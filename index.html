@@ -199,6 +199,7 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 <button onclick="show('pigeons',this)">Meine Tauben</button>
 <button onclick="show('pedigree',this)">Stammbaum</button>
 <button onclick="show('breeders',this)">Züchter</button>
+<button onclick="show('invitations',this)">Einladungen</button>
 </nav>
 
 <main>
@@ -262,6 +263,36 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 <p class="sub">Die echte Benutzerverwaltung und gemeinsame Freigaben werden im nächsten Entwicklungsschritt eingerichtet.</p>
 </div>
 </section>
+  <section id="invitations" class="hidden">
+<h2>Einladungen</h2>
+<p class="sub">Lade neue Züchter in die TABA-Community ein.</p>
+
+<div class="card">
+<h3>Neue Einladung erstellen</h3>
+
+<label>E-Mail-Adresse des eingeladenen Züchters *</label>
+<input id="inviteEmail" type="email"
+placeholder="züchter@email.de" required>
+
+<label>Maximale Nutzungen</label>
+<input id="inviteMaxUses" type="number"
+min="1" max="20" value="1">
+
+<label>Gültig bis (optional)</label>
+<input id="inviteExpiry" type="date">
+
+<button class="action" onclick="createInvitation()">
+Einladung erstellen
+</button>
+
+<p id="inviteMessage" class="sub"></p>
+</div>
+
+<h3>Meine Einladungen</h3>
+<div id="invitationList">
+<p class="sub">Einladungen werden geladen ...</p>
+</div>
+</section>
 </main>
 
 <footer>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</footer>
@@ -278,30 +309,40 @@ const supabaseClient = window.supabase.createClient(
  let pigeons=[];
  
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
-
-function save(){
- localStorage.setItem('taba_pigeons',JSON.stringify(pigeons));
- render();
-}
-
+  
 function show(id,btn){
  document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
  document.getElementById(id).classList.remove('hidden');
  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
  if(btn)btn.classList.add('active');
  render();
+
+ if (id === 'invitations') {
+   loadInvitations();
+ }
 }
+
 function showById(id){
- let buttons=[...document.querySelectorAll('nav button')];
- let index={dashboard:0,pigeons:1,pedigree:2,breeders:3}[id];
- show(id,buttons[index]);
+ const buttons = [...document.querySelectorAll('nav button')];
+ const index = {
+   dashboard: 0,
+   pigeons: 1,
+   pedigree: 2,
+   breeders: 3,
+   invitations: 4
+ }[id];
+
+ if (index === undefined) return;
+ show(id, buttons[index]);
 }
+
 
 async function addPigeon(){
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
 
   if (!user) {
+
     alert('Bitte zuerst anmelden.');
     return;
   }
@@ -367,7 +408,7 @@ async function loadPigeons() {
     return;
   }
 
-  pigeons = (data || []).map(p => ({
+    pigeons = (data || []).map(p => ({
     id: p.id,
     ring: p.ring_number,
     name: p.name || '',
@@ -509,7 +550,161 @@ function tree(){
  <p class="sub">Die Eltern werden über die Bearbeiten-Funktion bei der jeweiligen Taube zugeordnet.</p>`;
 }
 
+function generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
 
+  return Array.from(bytes, b => chars[b % chars.length]).join('');
+}
+
+
+async function createInvitation() {
+  const message = document.getElementById('inviteMessage');
+  const email = document.getElementById('inviteEmail').value.trim().toLowerCase();
+  const maxUses = Number(document.getElementById('inviteMaxUses').value);
+  const expiry = document.getElementById('inviteExpiry').value;
+
+  if (!email || !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 20) {
+    message.textContent = 'Bitte E-Mail-Adresse und Nutzungszahl prüfen.';
+    return;
+  }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    message.textContent = 'Bitte zuerst anmelden.';
+    return;
+  }
+
+  const code = generateInviteCode();
+
+  const invitation = {
+    code: code,
+    email: email,
+    max_uses: maxUses,
+    uses_count: 0,
+    expires_at: expiry
+      ? new Date(expiry + 'T23:59:59').toISOString()
+      : null,
+    active: true,
+    created_by: user.id
+  };
+
+  const { error } = await supabaseClient
+    .from('invitations')
+    .insert(invitation);
+
+  if (error) {
+    message.textContent = 'Fehler: ' + error.message;
+    return;
+  }
+
+  document.getElementById('inviteEmail').value = '';
+  document.getElementById('inviteExpiry').value = '';
+  document.getElementById('inviteMaxUses').value = '1';
+
+  message.textContent = 'Einladung wurde erstellt. Code: ' + code;
+
+  await loadInvitations();
+}
+
+
+async function loadInvitations() {
+  const list = document.getElementById('invitationList');
+
+  if (!list) return;
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    list.textContent = 'Bitte zuerst anmelden.';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('invitations')
+    .select('id, code, email, max_uses, uses_count, expires_at, active, created_at')
+    .eq('created_by', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Fehler beim Laden: ' + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p class="sub">Du hast noch keine Einladungen erstellt.</p>';
+    return;
+  }
+
+  list.innerHTML = data.map(invite => `
+    <div class="card">
+      <strong>${esc(invite.email || '')}</strong>
+      <p>Code: <strong>${esc(invite.code)}</strong></p>
+      <p class="sub">
+        Nutzungen: ${invite.uses_count} / ${invite.max_uses}
+      </p>
+      <p class="sub">
+        Status: ${invite.active ? 'Aktiv' : 'Deaktiviert'}
+      </p>
+      <p class="sub">
+        Ablauf: ${invite.expires_at
+          ? new Date(invite.expires_at).toLocaleDateString('de-DE')
+          : 'Kein Ablaufdatum'}
+      </p>
+      <button class="action"
+        onclick="copyInviteCode('${esc(invite.code)}')">
+        Code kopieren
+      </button>
+      ${invite.active ? `
+        <button class="action"
+          onclick="deactivateInvitation('${invite.id}')">
+          Deaktivieren
+        </button>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+
+async function copyInviteCode(code) {
+  try {
+    await navigator.clipboard.writeText(code);
+    alert('Einladungscode wurde kopiert.');
+  } catch (error) {
+    alert('Kopieren nicht möglich. Bitte den Code markieren und kopieren: ' + code);
+  }
+}
+
+
+async function deactivateInvitation(id) {
+  if (!confirm('Diese Einladung wirklich deaktivieren?')) return;
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Bitte zuerst anmelden.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('invitations')
+    .update({ active: false })
+    .eq('id', id)
+    .eq('created_by', user.id);
+
+  if (error) {
+    alert('Fehler beim Deaktivieren: ' + error.message);
+    return;
+  }
+
+  await loadInvitations();
+  alert('Einladung wurde deaktiviert.');
+}
 async function verifyTabaAccess(user) {
   const { data: breeder, error } = await supabaseClient
     .from('breeders')
