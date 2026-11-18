@@ -120,7 +120,14 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-let pigeons=[];
+const SUPABASE_URL = 'https://zntuhivibdibocuarewa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ZN7AZVgXHek1T7dGUFMU_Q_7UUKXo12';
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+ let pigeons=[];
  
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
 
