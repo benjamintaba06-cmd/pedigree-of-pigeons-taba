@@ -118,8 +118,10 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 
 <footer>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 let pigeons=[];
+ 
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
 
 function save(){
