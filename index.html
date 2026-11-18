@@ -11,7 +11,54 @@ body{margin:0;background:#f3f5f2;color:#20332e;font-family:Arial,sans-serif}
 header{background:#142e29;color:white;padding:24px 20px}
 .brand{font-size:12px;letter-spacing:3px;color:#d6bd82}
 header h1{font-size:23px;margin:12px 0 5px}
-header p{color:#cbd7d0;font-size:13px}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+header p {
+  color: #cbd7d0;
+  font-size: 13px;
+}
+.header-brand {
+  flex: 1;
+  min-width: 220px;
+}
+
+.developer-credit {
+  margin-top: 15px;
+  color: #d6bd82;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.company-logo {
+  width: 115px;
+  height: 115px;
+  background: white;
+  border-radius: 14px;
+  padding: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (max-width: 500px) {
+  .company-logo {
+    width: 85px;
+    height: 85px;
+  }
+}
+
 nav{display:flex;gap:8px;overflow-x:auto;padding:12px;background:white;position:sticky;top:0;z-index:5}
 nav button{border:0;border-radius:9px;padding:12px 15px;background:#edf1ed;color:#29443b;white-space:nowrap;font-weight:bold}
 nav button.active{background:#203d34;color:white}
@@ -94,11 +141,23 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 </style>
 </head>
 <body>
-<header>
-<div class="brand">TABA · BREEDER PLATFORM</div>
-<h1>🕊️ PEDIGREE OF PIGEONS</h1>
-<p>Every pigeon has a story.</p>
+
+<header class="main-header">
+  <div class="header-brand">
+    <div class="brand">TABA · BREEDER PLATFORM</div>
+    <h1>🕊️ PEDIGREE OF PIGEONS</h1>
+    <p>Every pigeon has a story.</p>
+    <div class="developer-credit">
+      Developed by Benjamin TABA · Hinterländer Hof
+    </div>
+  </div>
+
+  <div class="company-logo">
+    <img src="hinterlaender-hof-logo.jpg_1.jpg"
+         alt="Benjamin TABA – Hinterländer Hof">
+  </div>
 </header>
+
 
 <div id="loginOverlay" class="login-overlay">
   <div class="login-box">
