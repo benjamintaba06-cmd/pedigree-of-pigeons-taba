@@ -37,6 +37,60 @@ label{font-size:13px;font-weight:bold}
 .centerbird{background:#203d34;color:white;border-radius:12px;padding:18px;text-align:center;margin:10px 0}
 .hidden{display:none!important}
 footer{text-align:center;padding:25px;color:#829087;font-size:12px}
+
+/* TABA Anmeldeseite */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 25, 21, 0.48);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.login-box {
+  width: 100%;
+  max-width: 370px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 28px 24px;
+  box-shadow: 0 15px 50px #00000030;
+  text-align: center;
+}
+
+.login-box h2 {
+  color: #203d34;
+  margin: 8px 0;
+}
+
+.login-box p {
+  color: #718078;
+  font-size: 13px;
+}
+
+.login-box .action {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.login-logo {
+  color: #a58a4e;
+  font-size: 12px;
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+
+.login-link {
+  color: #a58a4e;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  margin-top: 16px;
+}
 </style>
 </head>
 <body>
@@ -45,6 +99,41 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 <h1>🕊️ PEDIGREE OF PIGEONS</h1>
 <p>Every pigeon has a story.</p>
 </header>
+
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">TABA · BREEDER PLATFORM</div>
+    <h2>Willkommen zurück</h2>
+    <p>Melde dich in deinem TABA-Konto an.</p>
+
+    <form id="loginForm">
+      <label for="loginEmail">E-Mail-Adresse</label>
+      <input id="loginEmail" type="email"
+        placeholder="deine@email.de" required>
+
+      <label for="loginPassword">Passwort</label>
+      <input id="loginPassword" type="password"
+        placeholder="Dein Passwort" required>
+
+      <button class="action" type="submit">
+        ANMELDEN
+      </button>
+    </form>
+
+    <div id="loginMessage"></div>
+
+    <div class="login-link"
+      onclick="alert('Die Passwort-Funktion richten wir im nächsten Schritt ein.')">
+      Passwort vergessen?
+    </div>
+
+    <p>Noch kein Konto?</p>
+    <div class="login-link"
+      onclick="alert('Die Einladung zur Registrierung richten wir später ein.')">
+      Mit Einladung registrieren
+    </div>
+  </div>
+</div>
 
 <nav>
 <button class="active" onclick="show('dashboard',this)">Dashboard</button>
@@ -224,6 +313,74 @@ function tree(){
  </div>
  <p class="sub">Die Eltern werden über die Bearbeiten-Funktion bei der jeweiligen Taube zugeordnet.</p>`;
 }
+
+
+async function verifyTabaAccess(user) {
+  const { data: breeder, error } = await supabaseClient
+    .from('breeders')
+    .select('status')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !breeder || breeder.status !== 'approved') {
+    await supabaseClient.auth.signOut();
+
+    const message = document.getElementById('loginMessage');
+    message.textContent = 'Dein TABA-Zugang ist noch nicht freigegeben.';
+    message.style.color = '#b33b32';
+
+    return false;
+  }
+
+  return true;
+}
+
+const loginForm = document.getElementById('loginForm');
+
+loginForm.addEventListener('submit', async function(event) {
+  event.preventDefault();
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const message = document.getElementById('loginMessage');
+
+  message.textContent = 'Anmeldung wird geprüft ...';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    message.textContent = 'Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.';
+    message.style.color = '#b33b32';
+    return;
+  }
+
+  const allowed = await verifyTabaAccess(data.user);
+
+  if (allowed) {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    message.textContent = '';
+    alert('Willkommen bei Pedigree of Pigeons by TABA!');
+  }
+});
+
+async function checkLogin() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    const allowed = await verifyTabaAccess(data.session.user);
+
+    if (allowed) {
+      document.getElementById('loginOverlay').classList.add('hidden');
+    }
+  }
+}
+
+checkLogin();
+
+
 render();
 </script>
 </body>
