@@ -186,11 +186,41 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
       Passwort vergessen?
     </div>
 
-    <p>Noch kein Konto?</p>
-    <div class="login-link"
-      onclick="alert('Die Einladung zur Registrierung richten wir später ein.')">
-      Mit Einladung registrieren
-    </div>
+   
+<p>Noch kein Konto?</p>
+
+<div class="login-link" onclick="toggleRegistration()">
+  Mit Einladung registrieren
+</div>
+
+<div id="registrationBox" class="hidden">
+  <h3>Neues Züchterkonto</h3>
+
+  <form id="registrationForm">
+    <label>Dein Name</label>
+    <input id="registerName" type="text"
+      placeholder="Vor- und Nachname" maxlength="100" required>
+
+    <label>E-Mail-Adresse</label>
+    <input id="registerEmail" type="email"
+      placeholder="deine@email.de" required>
+
+    <label>Passwort (mindestens 10 Zeichen)</label>
+    <input id="registerPassword" type="password"
+      minlength="10" required>
+
+    <label>Einladungscode</label>
+    <input id="registerCode" type="text"
+      placeholder="Dein TABA-Einladungscode" required>
+
+    <button class="action" type="submit">
+      Konto beantragen
+    </button>
+  </form>
+
+  <p id="registrationMessage" class="sub"></p>
+</div>
+
   </div>
 </div>
 
@@ -705,6 +735,58 @@ async function deactivateInvitation(id) {
   await loadInvitations();
   alert('Einladung wurde deaktiviert.');
 }
+  
+function toggleRegistration() {
+  document.getElementById('registrationBox').classList.toggle('hidden');
+}
+
+const registrationForm = document.getElementById('registrationForm');
+
+registrationForm.addEventListener('submit', async function(event) {
+  event.preventDefault();
+
+  const message = document.getElementById('registrationMessage');
+  const button = registrationForm.querySelector('button[type="submit"]');
+
+  message.textContent = 'Registrierung wird geprüft ...';
+  button.disabled = true;
+
+  try {
+    const response = await fetch(
+      'https://zntuhivibdibocuarewa.supabase.co/functions/v1/taba-register',
+      {
+        method: 'POST',
+    headers: {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY
+},
+        body: JSON.stringify({
+          display_name: document.getElementById('registerName').value.trim(),
+          email: document.getElementById('registerEmail').value.trim(),
+          password: document.getElementById('registerPassword').value,
+          code: document.getElementById('registerCode').value.trim()
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Registrierung fehlgeschlagen.');
+    }
+
+    message.textContent =
+      'Erfolgreich beantragt! Dein TABA-Zugang wartet auf Freigabe.';
+
+    registrationForm.reset();
+
+  } catch (error) {
+    message.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
 async function verifyTabaAccess(user) {
   const { data: breeder, error } = await supabaseClient
     .from('breeders')
