@@ -237,28 +237,92 @@ function showById(id){
  let index={dashboard:0,pigeons:1,pedigree:2,breeders:3}[id];
  show(id,buttons[index]);
 }
-function addPigeon(){
- let ring=document.getElementById('ring').value.trim();
- if(!ring){alert('Bitte eine Ringnummer eintragen.');return}
- if(pigeons.some(p=>p.ring.toLowerCase()===ring.toLowerCase())){
- alert('Diese Ringnummer ist bereits vorhanden.');return;
- }
- pigeons.push({
- id:Date.now(),ring,
- name:document.getElementById('name').value,
- sex:document.getElementById('sex').value,
- color:document.getElementById('color').value,
- birth:document.getElementById('birth').value,
- notes:document.getElementById('notes').value,
- father:null,mother:null
- });
- ['ring','name','color','birth','notes'].forEach(id=>document.getElementById(id).value='');
- save();
- alert('Taube wurde gespeichert!');
+
+async function addPigeon(){
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Bitte zuerst anmelden.');
+    return;
+  }
+
+  const ring = document.getElementById('ring').value.trim();
+
+  if (!ring) {
+    alert('Bitte eine Ringnummer eintragen.');
+    return;
+  }
+
+  const pigeon = {
+    owner_id: user.id,
+    ring_number: ring,
+    name: document.getElementById('name').value.trim(),
+    sex: document.getElementById('sex').value,
+    color: document.getElementById('color').value.trim(),
+    hatch_date: document.getElementById('birth').value || null,
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  const { error } = await supabaseClient
+    .from('pigeons')
+    .insert(pigeon);
+
+  if (error) {
+    alert('Fehler beim Speichern: ' + error.message);
+    return;
+  }
+
+  ['ring','name','color','birth','notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+
+  await loadPigeons();
+
+  alert('Taube wurde in deiner TABA-Datenbank gespeichert!');
 }
+
+
 function esc(s){
  return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+async function loadPigeons() {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    pigeons = [];
+    render();
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('pigeons')
+    .select('id, ring_number, name, sex, color, hatch_date, notes, father_id, mother_id')
+    .eq('owner_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    alert('Fehler beim Laden der Tauben: ' + error.message);
+    return;
+  }
+
+  pigeons = (data || []).map(p => ({
+    id: p.id,
+    ring: p.ring_number,
+    name: p.name || '',
+    sex: p.sex,
+    color: p.color || '',
+    birth: p.hatch_date || '',
+    notes: p.notes || '',
+    father: p.father_id,
+    mother: p.mother_id
+  }));
+
+  render();
+}
+
 function render(){
  document.getElementById('total').textContent=pigeons.length;
  document.getElementById('males').textContent=pigeons.filter(p=>p.sex==='male').length;
@@ -269,8 +333,8 @@ function render(){
  <div class="card pigeon">
  <div class="bird">🕊️</div>
  <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>${esc(p.name)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}</small></div>
- <button onclick="editPigeon(${p.id})" aria-label="Bearbeiten">✏️</button>
- <button onclick="removePigeon(${p.id})" aria-label="Löschen">🗑️</button>
+ <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button>
+<button onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
  </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
  let sel=document.getElementById('selected');
  let old=sel.value;
@@ -278,28 +342,100 @@ function render(){
  if(pigeons.some(p=>String(p.id)===old))sel.value=old;
  tree();
 }
-function removePigeon(id){
- if(confirm('Diese Taube wirklich löschen?')){
- pigeons=pigeons.filter(p=>p.id!==id);
- pigeons.forEach(p=>{if(p.father===id)p.father=null;if(p.mother===id)p.mother=null});
- save();
- }
+async function removePigeon(id) {
+  if (!confirm('Diese Taube wirklich löschen?')) {
+    return;
+  }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Bitte zuerst anmelden.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('pigeons')
+    .delete()
+    .eq('id', id)
+    .eq('owner_id', user.id);
+
+  if (error) {
+    alert('Fehler beim Löschen: ' + error.message);
+    return;
+  }
+
+  await loadPigeons();
+
+  alert('Taube wurde gelöscht.');
 }
-function editPigeon(id){
- let p=pigeons.find(x=>x.id===id);
- let father=prompt('Ringnummer des Vaters (leer lassen, wenn unbekannt):',p.father?pigeons.find(x=>x.id===p.father)?.ring||'':'');
- let mother=prompt('Ringnummer der Mutter (leer lassen, wenn unbekannt):',p.mother?pigeons.find(x=>x.id===p.mother)?.ring||'':'');
- let f=pigeons.find(x=>x.ring===father);
- let m=pigeons.find(x=>x.ring===mother);
- if(f&&f.id!==id&&f.sex!=='female')p.father=f.id;
- else if(!father)p.father=null;
- if(m&&m.id!==id&&m.sex!=='male')p.mother=m.id;
- else if(!mother)p.mother=null;
- save();
+
+async function editPigeon(id) {
+  const p = pigeons.find(x => String(x.id) === String(id));
+
+  if (!p) {
+    alert('Taube nicht gefunden.');
+    return;
+  }
+
+  const father = prompt(
+    'Ringnummer des Vaters (leer lassen, wenn unbekannt):',
+    pigeons.find(x => String(x.id) === String(p.father))?.ring || ''
+  );
+
+  if (father === null) return;
+
+  const mother = prompt(
+    'Ringnummer der Mutter (leer lassen, wenn unbekannt):',
+    pigeons.find(x => String(x.id) === String(p.mother))?.ring || ''
+  );
+
+  if (mother === null) return;
+
+  const normalize = value => value.trim().toLowerCase();
+
+  const f = pigeons.find(x => normalize(x.ring) === normalize(father));
+  const m = pigeons.find(x => normalize(x.ring) === normalize(mother));
+
+  if (father.trim() && (!f || String(f.id) === String(id) || f.sex === 'female')) {
+    alert('Der Vater wurde nicht gefunden oder hat ein ungeeignetes Geschlecht.');
+    return;
+  }
+
+  if (mother.trim() && (!m || String(m.id) === String(id) || m.sex === 'male')) {
+    alert('Die Mutter wurde nicht gefunden oder hat ein ungeeignetes Geschlecht.');
+    return;
+  }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Deine Anmeldung ist abgelaufen. Bitte erneut anmelden.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('pigeons')
+    .update({
+      father_id: f ? f.id : null,
+      mother_id: m ? m.id : null
+    })
+    .eq('id', id)
+    .eq('owner_id', user.id);
+
+  if (error) {
+    alert('Fehler beim Aktualisieren: ' + error.message);
+    return;
+  }
+
+  await loadPigeons();
+  alert('Abstammung wurde gespeichert!');
 }
 function tree(){
- let id=Number(document.getElementById('selected').value);
- let p=pigeons.find(x=>x.id===id);
+ let id=document.getElementById('selected').value;
+ let p=pigeons.find(x=>String(x.id)===String(id));
  let el=document.getElementById('treeview');
  if(!p){el.innerHTML='<p class="sub">Bitte zuerst eine Taube eintragen.</p>';return}
  function parent(id){
@@ -361,6 +497,7 @@ loginForm.addEventListener('submit', async function(event) {
 
   if (allowed) {
     document.getElementById('loginOverlay').classList.add('hidden');
+    await loadPigeons();
     message.textContent = '';
     alert('Willkommen bei Pedigree of Pigeons by TABA!');
   }
@@ -372,9 +509,10 @@ async function checkLogin() {
   if (data.session) {
     const allowed = await verifyTabaAccess(data.session.user);
 
-    if (allowed) {
-      document.getElementById('loginOverlay').classList.add('hidden');
-    }
+   if (allowed) {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  await loadPigeons();
+}
   }
 }
 
