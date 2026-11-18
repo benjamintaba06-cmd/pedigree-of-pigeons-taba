@@ -300,9 +300,9 @@ footer{text-align:center;padding:25px;color:#829087;font-size:12px}
 <div class="card">
 <h3>Neue Einladung erstellen</h3>
 
-<label>E-Mail-Adresse des eingeladenen Züchters *</label>
-<input id="inviteEmail" type="email"
-placeholder="züchter@email.de" required>
+<p class="sub">
+  Diese Einladung kann jeder verwenden, der den Link oder Zahlencode erhält.
+</p>
 
 <label>Maximale Nutzungen</label>
 <input id="inviteMaxUses" type="number"
@@ -581,22 +581,19 @@ function tree(){
 }
 
 function generateInviteCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = new Uint8Array(12);
+  const bytes = new Uint32Array(1);
   crypto.getRandomValues(bytes);
-
-  return Array.from(bytes, b => chars[b % chars.length]).join('');
+  return String(bytes[0] % 100000000).padStart(8, '0');
 }
 
 
 async function createInvitation() {
   const message = document.getElementById('inviteMessage');
-  const email = document.getElementById('inviteEmail').value.trim().toLowerCase();
   const maxUses = Number(document.getElementById('inviteMaxUses').value);
   const expiry = document.getElementById('inviteExpiry').value;
 
-  if (!email || !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 20) {
-    message.textContent = 'Bitte E-Mail-Adresse und Nutzungszahl prüfen.';
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 20) {
+    message.textContent = 'Bitte eine Nutzungszahl zwischen 1 und 20 eingeben.';
     return;
   }
 
@@ -608,11 +605,8 @@ async function createInvitation() {
     return;
   }
 
-  const code = generateInviteCode();
-
   const invitation = {
-    code: code,
-    email: email,
+    email: null,
     max_uses: maxUses,
     uses_count: 0,
     expires_at: expiry
@@ -622,24 +616,51 @@ async function createInvitation() {
     created_by: user.id
   };
 
-  const { error } = await supabaseClient
-    .from('invitations')
-    .insert(invitation);
+  let error = null;
+  let saved = false;
 
-  if (error) {
-    message.textContent = 'Fehler: ' + error.message;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    invitation.code = generateInviteCode();
+
+    const result = await supabaseClient
+      .from('invitations')
+      .insert(invitation);
+
+    error = result.error;
+
+    if (!error) {
+      saved = true;
+      break;
+    }
+
+    if (error.code !== '23505') break;
+  }
+
+  if (!saved) {
+    message.textContent = 'Fehler beim Erstellen: ' + error.message;
     return;
   }
 
-  document.getElementById('inviteEmail').value = '';
+  const code = invitation.code;
+
   document.getElementById('inviteExpiry').value = '';
   document.getElementById('inviteMaxUses').value = '1';
 
-  message.textContent = 'Einladung wurde erstellt. Code: ' + code;
+  const link = `${location.origin}${location.pathname}?invite=${code}`;
+
+  message.innerHTML = `
+    <strong>Einladung erfolgreich erstellt!</strong>
+    <p>Zahlencode: <strong>${code}</strong></p>
+    <button class="action" onclick="copyInviteCode('${code}')">
+      Zahlencode kopieren
+    </button>
+    <button class="action" onclick="copyInviteLink('${code}')">
+      Einladungslink kopieren
+    </button>
+  `;
 
   await loadInvitations();
 }
-
 
 async function loadInvitations() {
   const list = document.getElementById('invitationList');
@@ -694,18 +715,24 @@ async function loadInvitations() {
           onclick="deactivateInvitation('${invite.id}')">
           Deaktivieren
         </button>
+        <button class="action"
+  onclick="copyInviteLink('${esc(invite.code)}')">
+  Link kopieren
+</button>
       ` : ''}
     </div>
   `).join('');
 }
 
 
-async function copyInviteCode(code) {
+async function copyInviteLink(code) {
+  const link = `${location.origin}${location.pathname}?invite=${encodeURIComponent(code)}`;
+
   try {
-    await navigator.clipboard.writeText(code);
-    alert('Einladungscode wurde kopiert.');
+    await navigator.clipboard.writeText(link);
+    alert('Einladungslink wurde kopiert!');
   } catch (error) {
-    alert('Kopieren nicht möglich. Bitte den Code markieren und kopieren: ' + code);
+    prompt('Bitte den Einladungslink kopieren:', link);
   }
 }
 
@@ -738,6 +765,15 @@ async function deactivateInvitation(id) {
   
 function toggleRegistration() {
   document.getElementById('registrationBox').classList.toggle('hidden');
+}
+  const invitationFromLink =
+  new URLSearchParams(window.location.search).get('invite');
+
+if (invitationFromLink) {
+  document.getElementById('registerCode').value =
+    invitationFromLink.replace(/[^0-9]/g, '').slice(0, 8);
+
+  document.getElementById('registrationBox').classList.remove('hidden');
 }
 
 const registrationForm = document.getElementById('registrationForm');
