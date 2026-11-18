@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#142e29">
+<title>Pedigree of Pigeons by TABA</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5f2;color:#20332e;font-family:Arial,sans-serif}
+header{background:#142e29;color:white;padding:24px 20px}
+.brand{font-size:12px;letter-spacing:3px;color:#d6bd82}
+header h1{font-size:23px;margin:12px 0 5px}
+header p{color:#cbd7d0;font-size:13px}
+nav{display:flex;gap:8px;overflow-x:auto;padding:12px;background:white;position:sticky;top:0;z-index:5}
+nav button{border:0;border-radius:9px;padding:12px 15px;background:#edf1ed;color:#29443b;white-space:nowrap;font-weight:bold}
+nav button.active{background:#203d34;color:white}
+main{padding:20px;max-width:850px;margin:auto}
+h2{font-size:21px}
+.sub{color:#718078;font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:20px 0}
+.card{background:white;padding:17px;border-radius:14px;box-shadow:0 2px 10px #18352a0b;margin-bottom:12px}
+.stat{font-size:28px;font-weight:bold;margin-top:10px}
+.gold{color:#a58a4e}
+button{cursor:pointer}
+.action{background:#203d34;color:white;border:0;border-radius:9px;padding:13px 16px;font-weight:bold}
+input,select,textarea{width:100%;padding:13px;border:1px solid #dce3dc;border-radius:9px;margin:7px 0 13px;font-size:15px;background:white}
+label{font-size:13px;font-weight:bold}
+.pigeon{display:flex;align-items:center;gap:13px}
+.bird{width:48px;height:48px;border-radius:12px;background:#e9eee9;display:grid;place-items:center;font-size:25px}
+.pigeon-info{flex:1;min-width:0}
+.pigeon-info strong{display:block;overflow-wrap:anywhere}
+.pigeon-info small{color:#718078}
+.tag{font-size:11px;background:#e9f0e9;padding:5px 9px;border-radius:20px}
+.tree{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.parent{border:1px solid #dce4dc;border-radius:12px;padding:13px;text-align:center;background:white}
+.centerbird{background:#203d34;color:white;border-radius:12px;padding:18px;text-align:center;margin:10px 0}
+.hidden{display:none!important}
+footer{text-align:center;padding:25px;color:#829087;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">TABA · BREEDER PLATFORM</div>
+<h1>🕊️ PEDIGREE OF PIGEONS</h1>
+<p>Every pigeon has a story.</p>
+</header>
+
+<nav>
+<button class="active" onclick="show('dashboard',this)">Dashboard</button>
+<button onclick="show('pigeons',this)">Meine Tauben</button>
+<button onclick="show('pedigree',this)">Stammbaum</button>
+<button onclick="show('breeders',this)">Züchter</button>
+</nav>
+
+<main>
+<section id="dashboard">
+<h2>Willkommen bei TABA!</h2>
+<p class="sub">Dein persönliches digitales Zuchtbuch.</p>
+<div class="stats">
+<div class="card"><div>🕊️ Tauben</div><div class="stat" id="total">0</div></div>
+<div class="card"><div>♂ Täuber</div><div class="stat" id="males">0</div></div>
+<div class="card"><div>♀ Täubinnen</div><div class="stat" id="females">0</div></div>
+<div class="card"><div>🌳 Stammbäume</div><div class="stat" id="trees">0</div></div>
+</div>
+<div class="card">
+<h3>Willkommen in deiner Zuchtverwaltung</h3>
+<p class="sub">Erfasse deine Tauben, dokumentiere ihre Abstammung und behalte deine Blutlinien im Blick.</p>
+<button class="action" onclick="showById('pigeons')">+ Erste Taube eintragen</button>
+</div>
+</section>
+
+<section id="pigeons" class="hidden">
+<h2>Meine Tauben</h2>
+<p class="sub">Deine persönliche Taubendatenbank.</p>
+<div class="card">
+<h3>Neue Taube eintragen</h3>
+<label>Ringnummer *</label>
+<input id="ring" placeholder="z.B. DV-01234-2025">
+<label>Name</label>
+<input id="name" placeholder="Name der Taube">
+<label>Geschlecht</label>
+<select id="sex"><option value="male">Täuber</option><option value="female">Täubin</option><option value="unknown">Unbekannt</option></select>
+<label>Farbe / Zeichnung</label>
+<input id="color" placeholder="z.B. Blaugehämmert">
+<label>Geburtsdatum</label>
+<input id="birth" type="date">
+<label>Notizen</label>
+<textarea id="notes" placeholder="Herkunft, Leistung, Bemerkungen..."></textarea>
+<button class="action" onclick="addPigeon()">Taube speichern</button>
+</div>
+<h3>Dein Bestand</h3>
+<input id="search" placeholder="🔎 Ringnummer suchen..." oninput="render()">
+<div id="list"></div>
+</section>
+
+<section id="pedigree" class="hidden">
+<h2>Stammbaum</h2>
+<p class="sub">Wähle eine Taube, um ihre Abstammung zu sehen.</p>
+<div class="card">
+<label>Taube auswählen</label>
+<select id="selected" onchange="tree()"></select>
+<div id="treeview"></div>
+</div>
+</section>
+
+<section id="breeders" class="hidden">
+<h2>Züchterbereich</h2>
+<div class="card">
+<div style="font-size:32px">👥</div>
+<h3>TABA Breeder Community</h3>
+<p class="sub">Eine Plattform für Taubenzüchter. Jeder Züchter verwaltet seinen eigenen Bestand. Stammbäume können später gezielt freigegeben werden.</p>
+<p><span class="tag">Einladung erforderlich</span></p>
+<p class="sub">Die echte Benutzerverwaltung und gemeinsame Freigaben werden im nächsten Entwicklungsschritt eingerichtet.</p>
+</div>
+</section>
+</main>
+
+<footer>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</footer>
+
+<script>
+let pigeons=[];
+try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
+
+function save(){
+ localStorage.setItem('taba_pigeons',JSON.stringify(pigeons));
+ render();
+}
+
+function show(id,btn){
+ document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+ render();
+}
+function showById(id){
+ let buttons=[...document.querySelectorAll('nav button')];
+ let index={dashboard:0,pigeons:1,pedigree:2,breeders:3}[id];
+ show(id,buttons[index]);
+}
+function addPigeon(){
+ let ring=document.getElementById('ring').value.trim();
+ if(!ring){alert('Bitte eine Ringnummer eintragen.');return}
+ if(pigeons.some(p=>p.ring.toLowerCase()===ring.toLowerCase())){
+ alert('Diese Ringnummer ist bereits vorhanden.');return;
+ }
+ pigeons.push({
+ id:Date.now(),ring,
+ name:document.getElementById('name').value,
+ sex:document.getElementById('sex').value,
+ color:document.getElementById('color').value,
+ birth:document.getElementById('birth').value,
+ notes:document.getElementById('notes').value,
+ father:null,mother:null
+ });
+ ['ring','name','color','birth','notes'].forEach(id=>document.getElementById(id).value='');
+ save();
+ alert('Taube wurde gespeichert!');
+}
+function esc(s){
+ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function render(){
+ document.getElementById('total').textContent=pigeons.length;
+ document.getElementById('males').textContent=pigeons.filter(p=>p.sex==='male').length;
+ document.getElementById('females').textContent=pigeons.filter(p=>p.sex==='female').length;
+ document.getElementById('trees').textContent=pigeons.filter(p=>p.father||p.mother).length;
+ let q=(document.getElementById('search')?.value||'').toLowerCase();
+ document.getElementById('list').innerHTML=pigeons.filter(p=>p.ring.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)).map(p=>`
+ <div class="card pigeon">
+ <div class="bird">🕊️</div>
+ <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>${esc(p.name)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}</small></div>
+ <button onclick="editPigeon(${p.id})" aria-label="Bearbeiten">✏️</button>
+ <button onclick="removePigeon(${p.id})" aria-label="Löschen">🗑️</button>
+ </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
+ let sel=document.getElementById('selected');
+ let old=sel.value;
+ sel.innerHTML=pigeons.map(p=>`<option value="${p.id}">${esc(p.ring)}</option>`).join('');
+ if(pigeons.some(p=>String(p.id)===old))sel.value=old;
+ tree();
+}
+function removePigeon(id){
+ if(confirm('Diese Taube wirklich löschen?')){
+ pigeons=pigeons.filter(p=>p.id!==id);
+ pigeons.forEach(p=>{if(p.father===id)p.father=null;if(p.mother===id)p.mother=null});
+ save();
+ }
+}
+function editPigeon(id){
+ let p=pigeons.find(x=>x.id===id);
+ let father=prompt('Ringnummer des Vaters (leer lassen, wenn unbekannt):',p.father?pigeons.find(x=>x.id===p.father)?.ring||'':'');
+ let mother=prompt('Ringnummer der Mutter (leer lassen, wenn unbekannt):',p.mother?pigeons.find(x=>x.id===p.mother)?.ring||'':'');
+ let f=pigeons.find(x=>x.ring===father);
+ let m=pigeons.find(x=>x.ring===mother);
+ if(f&&f.id!==id&&f.sex!=='female')p.father=f.id;
+ else if(!father)p.father=null;
+ if(m&&m.id!==id&&m.sex!=='male')p.mother=m.id;
+ else if(!mother)p.mother=null;
+ save();
+}
+function tree(){
+ let id=Number(document.getElementById('selected').value);
+ let p=pigeons.find(x=>x.id===id);
+ let el=document.getElementById('treeview');
+ if(!p){el.innerHTML='<p class="sub">Bitte zuerst eine Taube eintragen.</p>';return}
+ function parent(id){
+ let x=pigeons.find(a=>a.id===id);
+ return x?esc(x.ring):'Nicht eingetragen';
+ }
+ el.innerHTML=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>Ausgewählte Taube</div></div>
+ <div class="tree">
+ <div class="parent">♂ Vater<br><strong>${parent(p.father)}</strong></div>
+ <div class="parent">♀ Mutter<br><strong>${parent(p.mother)}</strong></div>
+ </div>
+ <p class="sub">Die Eltern werden über die Bearbeiten-Funktion bei der jeweiligen Taube zugeordnet.</p>`;
+}
+render();
+</script>
+</body>
+</html>
