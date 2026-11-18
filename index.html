@@ -231,6 +231,7 @@ align-items: flex-start;
 <button onclick="show('pigeons',this)">Meine Tauben</button>
 <button onclick="show('pedigree',this)">Stammbaum</button>
 <button onclick="show('breeders',this)">Züchter</button>
+<button onclick="show('inbox',this)">📬 Posteingang <span id="unreadCount"></span></button>
 <button onclick="show('invitations',this)">Einladungen</button>
 </nav>
 
@@ -295,6 +296,16 @@ align-items: flex-start;
 <p class="sub">Die echte Benutzerverwaltung und gemeinsame Freigaben werden im nächsten Entwicklungsschritt eingerichtet.</p>
 </div>
 </section>
+  <section id="inbox" class="hidden">
+  <h2>📬 Mein Posteingang</h2>
+  <p class="sub">
+    Deine persönlichen Nachrichten aus der TABA-Züchtergemeinschaft.
+  </p>
+
+  <div id="notificationList">
+    <p class="sub">Nachrichten werden geladen ...</p>
+  </div>
+</section>
   <section id="invitations" class="hidden">
 <h2>Einladungen</h2>
 <p class="sub">Lade neue Züchter in die TABA-Community ein.</p>
@@ -350,19 +361,24 @@ function show(id,btn){
  render();
 
  if (id === 'invitations') {
-   loadInvitations();
- }
+  loadInvitations();
+}
+
+if (id === 'inbox') {
+  loadNotifications();
+}
 }
 
 function showById(id){
  const buttons = [...document.querySelectorAll('nav button')];
- const index = {
-   dashboard: 0,
-   pigeons: 1,
-   pedigree: 2,
-   breeders: 3,
-   invitations: 4
- }[id];
+const index = {
+  dashboard: 0,
+  pigeons: 1,
+  pedigree: 2,
+  breeders: 3,
+  inbox: 4,
+  invitations: 5
+}[id];
 
  if (index === undefined) return;
  show(id, buttons[index]);
@@ -764,7 +780,148 @@ async function deactivateInvitation(id) {
   await loadInvitations();
   alert('Einladung wurde deaktiviert.');
 }
-  
+  async function updateUnreadCount() {
+  const badge = document.getElementById('unreadCount');
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    badge.textContent = '';
+    return;
+  }
+
+  const { count, error } = await supabaseClient
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', user.id)
+    .is('read_at', null);
+
+  if (error) {
+    console.error('Fehler beim Laden der Nachrichtenzahl:', error);
+    return;
+  }
+
+  badge.textContent = count > 0 ? `(${count})` : '';
+}
+async function loadNotifications() {
+  const list = document.getElementById('notificationList');
+  const badge = document.getElementById('unreadCount');
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    list.textContent = 'Bitte zuerst anmelden.';
+    badge.textContent = '';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('notifications')
+    .select('id, title, message, created_at, read_at')
+    .eq('recipient_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Fehler beim Laden: ' + error.message;
+    return;
+  }
+
+  const notifications = data || [];
+  const unread = notifications.filter(n => !n.read_at).length;
+
+  badge.textContent = unread > 0 ? `(${unread})` : '';
+
+  if (notifications.length === 0) {
+    list.innerHTML =
+      '<p class="sub">Du hast noch keine Nachrichten.</p>';
+    return;
+  }
+
+  list.innerHTML = notifications.map(n => `
+    <div class="card" style="${n.read_at ? 'opacity:0.7;' : 'border-left:4px solid #a58a4e;'}">
+      <strong>${esc(n.title)}</strong>
+
+      <p>${esc(n.message)}</p>
+
+      <p class="sub">
+        ${new Date(n.created_at).toLocaleString('de-DE')}
+      </p>
+
+      <p class="sub">
+        ${n.read_at ? 'Gelesen' : 'Ungelesen'}
+      </p>
+
+      ${!n.read_at ? `
+        <button class="action"
+          onclick="markNotificationRead('${n.id}')">
+          Als gelesen markieren
+        </button>
+      ` : ''}
+
+      <button class="action"
+        onclick="deleteNotification('${n.id}')">
+        Löschen
+      </button>
+    </div>
+  `).join('');
+}
+
+
+async function markNotificationRead(id) {
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) return;
+
+  const { error } = await supabaseClient
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('recipient_id', user.id);
+
+  if (error) {
+    alert('Fehler beim Markieren: ' + error.message);
+    return;
+  }
+
+  await loadNotifications();
+  await updateUnreadCount();
+}
+
+
+async function deleteNotification(id) {
+  if (!confirm('Diese Nachricht wirklich löschen?')) return;
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) return;
+
+  const { error } = await supabaseClient
+    .from('notifications')
+    .delete()
+    .eq('id', id)
+    .eq('recipient_id', user.id);
+
+  if (error) {
+    alert('Fehler beim Löschen: ' + error.message);
+    return;
+  }
+
+    await loadNotifications();
+  await updateUnreadCount();
+}
+
 function toggleRegistration() {
   document.getElementById('registrationBox').classList.toggle('hidden');
 }
@@ -872,6 +1029,7 @@ loginForm.addEventListener('submit', async function(event) {
   if (allowed) {
     document.getElementById('loginOverlay').classList.add('hidden');
     await loadPigeons();
+    await updateUnreadCount();
     message.textContent = '';
     alert('Willkommen bei Pedigree of Pigeons by TABA!');
   }
@@ -886,6 +1044,7 @@ async function checkLogin() {
    if (allowed) {
   document.getElementById('loginOverlay').classList.add('hidden');
   await loadPigeons();
+     await updateUnreadCount();
 }
   }
 }
