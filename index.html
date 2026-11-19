@@ -790,7 +790,7 @@ function esc(s){
 }
 
 
-async function submitPigeonSale() {
+async async function submitPigeonSale() {
   const pigeonId = document.getElementById('sellPigeonSelect').value;
   const priceInput = document.getElementById('sellPrice').value.trim();
   const message = document.getElementById('sellPigeonMessage');
@@ -821,15 +821,26 @@ async function submitPigeonSale() {
 
   message.textContent = 'Verkaufsanzeige wird veröffentlicht ...';
 
-  // Die RPC-Funktion und Tabelle werden im nächsten Schritt gemeinsam in Supabase angelegt.
-  const { error } = await supabaseClient.rpc('publish_pigeon_listing', {
-    p_pigeon_id: pigeonId,
-    p_price: price
+  const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+  const user = authData?.user;
+  if (authError || !user) {
+    message.textContent = '';
+    alert('Bitte melde dich erneut an.');
+    return;
+  }
+
+  const { error } = await supabaseClient.from('sales_listings').insert({
+    owner_id: user.id,
+    pigeon_id: pigeonId,
+    price_type: price === null ? 'negotiable' : 'fixed',
+    price: price,
+    pedigree_public: false,
+    status: 'active'
   });
 
   if (error) {
     message.textContent = '';
-    alert('Die Verkaufsanzeige konnte noch nicht veröffentlicht werden. Die Supabase-Funktion richten wir als Nächstes gemeinsam ein. Details: ' + error.message);
+    alert('Die Verkaufsanzeige konnte nicht veröffentlicht werden: ' + error.message);
     return;
   }
 
@@ -1807,53 +1818,57 @@ async function loadBreeders() {
 async function loadPigeonListings() {
   const box = document.getElementById('pigeonListings');
   if (!box) return;
+  box.innerHTML = '<p class="sub">Verkaufsanzeigen werden geladen ...</p>';
 
-  // Diese Tabelle wird im anschließenden Supabase-Schritt angelegt.
   const { data: listings, error } = await supabaseClient
-    .from('pigeon_listings')
-    .select('id, seller_id, pigeon_id, price, status, created_at')
+    .from('sales_listings')
+    .select('id, owner_id, pigeon_id, price_type, price, pedigree_public, status, created_at')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.info('Die Verkaufsanzeigen-Tabelle wird in Supabase noch eingerichtet:', error.message);
-    box.innerHTML = '<p class="sub">Der Anzeigenbereich ist vorbereitet. Die Verbindung zu Supabase richten wir im nächsten Schritt ein.</p>';
+    console.error('Fehler beim Laden der Verkaufsanzeigen:', error);
+    box.innerHTML = '<p class="sub">Die Verkaufsanzeigen konnten nicht geladen werden: ' + esc(error.message) + '</p>';
     return;
   }
-
-  if (!listings || listings.length === 0) {
+  if (!listings?.length) {
     box.innerHTML = '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
     return;
   }
 
   const pigeonIds = [...new Set(listings.map(x => x.pigeon_id))];
-  const sellerIds = [...new Set(listings.map(x => x.seller_id))];
+  const sellerIds = [...new Set(listings.map(x => x.owner_id))];
   const [{ data: birds, error: birdsError }, { data: sellers, error: sellersError }] = await Promise.all([
-    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, notes').in('id', pigeonIds),
+    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, notes, photo_path').in('id', pigeonIds),
     supabaseClient.from('breeders').select('id, display_name, location_label').in('id', sellerIds)
   ]);
-
   if (birdsError || sellersError) {
-    box.innerHTML = '<p class="sub">Die Anzeigen-Details konnten nicht geladen werden.</p>';
+    box.innerHTML = '<p class="sub">Anzeigendetails konnten nicht geladen werden: ' + esc((birdsError || sellersError).message) + '</p>';
     return;
   }
 
   const birdById = Object.fromEntries((birds || []).map(b => [b.id, b]));
   const sellerById = Object.fromEntries((sellers || []).map(b => [b.id, b]));
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const currentUser = sessionData.session?.user;
+  const { data: authData } = await supabaseClient.auth.getUser();
+  const currentUser = authData?.user;
 
-  box.innerHTML = listings.map(item => {
+  const cards = await Promise.all(listings.map(async item => {
     const bird = birdById[item.pigeon_id];
-    const seller = sellerById[item.seller_id];
+    const seller = sellerById[item.owner_id];
     if (!bird || !seller) return '';
+    let photoUrl = null;
+    if (bird.photo_path) {
+      const { data } = await supabaseClient.storage.from('pigeon-photos').createSignedUrl(bird.photo_path, 3600);
+      photoUrl = data?.signedUrl || null;
+    }
     const priceText = item.price === null || item.price === undefined
       ? 'VB'
       : Number(item.price).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+    const isOwner = currentUser?.id === item.owner_id;
     return `
       <div class="card">
         <div class="pigeon">
-          <div class="bird">🕊️</div>
+          <div class="bird">${photoUrl ? `<img src="${photoUrl}" alt="Foto ${esc(bird.ring_number)}" style="width:76px;height:76px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
           <div class="pigeon-info">
             <strong>${esc(bird.ring_number)}${bird.name ? ' – ' + esc(bird.name) : ''}</strong>
             <small>${esc(bird.sex === 'male' ? 'Täuber' : bird.sex === 'female' ? 'Täubin' : 'Unbekannt')} · ${esc(bird.color || 'Farbe nicht angegeben')}</small>
@@ -1861,12 +1876,13 @@ async function loadPigeonListings() {
           <span class="tag"><strong>${esc(priceText)}</strong></span>
         </div>
         ${bird.hatch_date ? `<p class="sub">Geboren: ${new Date(bird.hatch_date).toLocaleDateString('de-DE')}</p>` : ''}
-        ${bird.notes ? `<p>${esc(bird.notes)}</p>` : ''}
         <p class="sub">Angeboten von: <strong>${esc(seller.display_name)}</strong>${seller.location_label ? ' · ' + esc(seller.location_label) : ''}</p>
-        ${currentUser && currentUser.id !== item.seller_id ? `<button class="action" onclick="startConversation('${item.seller_id}')">✉️ Interesse zeigen / Verkäufer kontaktieren</button>` : ''}
+        ${isOwner ? '<p class="sub">Deine Verkaufsanzeige</p>' : currentUser ? `<button class="action" onclick="startConversation('${item.owner_id}')">✉️ Interesse zeigen / Verkäufer kontaktieren</button>` : ''}
       </div>`;
-  }).filter(Boolean).join('') || '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
+  }));
+  box.innerHTML = cards.filter(Boolean).join('') || '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
 }
+
   async function startConversation(breederId) {
   const { data: sessionData } =
     await supabaseClient.auth.getSession();
