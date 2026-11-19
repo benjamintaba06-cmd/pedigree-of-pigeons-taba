@@ -339,7 +339,26 @@ align-items: flex-start;
 <div id="conversationList">
   <p class="sub">Unterhaltungen werden geladen ...</p>
 </div>
+<div id="conversationView" class="card hidden">
+  <h3 id="conversationTitle">Private Unterhaltung</h3>
 
+  <div id="messageList">
+    <p class="sub">Nachrichten werden geladen ...</p>
+  </div>
+
+  <label for="messageInput">Deine Nachricht</label>
+  <textarea id="messageInput"
+    maxlength="5000"
+    placeholder="Schreibe deine Nachricht ..."></textarea>
+
+  <button class="action" onclick="sendMessage()">
+    Nachricht senden
+  </button>
+
+  <button class="action" onclick="closeConversation()">
+    Zurück zur Unterhaltungsliste
+  </button>
+</div>
 <h3>Benachrichtigungen</h3>
 <div id="notificationList">
   <p class="sub">Nachrichten werden geladen ...</p>
@@ -936,6 +955,75 @@ async function loadBreeders() {
     </button>
   </div>
   `).join('');
+}
+  async function startConversation(breederId) {
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Bitte zuerst anmelden.');
+    return;
+  }
+
+  if (breederId === user.id) {
+    alert('Du kannst dir selbst keine Nachricht schreiben.');
+    return;
+  }
+
+  const { data: existingOne, error: errorOne } =
+    await supabaseClient
+      .from('conversations')
+      .select('id')
+      .eq('participant_one_id', user.id)
+      .eq('participant_two_id', breederId)
+      .maybeSingle();
+
+  if (errorOne) {
+    alert('Fehler beim Prüfen der Unterhaltung: ' + errorOne.message);
+    return;
+  }
+
+  if (existingOne) {
+    openConversation(existingOne.id);
+    return;
+  }
+
+  const { data: existingTwo, error: errorTwo } =
+    await supabaseClient
+      .from('conversations')
+      .select('id')
+      .eq('participant_one_id', breederId)
+      .eq('participant_two_id', user.id)
+      .maybeSingle();
+
+  if (errorTwo) {
+    alert('Fehler beim Prüfen der Unterhaltung: ' + errorTwo.message);
+    return;
+  }
+
+  if (existingTwo) {
+    openConversation(existingTwo.id);
+    return;
+  }
+
+  const { data: newConversation, error } =
+    await supabaseClient
+      .from('conversations')
+      .insert({
+        participant_one_id: user.id,
+        participant_two_id: breederId
+      })
+      .select('id')
+      .single();
+
+  if (error) {
+    alert('Unterhaltung konnte nicht gestartet werden: ' + error.message);
+    return;
+  }
+
+  openConversation(newConversation.id);
 }
   async function loadConversations() {
   const list = document.getElementById('conversationList');
