@@ -84,6 +84,9 @@ nav button.active{background:#203d34;color:white}
 .tree-generation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
 .tree-generation .parent{font-size:12px;padding:9px 5px;overflow-wrap:anywhere}
 .tree-generation-label{font-size:12px;color:#718078;font-weight:bold;margin-top:12px}
+.tree-node-button{width:100%;border:1px solid #dce4dc;border-radius:12px;padding:10px 6px;background:#fff;color:#29443b;text-align:center;font-size:12px;cursor:pointer}
+.tree-node-button:hover{border-color:#a58a4e;background:#f8faf7}
+.tree-node-button strong{display:block;margin-top:4px;overflow-wrap:anywhere}
 @media(max-width:600px){.tree-generation{grid-template-columns:repeat(2,minmax(0,1fr))}}
 main{padding:20px;max-width:850px;margin:auto}
 h2{font-size:21px}
@@ -364,22 +367,20 @@ align-items: flex-start;
 <div class="card" id="sellPigeonCard">
   <h3>🐦 Taube verkaufen</h3>
   <p class="sub">
-    Wähle eine Taube aus deinem Bestand und anschließend den Käufer.
-    Der Verkauf wird erst nach beidseitiger Bestätigung wirksam.
+    Wähle eine Taube aus deinem Bestand und veröffentliche sie als Verkaufsanzeige im Züchterkreis. Interessenten können dich anschließend direkt kontaktieren.
   </p>
 
-  <label>Welche Taube möchtest du verkaufen?</label>
+  <label>Welche Taube möchtest du anbieten?</label>
   <select id="sellPigeon">
     <option value="">Bitte Taube auswählen</option>
   </select>
 
-  <label>Käufer auswählen</label>
-  <select id="sellBuyer">
-    <option value="">Mitglieder werden geladen ...</option>
-  </select>
+  <label>Verkaufspreis in Euro (optional)</label>
+  <input id="sellPrice" type="number" min="0" step="0.01" placeholder="Leer lassen für VB">
+  <p class="sub">Ohne Preisangabe wird die Anzeige automatisch mit „VB“ gekennzeichnet.</p>
 
   <button class="action" onclick="submitPigeonSale()">
-    Verkauf zur Bestätigung einreichen
+    Verkaufsanzeige veröffentlichen
   </button>
 
   <p id="sellPigeonMessage" class="sub"></p>
@@ -399,9 +400,13 @@ align-items: flex-start;
 
 
 <section id="breeders" class="hidden">
-  <h2>Züchterverzeichnis</h2>
-  <p class="sub">Entdecke die freigegebenen Mitglieder der TABA-Züchtergemeinschaft.</p>
+  <h2>Züchterkreis</h2>
+  <p class="sub">Entdecke Mitglieder der TABA-Züchtergemeinschaft und aktuelle Tauben-Verkaufsanzeigen.</p>
 
+  <h3>🐦 Tauben im Angebot</h3>
+  <div id="pigeonListings"><p class="sub">Verkaufsanzeigen werden geladen ...</p></div>
+
+  <h3>👥 Züchterverzeichnis</h3>
   <div id="breedersList">
     <p class="sub">Züchter werden geladen ...</p>
   </div>
@@ -545,7 +550,6 @@ function show(id, btn) {
 
   if (id === 'pigeons') {
     loadPigeons();
-    loadSaleBuyers();
   }
 
   if (id === 'inbox') {
@@ -619,62 +623,9 @@ function esc(s){
 }
 
 
-async function loadSaleBuyers() {
-  const select = document.getElementById('sellBuyer');
-
-  if (!select) return;
-
-  select.innerHTML =
-    '<option value="">Käufer auswählen</option>';
-
-  const { data: sessionData } =
-    await supabaseClient.auth.getSession();
-
-  const user = sessionData.session?.user;
-
-  if (!user) return;
-
-const { data, error } = await supabaseClient
-  .from('breeders')
-  .select('id, display_name, loft_name, country')
-  .eq('status', 'approved')
-  .neq('id', user.id)
-  .order('display_name');
-
-const debugMessage = document.getElementById('sellPigeonMessage');
-
-if (debugMessage) {
-  debugMessage.textContent = error
-    ? 'Ladefehler: ' + error.message
-    : 'Angemeldet: ' + user.id + ' | Gefundene Mitglieder: ' + (data || []).length;
-}
-
-  if (error) {
-    select.innerHTML =
-      '<option value="">Fehler beim Laden</option>';
-    console.error(error);
-    return;
-  }
-
-  (data || []).forEach(breeder => {
-    const option = document.createElement('option');
-    option.value = breeder.id;
-    option.textContent =
-      breeder.display_name +
-      (breeder.loft_name ? ' – ' + breeder.loft_name : '') +
-      (breeder.country ? ' (' + breeder.country + ')' : '');
-
-    select.appendChild(option);
-  });
-
-  if (select.options.length === 1) {
-    select.innerHTML =
-      '<option value="">Keine weiteren Mitglieder vorhanden</option>';
-  }
-}
 async function submitPigeonSale() {
   const pigeonId = document.getElementById('sellPigeon').value;
-  const buyerId = document.getElementById('sellBuyer').value;
+  const priceInput = document.getElementById('sellPrice').value.trim();
   const message = document.getElementById('sellPigeonMessage');
 
   if (!pigeonId) {
@@ -682,51 +633,46 @@ async function submitPigeonSale() {
     return;
   }
 
-  if (!buyerId) {
-    alert('Bitte wähle einen Käufer aus.');
-    return;
-  }
-
   const pigeon = pigeons.find(p => String(p.id) === String(pigeonId));
-
   if (!pigeon || pigeon.pigeon_status !== 'in_loft') {
     alert('Diese Taube ist nicht mehr verfügbar.');
     await loadPigeons();
     return;
   }
 
-  if (!confirm(
-    'Möchtest du die Taube ' + pigeon.ring +
-    ' wirklich zum Verkauf einreichen?'
-  )) {
-    return;
+  let price = null;
+  if (priceInput !== '') {
+    price = Number(priceInput);
+    if (!Number.isFinite(price) || price < 0) {
+      alert('Bitte gib einen gültigen Preis ab 0 € ein oder lasse das Feld leer.');
+      return;
+    }
   }
 
-  message.textContent = 'Verkaufsanfrage wird gesendet ...';
+  const priceLabel = price === null ? 'VB' : price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  if (!confirm('Möchtest du ' + pigeon.ring + ' für ' + priceLabel + ' als Verkaufsanzeige im Züchterkreis veröffentlichen?')) return;
 
-  const { error } = await supabaseClient.rpc(
-    'submit_pigeon_sale',
-    {
-      p_pigeon_id: pigeonId,
-      p_buyer_id: buyerId
-    }
-  );
+  message.textContent = 'Verkaufsanzeige wird veröffentlicht ...';
+
+  // Die RPC-Funktion und Tabelle werden im nächsten Schritt gemeinsam in Supabase angelegt.
+  const { error } = await supabaseClient.rpc('publish_pigeon_listing', {
+    p_pigeon_id: pigeonId,
+    p_price: price
+  });
 
   if (error) {
     message.textContent = '';
-    alert('Fehler: ' + error.message);
+    alert('Die Verkaufsanzeige konnte noch nicht veröffentlicht werden. Die Supabase-Funktion richten wir als Nächstes gemeinsam ein. Details: ' + error.message);
     return;
   }
 
-  message.textContent =
-    'Verkaufsanfrage wurde erfolgreich eingereicht!';
-
+  message.textContent = 'Deine Verkaufsanzeige wurde veröffentlicht (' + priceLabel + ').';
   document.getElementById('sellPigeon').value = '';
-  document.getElementById('sellBuyer').value = '';
+  document.getElementById('sellPrice').value = '';
+  await loadPigeons();
+  alert('Deine Taube ist jetzt im Züchterkreis zu sehen.');
+}
 
-  alert('Der Käufer wurde benachrichtigt!');
-}  
-  
 async function respondToSale(saleId, response) {
   const actionText =
     response === 'confirmed' ? 'bestätigen' : 'ablehnen';
@@ -975,11 +921,24 @@ function tree(){
  let html=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>Ausgewählte Taube</div></div>`;
  for(let i=1;i<generations.length;i++){
    html+=`<div class="tree-generation-label">${i}. Generation · ${generations[i].length} Abstammungsplätze</div><div class="tree-generation">`;
-   html+=generations[i].map(entry=>`<div class="parent">${entry.label}<br><strong>${entry.bird ? esc(entry.bird.ring) : 'Nicht eingetragen'}</strong></div>`).join('');
+   html+=generations[i].map(entry=> entry.bird
+     ? `<button type="button" class="tree-node-button" onclick="selectPedigreeBird('${entry.bird.id}')">${entry.label}<strong>${esc(entry.bird.ring)}</strong>${entry.bird.name ? `<span>${esc(entry.bird.name)}</span>` : ''}<small>Als Mittelpunkt öffnen ↗</small></button>`
+     : `<div class="parent">${entry.label}<br><strong>Nicht eingetragen</strong></div>`
+   ).join('');
    html+='</div>';
  }
  html+='<p class="sub">Die Abstammung wird über Vater und Mutter der jeweiligen Taube aufgebaut. Nicht zugeordnete Eltern erscheinen als „Nicht eingetragen“.</p>';
+ html+='<p class="sub">Tipp: Klicke auf eine eingetragene Taube, um sie zum Mittelpunkt des Stammbaums zu machen.</p>';
  el.innerHTML=html;
+}
+
+function selectPedigreeBird(birdId) {
+ const select = document.getElementById('selected');
+ if (!select) return;
+ const exists = [...select.options].some(option => String(option.value) === String(birdId));
+ if (!exists) return;
+ select.value = birdId;
+ tree();
 }
 
 function generateInviteCode() {
@@ -1188,8 +1147,10 @@ async function deactivateInvitation(id) {
 
 async function loadBreeders() {
   const list = document.getElementById('breedersList');
+  const listingBox = document.getElementById('pigeonListings');
 
   list.innerHTML = '<p class="sub">Züchter werden geladen ...</p>';
+  if (listingBox) listingBox.innerHTML = '<p class="sub">Verkaufsanzeigen werden geladen ...</p>';
 
   const { data, error } = await supabaseClient
     .from('breeders')
@@ -1199,36 +1160,86 @@ async function loadBreeders() {
 
   if (error) {
     console.error('Fehler beim Laden der Züchter:', error);
-    list.innerHTML =
-      '<p class="sub">Das Züchterverzeichnis konnte nicht geladen werden.</p>';
+    list.innerHTML = '<p class="sub">Das Züchterverzeichnis konnte nicht geladen werden.</p>';
+  } else if (!data || data.length === 0) {
+    list.innerHTML = '<p class="sub">Aktuell sind noch keine freigegebenen Züchter eingetragen.</p>';
+  } else {
+    list.innerHTML = data.map(breeder => `
+      <div class="card">
+        <h3>🕊️ ${esc(breeder.display_name)}</h3>
+        ${breeder.location_label ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>` : ''}
+        ${breeder.breeding_focus ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>` : ''}
+        ${breeder.bio ? `<p>${esc(breeder.bio)}</p>` : ''}
+        <button class="action" onclick="startConversation('${breeder.id}')">✉️ Nachricht schreiben</button>
+      </div>
+    `).join('');
+  }
+
+  await loadPigeonListings();
+}
+
+async function loadPigeonListings() {
+  const box = document.getElementById('pigeonListings');
+  if (!box) return;
+
+  // Diese Tabelle wird im anschließenden Supabase-Schritt angelegt.
+  const { data: listings, error } = await supabaseClient
+    .from('pigeon_listings')
+    .select('id, seller_id, pigeon_id, price, status, created_at')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.info('Die Verkaufsanzeigen-Tabelle wird in Supabase noch eingerichtet:', error.message);
+    box.innerHTML = '<p class="sub">Der Anzeigenbereich ist vorbereitet. Die Verbindung zu Supabase richten wir im nächsten Schritt ein.</p>';
     return;
   }
 
-  if (!data || data.length === 0) {
-    list.innerHTML =
-      '<p class="sub">Aktuell sind noch keine freigegebenen Züchter eingetragen.</p>';
+  if (!listings || listings.length === 0) {
+    box.innerHTML = '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
     return;
   }
 
-  list.innerHTML = data.map(breeder => `
-    
-  <div class="card">
-    <h3>🕊️ ${esc(breeder.display_name)}</h3>
-    ${breeder.location_label
-      ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>`
-      : ''}
-    ${breeder.breeding_focus
-      ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>`
-      : ''}
-    ${breeder.bio
-      ? `<p>${esc(breeder.bio)}</p>`
-      : ''}
-    <button class="action"
-      onclick="startConversation('${breeder.id}')">
-      ✉️ Nachricht schreiben
-    </button>
-  </div>
-  `).join('');
+  const pigeonIds = [...new Set(listings.map(x => x.pigeon_id))];
+  const sellerIds = [...new Set(listings.map(x => x.seller_id))];
+  const [{ data: birds, error: birdsError }, { data: sellers, error: sellersError }] = await Promise.all([
+    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, notes').in('id', pigeonIds),
+    supabaseClient.from('breeders').select('id, display_name, location_label').in('id', sellerIds)
+  ]);
+
+  if (birdsError || sellersError) {
+    box.innerHTML = '<p class="sub">Die Anzeigen-Details konnten nicht geladen werden.</p>';
+    return;
+  }
+
+  const birdById = Object.fromEntries((birds || []).map(b => [b.id, b]));
+  const sellerById = Object.fromEntries((sellers || []).map(b => [b.id, b]));
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const currentUser = sessionData.session?.user;
+
+  box.innerHTML = listings.map(item => {
+    const bird = birdById[item.pigeon_id];
+    const seller = sellerById[item.seller_id];
+    if (!bird || !seller) return '';
+    const priceText = item.price === null || item.price === undefined
+      ? 'VB'
+      : Number(item.price).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+    return `
+      <div class="card">
+        <div class="pigeon">
+          <div class="bird">🕊️</div>
+          <div class="pigeon-info">
+            <strong>${esc(bird.ring_number)}${bird.name ? ' – ' + esc(bird.name) : ''}</strong>
+            <small>${esc(bird.sex === 'male' ? 'Täuber' : bird.sex === 'female' ? 'Täubin' : 'Unbekannt')} · ${esc(bird.color || 'Farbe nicht angegeben')}</small>
+          </div>
+          <span class="tag"><strong>${esc(priceText)}</strong></span>
+        </div>
+        ${bird.hatch_date ? `<p class="sub">Geboren: ${new Date(bird.hatch_date).toLocaleDateString('de-DE')}</p>` : ''}
+        ${bird.notes ? `<p>${esc(bird.notes)}</p>` : ''}
+        <p class="sub">Angeboten von: <strong>${esc(seller.display_name)}</strong>${seller.location_label ? ' · ' + esc(seller.location_label) : ''}</p>
+        ${currentUser && currentUser.id !== item.seller_id ? `<button class="action" onclick="startConversation('${item.seller_id}')">✉️ Interesse zeigen / Verkäufer kontaktieren</button>` : ''}
+      </div>`;
+  }).filter(Boolean).join('') || '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
 }
   async function startConversation(breederId) {
   const { data: sessionData } =
