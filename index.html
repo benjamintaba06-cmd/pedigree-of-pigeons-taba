@@ -590,6 +590,7 @@ function esc(s){
 
 
 async function loadSaleBuyers() {
+  console.log('Angemeldeter Benutzer:', (await supabaseClient.auth.getUser()).data.user?.id);
   const select = document.getElementById('sellBuyer');
 
   if (!select) return;
