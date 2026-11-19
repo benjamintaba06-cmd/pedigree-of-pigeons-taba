@@ -199,7 +199,7 @@ align-items: flex-start;
 
 
 /* Züchterkreis: kompaktere Karten und Community-Beiträge */
-.breeder-card{max-width:700px;margin:12px auto;padding:18px 22px}
+.breeder-card{width:calc(100% - 32px);max-width:920px;box-sizing:border-box;margin:12px auto;padding:18px 22px}
 .community-composer{max-width:900px;margin:18px auto}
 .community-post{max-width:900px;margin:12px auto}
 .community-post img{display:block;max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin-top:12px}
@@ -967,7 +967,7 @@ function generateInviteCode() {
 async function createInvitation() {
   const message = document.getElementById('inviteMessage');
   const maxUses = Number(document.getElementById('inviteMaxUses').value);
-  const expiry = document.getElementById('inviteExpiry').value;
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
   if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 20) {
     message.textContent = 'Bitte eine Nutzungszahl zwischen 1 und 20 eingeben.';
@@ -986,9 +986,7 @@ async function createInvitation() {
     email: null,
     max_uses: maxUses,
     uses_count: 0,
-    expires_at: expiry
-      ? new Date(expiry + 'T23:59:59').toISOString()
-      : null,
+    expires_at: expiresAt,
     active: true,
     created_by: user.id
   };
@@ -1020,7 +1018,6 @@ async function createInvitation() {
 
   const code = invitation.code;
 
-  document.getElementById('inviteExpiry').value = '';
   document.getElementById('inviteMaxUses').value = '1';
 
   const link = `${location.origin}${location.pathname}?invite=${code}`;
@@ -1063,12 +1060,29 @@ async function loadInvitations() {
     return;
   }
 
-  if (!data || data.length === 0) {
-    list.innerHTML = '<p class="sub">Du hast noch keine Einladungen erstellt.</p>';
+  const now = Date.now();
+  const visibleInvitations = (data || []).filter(invite => {
+    const expired = invite.expires_at && new Date(invite.expires_at).getTime() <= now;
+    return !expired && invite.active;
+  });
+
+  const expiredIds = (data || [])
+    .filter(invite => invite.active && invite.expires_at && new Date(invite.expires_at).getTime() <= now)
+    .map(invite => invite.id);
+
+  if (expiredIds.length) {
+    await supabaseClient.from('invitations')
+      .update({ active: false })
+      .in('id', expiredIds)
+      .eq('created_by', user.id);
+  }
+
+  if (!visibleInvitations.length) {
+    list.innerHTML = '<p class="sub">Aktuell hast du keine gültigen Einladungen. Erstelle oben einen neuen Code.</p>';
     return;
   }
 
-  list.innerHTML = data.map(invite => `
+  list.innerHTML = visibleInvitations.map(invite => `
     <div class="card">
       <strong>${esc(invite.email || '')}</strong>
       <p>Code: <strong>${esc(invite.code)}</strong></p>
@@ -2118,6 +2132,7 @@ loginForm.addEventListener('submit', async function(event) {
   if (allowed) {
     updateAccountRole(data.user);
     document.getElementById('loginOverlay').classList.add('hidden');
+    startIdleLogout();
     await loadPigeons();
     await updateUnreadCount();
     await loadWelcomeBanner();
@@ -2125,6 +2140,44 @@ loginForm.addEventListener('submit', async function(event) {
     alert('Willkommen bei Pedigree of Pigeons by TABA!');
   }
 });
+
+// Automatische Abmeldung nach 10 Minuten ohne Nutzeraktivität.
+let idleLogoutTimer = null;
+let idleLogoutStarted = false;
+
+function stopIdleLogout() {
+  if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
+  idleLogoutTimer = null;
+  idleLogoutStarted = false;
+}
+
+function startIdleLogout() {
+  stopIdleLogout();
+  idleLogoutStarted = true;
+
+  const resetIdleTimer = () => {
+    if (!idleLogoutStarted) return;
+    if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
+    idleLogoutTimer = setTimeout(async () => {
+      idleLogoutStarted = false;
+      idleLogoutTimer = null;
+      await supabaseClient.auth.signOut();
+      updateAccountRole(null);
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) overlay.classList.remove('hidden');
+      const message = document.getElementById('loginMessage');
+      if (message) {
+        message.textContent = 'Du wurdest wegen 10 Minuten Inaktivität automatisch abgemeldet. Bitte melde dich erneut an.';
+        message.style.color = '#b33b32';
+      }
+    }, 10 * 60 * 1000);
+  };
+
+  ['pointerdown', 'keydown', 'touchstart', 'mousemove', 'scroll'].forEach(eventName => {
+    document.addEventListener(eventName, resetIdleTimer, { passive: true });
+  });
+  resetIdleTimer();
+}
 
 async function checkLogin() {
   const { data } = await supabaseClient.auth.getSession();
@@ -2134,6 +2187,7 @@ async function checkLogin() {
 
    if (allowed) {
   document.getElementById('loginOverlay').classList.add('hidden');
+  startIdleLogout();
   await loadPigeons();
      await updateUnreadCount();
        await loadWelcomeBanner();
