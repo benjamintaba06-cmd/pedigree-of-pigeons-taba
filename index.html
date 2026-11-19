@@ -455,9 +455,9 @@ align-items: flex-start;
 <button class="action" onclick="addPigeon()">Taube speichern</button>
 </div>
 <h3>Dein Bestand</h3>
-<input id="search" placeholder="🔎 Ringnummer suchen..." oninput="render()">
-
-<div id="list"></div>
+<p class="sub">Alle deine eingetragenen Tauben erscheinen hier. Über ✏️ kannst du Angaben bearbeiten und über 🗑️ eine Taube löschen.</p>
+<input id="search" placeholder="🔎 Ringnummer oder Name suchen..." oninput="render()">
+<div id="list"><p class="sub">Dein Bestand wird geladen ...</p></div>
 
 
 </section>
@@ -465,11 +465,11 @@ align-items: flex-start;
 
 <section id="pedigree" class="hidden">
 <h2>Stammbaum</h2>
-<p class="sub">Wähle eine Taube, um ihre Abstammung zu sehen.</p>
+<p class="sub">Der Stammbaum zeigt vier Generationen. Klicke auf ein leeres Elternfeld, um eine Taube zuzuordnen oder neu einzutragen.</p>
 <div class="card">
-<label>Taube auswählen</label>
-<select id="selected" onchange="tree()"></select>
-<div id="treeview"></div>
+<label>Ausgangspunkt auswählen</label>
+<select id="selected" onchange="tree()"><option value="">Noch keine Taube vorhanden</option></select>
+<div id="treeview"><p class="sub">Stammbaum wird geladen ...</p></div>
 </div>
 </section>
 
@@ -905,7 +905,7 @@ function render(){
  document.getElementById('females').textContent=pigeons.filter(p=>p.sex==='female').length;
  document.getElementById('trees').textContent=pigeons.filter(p=>p.father||p.mother).length;
  let q=(document.getElementById('search')?.value||'').toLowerCase();
- document.getElementById('list').innerHTML=pigeons.filter(p=>p.ring.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)).map(p=>`
+ document.getElementById('list').innerHTML=pigeons.filter(p=>(p.ring||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)).map(p=>`
  <div class="card pigeon">
  <div class="bird">🕊️</div>
  <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>
@@ -917,8 +917,9 @@ function render(){
  </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
  let sel=document.getElementById('selected');
  let old=sel.value;
- sel.innerHTML=pigeons.map(p=>`<option value="${p.id}">${esc(p.ring)}</option>`).join('');
- if(pigeons.some(p=>String(p.id)===old))sel.value=old;
+ sel.innerHTML='<option value="">Bitte Taube auswählen</option>'+pigeons.map(p=>`<option value="${p.id}">${esc(p.ring)}${p.name ? ' – '+esc(p.name) : ''}</option>`).join('');
+ if(pigeons.some(p=>String(p.id)===old)) sel.value=old;
+ else if(pigeons.length) sel.value=pigeons[0].id;
  tree();
 }
 async function removePigeon(id) {
@@ -952,44 +953,35 @@ async function removePigeon(id) {
 
 async function editPigeon(id) {
   const p = pigeons.find(x => String(x.id) === String(id));
-
   if (!p) {
     alert('Taube nicht gefunden.');
     return;
   }
 
-  const father = prompt(
-    'Ringnummer des Vaters (leer lassen, wenn unbekannt):',
-    pigeons.find(x => String(x.id) === String(p.father))?.ring || ''
-  );
-
-  if (father === null) return;
-
-  const mother = prompt(
-    'Ringnummer der Mutter (leer lassen, wenn unbekannt):',
-    pigeons.find(x => String(x.id) === String(p.mother))?.ring || ''
-  );
-
-  if (mother === null) return;
-
-  const normalize = value => value.trim().toLowerCase();
-
-  const f = pigeons.find(x => normalize(x.ring) === normalize(father));
-  const m = pigeons.find(x => normalize(x.ring) === normalize(mother));
-
-  if (father.trim() && (!f || String(f.id) === String(id) || f.sex === 'female')) {
-    alert('Der Vater wurde nicht gefunden oder hat ein ungeeignetes Geschlecht.');
+  const ring = prompt('Ringnummer:', p.ring || '');
+  if (ring === null) return;
+  if (!ring.trim()) {
+    alert('Die Ringnummer darf nicht leer sein.');
     return;
   }
-
-  if (mother.trim() && (!m || String(m.id) === String(id) || m.sex === 'male')) {
-    alert('Die Mutter wurde nicht gefunden oder hat ein ungeeignetes Geschlecht.');
+  const name = prompt('Name:', p.name || '');
+  if (name === null) return;
+  const color = prompt('Farbe / Zeichnung:', p.color || '');
+  if (color === null) return;
+  const birth = prompt('Geburtsdatum (JJJJ-MM-TT, leer lassen wenn unbekannt):', p.birth || '');
+  if (birth === null) return;
+  const notes = prompt('Notizen:', p.notes || '');
+  if (notes === null) return;
+  const sexChoice = prompt('Geschlecht eingeben: male = Täuber, female = Täubin, unknown = Unbekannt', p.sex || 'unknown');
+  if (sexChoice === null) return;
+  const sex = sexChoice.trim().toLowerCase();
+  if (!['male', 'female', 'unknown'].includes(sex)) {
+    alert('Bitte male, female oder unknown eingeben.');
     return;
   }
 
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
-
   if (!user) {
     alert('Deine Anmeldung ist abgelaufen. Bitte erneut anmelden.');
     return;
@@ -998,54 +990,103 @@ async function editPigeon(id) {
   const { error } = await supabaseClient
     .from('pigeons')
     .update({
-      father_id: f ? f.id : null,
-      mother_id: m ? m.id : null
+      ring_number: ring.trim(),
+      name: name.trim() || null,
+      sex,
+      color: color.trim() || null,
+      hatch_date: birth.trim() || null,
+      notes: notes.trim() || null
     })
     .eq('id', id)
     .eq('owner_id', user.id);
 
   if (error) {
-    alert('Fehler beim Aktualisieren: ' + error.message);
+    alert('Fehler beim Bearbeiten: ' + error.message);
     return;
   }
 
   await loadPigeons();
-  alert('Abstammung wurde gespeichert!');
+  alert('Taube wurde aktualisiert.');
 }
+
 function tree(){
- const id=document.getElementById('selected').value;
+ const id=document.getElementById('selected')?.value;
  const p=pigeons.find(x=>String(x.id)===String(id));
  const el=document.getElementById('treeview');
- if(!p){el.innerHTML='<p class="sub">Bitte zuerst eine Taube eintragen.</p>';return;}
- const generations = [
-   [{bird:p, label:'Ausgewählte Taube'}],
-   [
-     {bird:pigeons.find(x=>String(x.id)===String(p.father)), label:'Vater'},
-     {bird:pigeons.find(x=>String(x.id)===String(p.mother)), label:'Mutter'}
-   ]
- ];
- for(let generation=2; generation<=4; generation++){
-   const previous=generations[generation-1];
+ if(!el) return;
+ if(!p){
+   el.innerHTML=`<div class="centerbird"><div>🕊️</div><strong>Noch keine Taube</strong><div>Ausgangspunkt</div><button type="button" class="tree-node-button" onclick="createTreeRoot()">＋ Erste Taube hinzufügen</button></div>`+
+   [1,2,3,4].map((n)=>`<div class="tree-generation-label">${n}. Generation</div><div class="tree-generation">${Array.from({length:2**n},(_,i)=>`<button type="button" class="tree-node-button parent" disabled>EMPTY<br><strong>Hier erscheint eine Taube</strong></button>`).join('')}</div>`).join('');
+   return;
+ }
+ const generations=[[{bird:p,label:'Ausgewählte Taube'}],[
+   {bird:pigeons.find(x=>String(x.id)===String(p.father)),label:'♂ Vater',parent:p,relation:'father'},
+   {bird:pigeons.find(x=>String(x.id)===String(p.mother)),label:'♀ Mutter',parent:p,relation:'mother'}
+ ]];
+ for(let gen=2;gen<=4;gen++){
    const current=[];
-   previous.forEach(entry=>{
-     const bird=entry.bird;
-     current.push({bird:bird ? pigeons.find(x=>String(x.id)===String(bird.father)) : null,label:'♂ Vater'});
-     current.push({bird:bird ? pigeons.find(x=>String(x.id)===String(bird.mother)) : null,label:'♀ Mutter'});
+   generations[gen-1].forEach(entry=>{
+     const b=entry.bird;
+     current.push({bird:b?pigeons.find(x=>String(x.id)===String(b.father)):null,label:'♂ Vater',parent:b,relation:'father'});
+     current.push({bird:b?pigeons.find(x=>String(x.id)===String(b.mother)):null,label:'♀ Mutter',parent:b,relation:'mother'});
    });
    generations.push(current);
  }
- let html=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>Ausgewählte Taube</div></div>`;
+ let html=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>${esc(p.name||'Ausgewählte Taube')}</div></div>`;
  for(let i=1;i<generations.length;i++){
    html+=`<div class="tree-generation-label">${i}. Generation · ${generations[i].length} Abstammungsplätze</div><div class="tree-generation">`;
-   html+=generations[i].map(entry=> entry.bird
-     ? `<button type="button" class="tree-node-button" onclick="selectPedigreeBird('${entry.bird.id}')">${entry.label}<strong>${esc(entry.bird.ring)}</strong>${entry.bird.name ? `<span>${esc(entry.bird.name)}</span>` : ''}<small>Als Mittelpunkt öffnen ↗</small></button>`
-     : `<div class="parent">${entry.label}<br><strong>Nicht eingetragen</strong></div>`
+   html+=generations[i].map(entry=>entry.bird
+     ? `<button type="button" class="tree-node-button" onclick="selectPedigreeBird('${entry.bird.id}')">${entry.label}<strong>${esc(entry.bird.ring)}</strong>${entry.bird.name?`<span>${esc(entry.bird.name)}</span>`:''}<small>Als Mittelpunkt öffnen ↗</small></button>`
+     : `<button type="button" class="tree-node-button parent" onclick="assignTreeSlot('${entry.parent?.id||''}','${entry.relation||''}')">${entry.label}<br><strong>EMPTY</strong><small>＋ Taube hinzufügen</small></button>`
    ).join('');
    html+='</div>';
  }
- html+='<p class="sub">Die Abstammung wird über Vater und Mutter der jeweiligen Taube aufgebaut. Nicht zugeordnete Eltern erscheinen als „Nicht eingetragen“.</p>';
- html+='<p class="sub">Tipp: Klicke auf eine eingetragene Taube, um sie zum Mittelpunkt des Stammbaums zu machen.</p>';
+ html+='<p class="sub">Leere Felder sind mit EMPTY markiert. Klicke darauf, um eine vorhandene Taube auszuwählen oder eine neue Taube anzulegen.</p>';
  el.innerHTML=html;
+}
+
+async function createTreeRoot(){
+ const ring=prompt('Ringnummer der ersten Taube:');
+ if(ring===null) return;
+ if(!ring.trim()){alert('Bitte eine Ringnummer eingeben.');return;}
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ if(!session?.user){alert('Bitte zuerst anmelden.');return;}
+ const {data,error}=await supabaseClient.from('pigeons').insert({owner_id:session.user.id,ring_number:ring.trim(),sex:'unknown'}).select('id').single();
+ if(error){alert('Taube konnte nicht angelegt werden: '+error.message);return;}
+ await loadPigeons();
+ document.getElementById('selected').value=data.id; tree();
+}
+
+async function assignTreeSlot(parentId, relation){
+ const parent=pigeons.find(x=>String(x.id)===String(parentId));
+ if(!parent || !['father','mother'].includes(relation)) return;
+ const choice=prompt('Taube zuordnen:\n1 = vorhandene Taube auswählen\n2 = neue Taube eintragen','1');
+ if(choice===null) return;
+ let birdId=null;
+ if(choice.trim()==='1'){
+   const options=pigeons.filter(x=>String(x.id)!==String(parentId)).map((x,i)=>`${i+1}: ${x.ring}${x.name?' – '+x.name:''}`).join('\n');
+   if(!options){alert('Es gibt noch keine andere Taube. Bitte wähle 2, um eine neue anzulegen.');return;}
+   const number=prompt('Welche Taube? Nummer eingeben:\n'+options);
+   if(number===null) return;
+   const chosen=pigeons.filter(x=>String(x.id)!==String(parentId))[Number(number)-1];
+   if(!chosen){alert('Ungültige Auswahl.');return;}
+   birdId=chosen.id;
+ } else if(choice.trim()==='2'){
+   const ring=prompt('Ringnummer der neuen Taube:');
+   if(ring===null) return;
+   if(!ring.trim()){alert('Bitte eine Ringnummer eingeben.');return;}
+   const {data:{session}}=await supabaseClient.auth.getSession();
+   if(!session?.user){alert('Bitte zuerst anmelden.');return;}
+   const {data,error}=await supabaseClient.from('pigeons').insert({owner_id:session.user.id,ring_number:ring.trim(),sex:relation==='father'?'male':'female'}).select('id').single();
+   if(error){alert('Taube konnte nicht angelegt werden: '+error.message);return;}
+   birdId=data.id;
+ } else { alert('Bitte 1 oder 2 eingeben.'); return; }
+ const field=relation==='father'?'father_id':'mother_id';
+ const {error}=await supabaseClient.from('pigeons').update({[field]:birdId}).eq('id',parentId);
+ if(error){alert('Zuordnung fehlgeschlagen: '+error.message);return;}
+ await loadPigeons();
+ document.getElementById('selected').value=parentId;
+ tree();
 }
 
 function selectPedigreeBird(birdId) {
