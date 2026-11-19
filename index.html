@@ -1920,6 +1920,7 @@ loginForm.addEventListener('submit', async function(event) {
   }
 
   const allowed = await verifyTabaAccess(data.user);
+  alert('Zugang geprüft: ' + allowed);
 
   if (allowed) {
     document.getElementById('loginOverlay').classList.add('hidden');
