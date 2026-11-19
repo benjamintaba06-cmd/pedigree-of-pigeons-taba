@@ -196,6 +196,18 @@ align-items: flex-start;
     transform: translateX(calc(100vw + 100%));
   }
 }
+
+
+/* Züchterkreis: kompaktere Karten und Community-Beiträge */
+.breeder-card{max-width:700px;margin:12px auto;padding:18px 22px}
+.community-composer{max-width:900px;margin:18px auto}
+.community-post{max-width:900px;margin:12px auto}
+.community-post img{display:block;max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin-top:12px}
+.profile-tree{max-width:100%;overflow-x:auto}
+.profile-tree .tree-generation{min-width:520px}
+.breeder-open{cursor:pointer}
+.breeder-open:hover{border-color:#a58a4e;box-shadow:0 3px 12px #203d3412}
+
 </style>
 </head>
 <body>
@@ -391,12 +403,28 @@ align-items: flex-start;
   <h2>Züchterkreis</h2>
   <p class="sub">Entdecke Mitglieder der TABA-Züchtergemeinschaft und aktuelle Tauben-Verkaufsanzeigen.</p>
 
+  <h3>📝 Im Züchterkreis posten</h3>
+  <div class="card community-composer">
+    <label for="communityPostText">Was möchtest du mit den anderen Züchtern teilen?</label>
+    <textarea id="communityPostText" rows="4" placeholder="Schreibe etwas über deine Tauben, Zucht oder Neuigkeiten ..."></textarea>
+    <label for="communityPostImage">Bild hinzufügen (optional)</label>
+    <input id="communityPostImage" type="file" accept="image/*" onchange="previewCommunityPostImage(this)">
+    <img id="communityPostPreview" class="hidden" alt="Bildvorschau" style="max-width:100%;max-height:260px;border-radius:12px;margin-top:10px">
+    <button class="action" onclick="publishCommunityPost()">Beitrag veröffentlichen</button>
+    <p id="communityPostMessage" class="sub"></p>
+  </div>
+  <div id="communityPosts"><p class="sub">Beiträge werden geladen ...</p></div>
+
   <h3>🐦 Tauben im Angebot</h3>
   <div id="pigeonListings"><p class="sub">Verkaufsanzeigen werden geladen ...</p></div>
 
   <h3>👥 Züchterverzeichnis</h3>
   <div id="breedersList">
     <p class="sub">Züchter werden geladen ...</p>
+  </div>
+  <div id="breederProfile" class="card hidden">
+    <button type="button" class="secondary" onclick="closeBreederProfile()">← Zurück zum Züchterkreis</button>
+    <div id="breederProfileContent"></div>
   </div>
 
   <div style="height:1px;background:#e5e9e7;margin:28px 0"></div>
@@ -1133,12 +1161,170 @@ async function deactivateInvitation(id) {
   await updateMessageUnreadBadge(user, unreadMessages);
 }
 
+
+let communityPostPreviewUrl = null;
+
+function previewCommunityPostImage(input) {
+  const preview = document.getElementById('communityPostPreview');
+  if (communityPostPreviewUrl) URL.revokeObjectURL(communityPostPreviewUrl);
+  const file = input.files && input.files[0];
+  if (!file) { preview.src = ''; preview.classList.add('hidden'); return; }
+  if (!file.type.startsWith('image/')) { alert('Bitte eine Bilddatei auswählen.'); input.value=''; return; }
+  communityPostPreviewUrl = URL.createObjectURL(file);
+  preview.src = communityPostPreviewUrl;
+  preview.classList.remove('hidden');
+}
+
+async function publishCommunityPost() {
+  const message = document.getElementById('communityPostMessage');
+  const text = document.getElementById('communityPostText').value.trim();
+  const input = document.getElementById('communityPostImage');
+  const file = input.files && input.files[0];
+  if (!text && !file) { message.textContent = 'Bitte schreibe etwas oder füge ein Bild hinzu.'; return; }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+  if (!user) { message.textContent = 'Bitte zuerst anmelden.'; return; }
+
+  message.textContent = 'Beitrag wird veröffentlicht ...';
+  let imageUrl = null;
+  if (file) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+    const filePath = `${user.id}/${Date.now()}.${ext}`;
+    const upload = await supabaseClient.storage.from('community-posts').upload(filePath, file, { upsert:false, contentType:file.type });
+    if (upload.error) {
+      message.textContent = 'Bild-Upload nicht möglich. Den Supabase-Speicher „community-posts“ richten wir noch ein: ' + upload.error.message;
+      return;
+    }
+    const publicResult = supabaseClient.storage.from('community-posts').getPublicUrl(filePath);
+    imageUrl = publicResult.data?.publicUrl || null;
+  }
+
+  const { error } = await supabaseClient.from('breeder_posts').insert({
+    author_id: user.id,
+    content: text || '',
+    image_url: imageUrl
+  });
+  if (error) {
+    message.textContent = 'Beitrag konnte nicht gespeichert werden. Die Tabelle „breeder_posts“ und Zugriffsregeln richten wir in Supabase noch ein: ' + error.message;
+    return;
+  }
+  document.getElementById('communityPostText').value = '';
+  input.value = '';
+  document.getElementById('communityPostPreview').classList.add('hidden');
+  message.textContent = 'Dein Beitrag wurde veröffentlicht.';
+  await loadCommunityPosts();
+}
+
+async function loadCommunityPosts() {
+  const box = document.getElementById('communityPosts');
+  if (!box) return;
+  const { data: posts, error } = await supabaseClient
+    .from('breeder_posts')
+    .select('id, author_id, content, image_url, created_at')
+    .order('created_at', { ascending:false })
+    .limit(50);
+  if (error) {
+    box.innerHTML = '<p class="sub">Der Beitragsbereich ist vorbereitet. Tabelle und Bildspeicher richten wir in Supabase ein.</p>';
+    return;
+  }
+  if (!posts || !posts.length) {
+    box.innerHTML = '<p class="sub">Noch keine Beiträge im Züchterkreis.</p>';
+    return;
+  }
+  const ids = [...new Set(posts.map(post => post.author_id))];
+  const { data: authors } = await supabaseClient.from('breeders').select('id, display_name').in('id', ids);
+  const authorMap = Object.fromEntries((authors || []).map(a => [a.id, a.display_name]));
+  box.innerHTML = posts.map(post => `
+    <article class="card community-post">
+      <strong>${esc(authorMap[post.author_id] || 'TABA-Mitglied')}</strong>
+      <small class="sub"> · ${post.created_at ? new Date(post.created_at).toLocaleString('de-DE') : ''}</small>
+      ${post.content ? `<p>${esc(post.content).replace(/\n/g,'<br>')}</p>` : ''}
+      ${post.image_url ? `<img src="${esc(post.image_url)}" alt="Bild zum Beitrag" loading="lazy">` : ''}
+    </article>`).join('');
+}
+
+async function openBreederProfile(breederId) {
+  const panel = document.getElementById('breederProfile');
+  const content = document.getElementById('breederProfileContent');
+  const list = document.getElementById('breedersList');
+  panel.classList.remove('hidden');
+  list.classList.add('hidden');
+  content.innerHTML = '<p class="sub">Mitglied und Stammbaum werden geladen ...</p>';
+
+  const [{ data: breeder, error: breederError }, { data: birds, error: birdsError }] = await Promise.all([
+    supabaseClient.from('breeders').select('id, display_name, location_label, bio, breeding_focus').eq('id', breederId).single(),
+    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, father_id, mother_id, notes').eq('owner_id', breederId)
+  ]);
+  if (breederError || !breeder) {
+    content.innerHTML = '<p class="sub">Dieses Mitgliederprofil konnte nicht geladen werden.</p>';
+    return;
+  }
+  const memberBirds = (birds || []).map(b => ({
+    id:b.id, ring:b.ring_number, name:b.name || '', sex:b.sex, color:b.color || '',
+    birth:b.hatch_date || '', father:b.father_id, mother:b.mother_id, notes:b.notes || ''
+  }));
+  content.innerHTML = `<h2>🕊️ ${esc(breeder.display_name)}</h2>
+    ${breeder.location_label ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>` : ''}
+    ${breeder.breeding_focus ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>` : ''}
+    ${breeder.bio ? `<p>${esc(breeder.bio)}</p>` : ''}
+    <button class="action" onclick="startConversation('${breeder.id}')">✉️ Nachricht schreiben</button>
+    <h3>🌳 Stammbaum der Tauben</h3>
+    <label>Taube auswählen</label>
+    <select id="memberTreeSelect" onchange="renderMemberTree()">
+      ${memberBirds.map(b => `<option value="${b.id}">${esc(b.ring)}${b.name ? ' – '+esc(b.name):''}</option>`).join('')}
+    </select>
+    <div id="memberTreeView" class="profile-tree"></div>`;
+  window.memberProfileBirds = memberBirds;
+  if (!memberBirds.length) {
+    document.getElementById('memberTreeView').innerHTML = '<p class="sub">Dieses Mitglied hat noch keine Tauben eingetragen.</p>';
+  } else renderMemberTree();
+}
+
+function renderMemberTree() {
+  const birds = window.memberProfileBirds || [];
+  const selected = document.getElementById('memberTreeSelect')?.value;
+  const bird = birds.find(b => String(b.id) === String(selected));
+  const target = document.getElementById('memberTreeView');
+  if (!bird || !target) return;
+  const find = id => birds.find(b => String(b.id) === String(id));
+  const generations = [[{bird, label:'Ausgewählte Taube'}]];
+  for (let gen=1; gen<4; gen++) {
+    const next=[];
+    generations[gen-1].forEach(item => {
+      next.push({bird:item.bird ? find(item.bird.father) : null, label:'♂ Vater'});
+      next.push({bird:item.bird ? find(item.bird.mother) : null, label:'♀ Mutter'});
+    });
+    generations.push(next);
+  }
+  let html=`<div class="centerbird"><strong>${esc(bird.ring)}</strong><div>${esc(bird.name || 'Mittelpunkt')}</div></div>`;
+  for (let i=1;i<4;i++) {
+    html+=`<div class="tree-generation-label">${i}. Generation</div><div class="tree-generation">`;
+    html+=generations[i].map(item => item.bird
+      ? `<button class="tree-node-button" onclick="focusMemberAncestor('${item.bird.id}')">${item.label}<strong>${esc(item.bird.ring)}</strong><small>Als Mittelpunkt öffnen ↗</small></button>`
+      : `<div class="parent">${item.label}<br><strong>Nicht eingetragen</strong></div>`).join('');
+    html+='</div>';
+  }
+  target.innerHTML=html;
+}
+function focusMemberAncestor(id) {
+  const select=document.getElementById('memberTreeSelect');
+  if (!select) return;
+  select.value=String(id);
+  renderMemberTree();
+}
+function closeBreederProfile() {
+  document.getElementById('breederProfile').classList.add('hidden');
+  document.getElementById('breedersList').classList.remove('hidden');
+}
+
 async function loadBreeders() {
   const list = document.getElementById('breedersList');
   const listingBox = document.getElementById('pigeonListings');
 
   list.innerHTML = '<p class="sub">Züchter werden geladen ...</p>';
   if (listingBox) listingBox.innerHTML = '<p class="sub">Verkaufsanzeigen werden geladen ...</p>';
+  await loadCommunityPosts();
 
   const { data, error } = await supabaseClient
     .from('breeders')
@@ -1153,12 +1339,13 @@ async function loadBreeders() {
     list.innerHTML = '<p class="sub">Aktuell sind noch keine freigegebenen Züchter eingetragen.</p>';
   } else {
     list.innerHTML = data.map(breeder => `
-      <div class="card">
+      <div class="card breeder-card breeder-open" onclick="openBreederProfile('${breeder.id}')">
         <h3>🕊️ ${esc(breeder.display_name)}</h3>
         ${breeder.location_label ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>` : ''}
         ${breeder.breeding_focus ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>` : ''}
         ${breeder.bio ? `<p>${esc(breeder.bio)}</p>` : ''}
-        <button class="action" onclick="startConversation('${breeder.id}')">✉️ Nachricht schreiben</button>
+        <button class="action" onclick="event.stopPropagation();startConversation('${breeder.id}')">✉️ Nachricht schreiben</button>
+        <button type="button" class="secondary" onclick="event.stopPropagation();openBreederProfile('${breeder.id}')">Stammbaum ansehen</button>
       </div>
     `).join('');
   }
