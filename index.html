@@ -634,7 +634,162 @@ async function loadSaleBuyers() {
       '<option value="">Keine weiteren Mitglieder vorhanden</option>';
   }
 }
+async function submitPigeonSale() {
+  const pigeonId = document.getElementById('sellPigeon').value;
+  const buyerId = document.getElementById('sellBuyer').value;
+  const message = document.getElementById('sellPigeonMessage');
 
+  if (!pigeonId) {
+    alert('Bitte wähle eine Taube aus.');
+    return;
+  }
+
+  if (!buyerId) {
+    alert('Bitte wähle einen Käufer aus.');
+    return;
+  }
+
+  const pigeon = pigeons.find(p => String(p.id) === String(pigeonId));
+
+  if (!pigeon || pigeon.pigeon_status !== 'in_loft') {
+    alert('Diese Taube ist nicht mehr verfügbar.');
+    await loadPigeons();
+    return;
+  }
+
+  if (!confirm(
+    'Möchtest du die Taube ' + pigeon.ring +
+    ' wirklich zum Verkauf einreichen?'
+  )) {
+    return;
+  }
+
+  message.textContent = 'Verkaufsanfrage wird gesendet ...';
+
+  const { error } = await supabaseClient.rpc(
+    'submit_pigeon_sale',
+    {
+      p_pigeon_id: pigeonId,
+      p_buyer_id: buyerId
+    }
+  );
+
+  if (error) {
+    message.textContent = '';
+    alert('Fehler: ' + error.message);
+    return;
+  }
+
+  message.textContent =
+    'Verkaufsanfrage wurde erfolgreich eingereicht!';
+
+  document.getElementById('sellPigeon').value = '';
+  document.getElementById('sellBuyer').value = '';
+
+  alert('Der Käufer wurde benachrichtigt!');
+}  
+  
+async function respondToSale(saleId, response) {
+  const actionText =
+    response === 'confirmed' ? 'bestätigen' : 'ablehnen';
+
+  if (!confirm(
+    'Möchtest du diesen Verkauf wirklich ' + actionText + '?'
+  )) {
+    return;
+  }
+
+  const { data, error } = await supabaseClient.rpc(
+    'respond_to_sale',
+    {
+      p_sale_id: saleId,
+      p_response: response
+    }
+  );
+
+  if (error) {
+    alert('Fehler: ' + error.message);
+    return;
+  }
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  const { error: updateError } = await supabaseClient
+    .from('notifications')
+    .update({
+      action_completed_at: new Date().toISOString()
+    })
+    .eq('recipient_id', user.id)
+    .eq('related_sale_id', saleId)
+    .eq('type', 'sale_confirmation');
+
+  if (updateError) {
+    alert('Antwort gespeichert, aber Nachricht konnte nicht aktualisiert werden: ' + updateError.message);
+    return;
+  }
+
+  alert('Deine Antwort wurde gespeichert!');
+
+  await loadNotifications();
+}
+
+  async function submitPigeonSale() {
+  const pigeonId = document.getElementById('sellPigeon').value;
+  const buyerId = document.getElementById('sellBuyer').value;
+  const message = document.getElementById('sellPigeonMessage');
+
+  if (!pigeonId) {
+    alert('Bitte wähle eine Taube aus.');
+    return;
+  }
+
+  if (!buyerId) {
+    alert('Bitte wähle einen Käufer aus.');
+    return;
+  }
+
+  const pigeon = pigeons.find(p => String(p.id) === String(pigeonId));
+
+  if (!pigeon || pigeon.pigeon_status !== 'in_loft') {
+    alert('Diese Taube ist nicht mehr verfügbar.');
+    await loadPigeons();
+    return;
+  }
+
+  if (!confirm(
+    'Möchtest du die Taube ' + pigeon.ring +
+    ' wirklich zum Verkauf einreichen?'
+  )) {
+    return;
+  }
+
+  message.textContent = 'Verkaufsanfrage wird gesendet ...';
+
+  const { error } = await supabaseClient.rpc(
+    'submit_pigeon_sale',
+    {
+      p_pigeon_id: pigeonId,
+      p_buyer_id: buyerId
+    }
+  );
+
+  if (error) {
+    message.textContent = '';
+    alert('Fehler: ' + error.message);
+    return;
+  }
+
+  message.textContent =
+    'Verkaufsanfrage wurde erfolgreich eingereicht!';
+
+  document.getElementById('sellPigeon').value = '';
+  document.getElementById('sellBuyer').value = '';
+
+  alert('Der Käufer wurde benachrichtigt!');
+}
 async function loadPigeons() {
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
@@ -1439,7 +1594,7 @@ async function loadNotifications() {
 
   const { data, error } = await supabaseClient
     .from('notifications')
-    .select('id, title, message, created_at, read_at, type, related_sale_id')
+    .select('id, title, message, created_at, read_at, type, related_sale_id, action_completed_at')
     .eq('recipient_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -1477,7 +1632,17 @@ async function loadNotifications() {
       <p class="sub">
         ${n.read_at ? 'Gelesen' : 'Ungelesen'}
       </p>
+${n.type === 'sale_confirmation' && n.related_sale_id && !n.action_completed_at ? `
+  <button class="action"
+    onclick="respondToSale('${n.related_sale_id}', 'confirmed')">
+    Verkauf bestätigen
+  </button>
 
+  <button class="action"
+    onclick="respondToSale('${n.related_sale_id}', 'rejected')">
+    Verkauf ablehnen
+  </button>
+` : ''}
       ${isAdmin && n.type === 'sale_review' && n.related_sale_id ? `
         <button class="action"
           onclick="adminReviewSale('${n.related_sale_id}', 'confirmed')">
