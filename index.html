@@ -58,10 +58,65 @@ header p {
   justify-content: center;
 }
 
+.company-logo {
+  position: relative;
+  overflow: visible;
+}
 .company-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.logo-role-mark {
+  position: absolute;
+  z-index: 2;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px #0005);
+}
+.logout-button {
+  display: inline-block;
+  margin: 12px 0 0 10px;
+  padding: 9px 16px;
+  border: 1px solid #e7b5ae;
+  border-radius: 9px;
+  background: #a94339;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+.logout-button.hidden { display: none; }
+.member-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 9px;
+  margin-top: 12px;
+}
+.member-stats.hidden { display: none; }
+.member-stat {
+  min-width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 10px;
+  background: rgba(255,255,255,.09);
+  color: #fff;
+  text-align: center;
+}
+.member-stat span { font-size: 17px; line-height: 1.2; }
+.member-stat strong { font-size: 18px; line-height: 1.2; }
+.member-stat small { font-size: 10px; opacity: .82; }
+@media (max-width: 600px) {
+  .member-stats { gap: 6px; }
+  .member-stat { min-width: 60px; padding: 6px 8px; }
 }
 
 @media (max-width: 500px) {
@@ -221,9 +276,18 @@ align-items: flex-start;
       Developed by Benjamin TABA · Hinterländer Hof
     </div>
     <div id="accountRole" class="account-role hidden"></div>
+    <div id="memberStats" class="member-stats hidden" aria-live="polite">
+      <div class="member-stat"><span>📝</span><strong id="statPosts">–</strong><small>Beiträge</small></div>
+      <div class="member-stat"><span>🤝</span><strong id="statSales">–</strong><small>Verkäufe</small></div>
+      <div class="member-stat"><span>🕊️</span><strong id="statPigeons">–</strong><small>Tauben</small></div>
+      <div class="member-stat"><span>💬</span><strong id="statMessages">–</strong><small>Nachrichten</small></div>
+    </div>
+    <button id="logoutButton" class="logout-button hidden" type="button"
+      onclick="logoutTabaAccount()">Abmelden</button>
   </div>
 
-  <div class="company-logo">
+  <div class="company-logo" id="companyLogo">
+    <span id="logoRoleMark" class="logo-role-mark hidden" aria-hidden="true"></span>
     <img src="hinterlaender-hof-logo.jpg_1.jpg"
          alt="Benjamin TABA – Hinterländer Hof">
   </div>
@@ -1228,6 +1292,8 @@ async function publishCommunityPost() {
   document.getElementById('communityPostPreview').classList.add('hidden');
   message.textContent = 'Dein Beitrag wurde veröffentlicht.';
   await loadCommunityPosts();
+  const { data: currentSession } = await supabaseClient.auth.getSession();
+  if (currentSession.session?.user) await loadMemberStats(currentSession.session.user.id);
 }
 
 async function loadCommunityPosts() {
@@ -2070,17 +2136,89 @@ passwordResetForm.addEventListener('submit', async function(event) {
 });
 function updateAccountRole(user) {
   const badge = document.getElementById('accountRole');
+  const mark = document.getElementById('logoRoleMark');
+  const logoutButton = document.getElementById('logoutButton');
   if (!badge) return;
 
   if (!user) {
     badge.textContent = '';
     badge.classList.add('hidden');
+    if (mark) {
+      mark.textContent = '';
+      mark.classList.add('hidden');
+      mark.removeAttribute('data-role');
+    }
+    if (logoutButton) logoutButton.classList.add('hidden');
+    const stats = document.getElementById('memberStats');
+    if (stats) stats.classList.add('hidden');
     return;
   }
 
   const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
   badge.classList.remove('hidden');
+
+  if (mark) {
+    mark.textContent = isAdmin ? '👑' : '🕊️';
+    mark.dataset.role = isAdmin ? 'admin' : 'member';
+    mark.classList.remove('hidden');
+  }
+  if (logoutButton) logoutButton.classList.remove('hidden');
+  const stats = document.getElementById('memberStats');
+  if (stats) stats.classList.remove('hidden');
+  loadMemberStats(user.id);
+}
+
+async function loadMemberStats(userId) {
+  const stats = document.getElementById('memberStats');
+  if (!stats || !userId) return;
+
+  const setCount = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = Number(value || 0).toLocaleString('de-DE');
+  };
+
+  const [posts, sales, pigeonsCount, messages] = await Promise.all([
+    supabaseClient.from('breeder_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('author_id', userId),
+    supabaseClient.from('sales')
+      .select('id', { count: 'exact', head: true })
+      .eq('seller_id', userId)
+      .eq('status', 'confirmed'),
+    supabaseClient.from('pigeons')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', userId),
+    supabaseClient.from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('sender_id', userId)
+  ]);
+
+  setCount('statPosts', posts.error ? 0 : posts.count);
+  setCount('statSales', sales.error ? 0 : sales.count);
+  setCount('statPigeons', pigeonsCount.error ? 0 : pigeonsCount.count);
+  setCount('statMessages', messages.error ? 0 : messages.count);
+
+  [posts, sales, pigeonsCount, messages].forEach((result, index) => {
+    if (result.error) {
+      console.warn('Mitgliederstatistik konnte nicht vollständig geladen werden (' + index + '):', result.error.message);
+    }
+  });
+}
+
+async function logoutTabaAccount() {
+  if (!confirm('Möchtest du dich wirklich abmelden?')) return;
+  stopIdleLogout();
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    alert('Abmeldung fehlgeschlagen: ' + error.message);
+    return;
+  }
+  updateAccountRole(null);
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.classList.remove('hidden');
+  const message = document.getElementById('loginMessage');
+  if (message) message.textContent = 'Du hast dich erfolgreich abgemeldet.';
 }
 
 async function verifyTabaAccess(user) {
