@@ -749,12 +749,16 @@ async function addPigeon(){
     return;
   }
 
+  // ID clientseitig vergeben, damit INSERT keine RETURNING/SELECT-Berechtigung benötigt.
+  const newPigeonId = existing?.id || crypto.randomUUID();
+  if (!existing) pigeon.id = newPigeonId;
+
   const saveResult = existing
     ? await supabaseClient.from('pigeons').update({
         name: pigeon.name, sex: pigeon.sex, color: pigeon.color,
         hatch_date: pigeon.hatch_date, notes: pigeon.notes
       }).eq('id', existing.id).eq('owner_id', user.id)
-    : await supabaseClient.from('pigeons').insert(pigeon).select('id').single();
+    : await supabaseClient.from('pigeons').insert(pigeon);
 
   if (saveResult.error) {
     alert('Fehler beim Speichern: ' + saveResult.error.message);
@@ -764,7 +768,7 @@ async function addPigeon(){
   const photoFile = document.getElementById('pigeonPhoto')?.files?.[0];
   if (photoFile) {
     if (!photoFile.type.startsWith('image/') || photoFile.size > 8*1024*1024) { alert('Bitte ein Bild bis maximal 8 MB auswählen.'); return; }
-    const pigeonId = existing?.id || saveResult.data?.id;
+    const pigeonId = newPigeonId;
     const path = `${user.id}/${pigeonId}/${Date.now()}-${photoFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
     const { error: uploadError } = await supabaseClient.storage.from('pigeon-photos').upload(path, photoFile, { contentType: photoFile.type });
     if (uploadError) { alert('Taube gespeichert, aber Foto-Upload fehlgeschlagen: ' + uploadError.message); return; }
