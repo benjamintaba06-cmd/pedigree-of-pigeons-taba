@@ -2274,18 +2274,21 @@ async function loadPigeonListings() {
   if (!user) { alert('Bitte zuerst anmelden.'); return; }
 
   const { error } = await supabaseClient
-    .from('conversations')
-    .delete()
-    .eq('id', conversationId)
-    .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`);
+    .from('conversation_hidden')
+    .upsert({ conversation_id: conversationId, user_id: user.id }, { onConflict: 'conversation_id,user_id' });
 
   if (error) {
-    console.error('Unterhaltung konnte nicht gelöscht werden:', error);
-    alert('Die Unterhaltung konnte nicht gelöscht werden. Möglicherweise fehlt noch die DELETE-Berechtigung in Supabase: ' + error.message);
+    console.error('Unterhaltung konnte nicht ausgeblendet werden:', error);
+    alert('Die Unterhaltung konnte nicht aus deiner Liste entfernt werden: ' + error.message);
     return;
   }
-  if (activeConversationId === conversationId) closeConversation();
-  else await loadConversations();
+  if (activeConversationId === conversationId) {
+    activeConversationId = null;
+    document.getElementById('conversationView')?.classList.add('hidden');
+    const input = document.getElementById('messageInput');
+    if (input) input.value = '';
+  }
+  await loadConversations();
 }
 
 async function loadConversations() {
@@ -2311,6 +2314,24 @@ async function loadConversations() {
     return;
   }
 
+  const { data: hiddenRows, error: hiddenError } = await supabaseClient
+    .from('conversation_hidden')
+    .select('conversation_id')
+    .eq('user_id', user.id);
+  if (hiddenError) {
+    console.error('Ausgeblendete Unterhaltungen konnten nicht geladen werden:', hiddenError);
+    list.innerHTML = '<p class="sub">Deine DM-Liste konnte nicht geladen werden. Bitte Datenbankeinrichtung prüfen.</p>';
+    return;
+  }
+  const hiddenIds = new Set((hiddenRows || []).map(row => row.conversation_id));
+  const visibleConversations = data.filter(conversation => !hiddenIds.has(conversation.id));
+  if (visibleConversations.length === 0) {
+    list.innerHTML = '<p class="sub">Du hast keine privaten Unterhaltungen in deiner Liste.</p>';
+    await updateMessageUnreadBadge(user, []);
+    return;
+  }
+
+  data.splice(0, data.length, ...visibleConversations);
   const conversationIds = data.map(c => c.id);
   const { data: unreadMessages, error: unreadError } = await supabaseClient
     .from('messages')
