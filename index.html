@@ -140,6 +140,38 @@ align-items: flex-start;
   font-size: 13px;
   margin-top: 16px;
 }
+/* TABA Begrüßungsleiste */
+.welcome-banner {
+  background: #142e29;
+  color: #d6bd82;
+  border-top: 1px solid #a58a4e;
+  border-bottom: 1px solid #a58a4e;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 13px 0;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+}
+
+.welcome-track {
+  display: inline-flex;
+  width: max-content;
+  animation: tabaWelcomeMove 35s linear infinite;
+}
+
+.welcome-item {
+  padding: 0 45px;
+}
+
+@keyframes tabaWelcomeMove {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100vw);
+  }
+}  
 </style>
 </head>
 <body>
@@ -159,7 +191,10 @@ align-items: flex-start;
          alt="Benjamin TABA – Hinterländer Hof">
   </div>
 </header>
-
+<!-- TABA Begrüßungsleiste -->
+<div id="welcomeBanner" class="welcome-banner hidden">
+  <div id="welcomeTrack" class="welcome-track"></div>
+</div>
 
 <div id="loginOverlay" class="login-overlay">
   <div class="login-box">
@@ -349,6 +384,34 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+  async function loadWelcomeBanner() {
+  const banner = document.getElementById('welcomeBanner');
+  const track = document.getElementById('welcomeTrack');
+
+  const { data, error } = await supabaseClient
+    .from('community_events')
+    .select('breeder_id, display_name, joined_at')
+    .order('joined_at', { ascending: false });
+
+  if (error) {
+    console.error('Begrüßungsleiste konnte nicht geladen werden:', error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    banner.classList.add('hidden');
+    return;
+  }
+
+  track.innerHTML = data.map(member => `
+    <span class="welcome-item">
+      🕊️ Herzlich willkommen, ${esc(member.display_name)}!
+      Ein neues Mitglied bereichert unseren Züchterkreis.
+    </span>
+  `).join('');
+
+  banner.classList.remove('hidden');
+}
  let pigeons=[];
  
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
@@ -1030,6 +1093,7 @@ loginForm.addEventListener('submit', async function(event) {
     document.getElementById('loginOverlay').classList.add('hidden');
     await loadPigeons();
     await updateUnreadCount();
+    await loadWelcomeBanner();
     message.textContent = '';
     alert('Willkommen bei Pedigree of Pigeons by TABA!');
   }
