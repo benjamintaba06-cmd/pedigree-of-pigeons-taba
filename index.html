@@ -322,6 +322,12 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 .breeder-subnav button.active{background:#203d34;color:#fff}
 .breeder-panel{min-width:0}
 
+
+.conversation-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:10px}
+.conversation-actions button{min-height:46px}
+.conversation-actions .conversation-delete{background:#b94040!important;color:#fff!important;border:0!important}
+.conversation-actions .conversation-delete:hover{background:#9f3030!important}
+
 </style>
 </head>
 <body>
@@ -470,6 +476,8 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 <input id="ring" placeholder="z.B. DV-01234-2025" required>
 <label>Name</label>
 <input id="name" placeholder="Name der Taube">
+<label>Rasse *</label>
+<input id="breed" placeholder="z.B. Brieftaube, Lahore, King" required>
 <label>Geschlecht</label>
 <select id="sex"><option value="male">Täuber</option><option value="female">Täubin</option><option value="unknown">Unbekannt</option></select>
 <label>Farbe / Zeichnung</label>
@@ -658,7 +666,6 @@ Einladung erstellen
 
 <footer>
   <div>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</div>
-  <a href="#invitationsPanel" class="footer-invitations-link" onclick="openInvitations();return false;">✉️ Züchter einladen</a>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -781,8 +788,14 @@ async function addPigeon(){
   }
 
   const ring = document.getElementById('ring').value.trim();
+  const breed = document.getElementById('breed').value.trim();
   if (!ring) {
     alert('Bitte eine Ringnummer eintragen.');
+    return;
+  }
+  if (!breed) {
+    alert('Bitte die Rasse der Taube eintragen.');
+    document.getElementById('breed').focus();
     return;
   }
 
@@ -800,6 +813,7 @@ async function addPigeon(){
     owner_id: user.id,
     ring_number: ring,
     name: document.getElementById('name').value.trim() || null,
+    breed,
     sex: document.getElementById('sex').value,
     color: document.getElementById('color').value.trim() || null,
     hatch_date: document.getElementById('birth').value ? document.getElementById('birth').value + '-01' : null,
@@ -821,7 +835,7 @@ async function addPigeon(){
 
   const saveResult = existing
     ? await supabaseClient.from('pigeons').update({
-        name: pigeon.name, sex: pigeon.sex, color: pigeon.color,
+        name: pigeon.name, breed: pigeon.breed, sex: pigeon.sex, color: pigeon.color,
         hatch_date: pigeon.hatch_date, notes: pigeon.notes
       }).eq('id', existing.id).eq('owner_id', user.id)
     : await supabaseClient.from('pigeons').insert(pigeon);
@@ -1050,7 +1064,7 @@ function render(){
  <div class="card pigeon">
  <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
  <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>
-  ${esc(p.name)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}
+  ${esc(p.name)} · ${esc(p.breed)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}
   ${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b;">VERKAUFT</strong>' : ''}
 </small></div>
  <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button><button onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
@@ -1124,6 +1138,9 @@ async function editPigeon(id) {
   }
   const name = prompt('Name:', p.name || '');
   if (name === null) return;
+  const breed = prompt('Rasse (Pflichtfeld):', p.breed || '');
+  if (breed === null) return;
+  if (!breed.trim()) { alert('Die Rasse ist ein Pflichtfeld.'); return; }
   const color = prompt('Farbe / Zeichnung:', p.color || '');
   if (color === null) return;
   const birth = prompt('Geburtsdatum (JJJJ-MM-TT, leer lassen wenn unbekannt):', p.birth || '');
@@ -1150,6 +1167,7 @@ async function editPigeon(id) {
     .update({
       ring_number: ring.trim(),
       name: name.trim() || null,
+      breed: breed.trim(),
       sex,
       color: color.trim() || null,
       hatch_date: birth.trim() || null,
@@ -2249,7 +2267,28 @@ async function loadPigeonListings() {
   }
   await loadConversations();
 }
-  async function loadConversations() {
+  async function deleteConversation(conversationId) {
+  if (!confirm('Möchtest du diese Unterhaltung wirklich löschen? Die Nachrichten können danach nicht mehr angezeigt werden.')) return;
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+  if (!user) { alert('Bitte zuerst anmelden.'); return; }
+
+  const { error } = await supabaseClient
+    .from('conversations')
+    .delete()
+    .eq('id', conversationId)
+    .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`);
+
+  if (error) {
+    console.error('Unterhaltung konnte nicht gelöscht werden:', error);
+    alert('Die Unterhaltung konnte nicht gelöscht werden. Möglicherweise fehlt noch die DELETE-Berechtigung in Supabase: ' + error.message);
+    return;
+  }
+  if (activeConversationId === conversationId) closeConversation();
+  else await loadConversations();
+}
+
+async function loadConversations() {
   const list = document.getElementById('conversationList');
   list.innerHTML = '<p class="sub">Unterhaltungen werden geladen ...</p>';
   const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -2304,7 +2343,10 @@ async function loadPigeonListings() {
         <h3>🕊️ ${esc(names[otherId] || 'TABA-Mitglied')}${hasUnread ? '<span class="conversation-unread" title="Ungelesene Nachrichten"></span>' : ''}</h3>
         <p class="sub">Letzte Aktivität: ${new Date(conversation.updated_at).toLocaleString('de-DE')}</p>
         ${hasUnread ? '<p class="sub"><strong>Neue Nachricht</strong></p>' : ''}
-        <button class="action" onclick="openConversation('${conversation.id}')">Unterhaltung öffnen</button>
+        <div class="conversation-actions">
+          <button class="action" onclick="openConversation('${conversation.id}')">Unterhaltung öffnen</button>
+          <button class="action conversation-delete" onclick="deleteConversation('${conversation.id}')">Unterhaltung löschen</button>
+        </div>
       </div>`;
   }).join('');
 }
