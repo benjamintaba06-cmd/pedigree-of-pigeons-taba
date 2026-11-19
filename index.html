@@ -505,12 +505,14 @@ function show(id,btn){
  if(btn)btn.classList.add('active');
  render();
 
- if (id === 'invitations') {
+  if (id === 'invitations') {
   loadInvitations();
-   if (id === 'pigeons') {
+ }
+
+ if (id === 'pigeons') {
   loadPigeons();
   loadSaleBuyers();
-}
+ }
 }
 
 if (id === 'inbox') {
