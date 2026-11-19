@@ -451,7 +451,7 @@ const supabaseClient = window.supabase.createClient(
   banner.classList.remove('hidden');
 }
  let pigeons=[];
- 
+ let activeConversationId = null;
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
   
 function show(id,btn){
@@ -1024,6 +1024,169 @@ async function loadBreeders() {
   }
 
   openConversation(newConversation.id);
+}
+  async function openConversation(conversationId) {
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Bitte zuerst anmelden.');
+    return;
+  }
+
+  const { data: conversation, error } =
+    await supabaseClient
+      .from('conversations')
+      .select('id, participant_one_id, participant_two_id')
+      .eq('id', conversationId)
+      .single();
+
+  if (error || !conversation) {
+    alert('Unterhaltung konnte nicht geöffnet werden.');
+    return;
+  }
+
+  const otherId =
+    conversation.participant_one_id === user.id
+      ? conversation.participant_two_id
+      : conversation.participant_one_id;
+
+  const { data: breeder, error: breederError } =
+    await supabaseClient
+      .from('breeders')
+      .select('display_name')
+      .eq('id', otherId)
+      .single();
+
+  if (breederError) {
+    alert('Mitglied konnte nicht gefunden werden.');
+    return;
+  }
+
+  activeConversationId = conversation.id;
+
+  document.getElementById('conversationTitle').textContent =
+    'Unterhaltung mit ' + breeder.display_name;
+
+  document.getElementById('conversationView')
+    .classList.remove('hidden');
+
+  await loadMessages();
+}
+  function closeConversation() {
+  activeConversationId = null;
+
+  document.getElementById('conversationView')
+    .classList.add('hidden');
+
+  document.getElementById('messageInput').value = '';
+
+  loadConversations();
+}
+  async function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const body = input.value.trim();
+
+  if (!activeConversationId) {
+    alert('Bitte zuerst eine Unterhaltung öffnen.');
+    return;
+  }
+
+  if (!body) {
+    alert('Bitte schreibe zuerst eine Nachricht.');
+    return;
+  }
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert('Bitte zuerst anmelden.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('messages')
+    .insert({
+      conversation_id: activeConversationId,
+      sender_id: user.id,
+      body: body
+    });
+
+  if (error) {
+    alert('Nachricht konnte nicht gesendet werden: ' + error.message);
+    return;
+  }
+
+  input.value = '';
+
+  await loadMessages();
+  await loadConversations();
+}
+  async function loadMessages() {
+  const list = document.getElementById('messageList');
+
+  if (!activeConversationId) return;
+
+  list.innerHTML = '<p class="sub">Nachrichten werden geladen ...</p>';
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    list.innerHTML = '<p class="sub">Bitte zuerst anmelden.</p>';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('messages')
+    .select('id, sender_id, body, created_at, read_at')
+    .eq('conversation_id', activeConversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Fehler beim Laden der Nachrichten:', error);
+    list.innerHTML = '<p class="sub">Nachrichten konnten nicht geladen werden.</p>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p class="sub">Noch keine Nachrichten. Schreibe die erste!</p>';
+    return;
+  }
+
+  list.innerHTML = data.map(message => `
+    <div class="card">
+      <strong>${message.sender_id === user.id ? 'Du' : 'Züchter'}</strong>
+      <p>${esc(message.body)}</p>
+      <p class="sub">
+        ${new Date(message.created_at).toLocaleString('de-DE')}
+      </p>
+    </div>
+  `).join('');
+
+  const unreadIds = data
+    .filter(message =>
+      message.sender_id !== user.id && !message.read_at
+    )
+    .map(message => message.id);
+
+  if (unreadIds.length > 0) {
+    const { error: readError } = await supabaseClient
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .in('id', unreadIds);
+
+    if (readError) {
+      console.error('Nachrichten konnten nicht als gelesen markiert werden:', readError);
+    }
+  }
 }
   async function loadConversations() {
   const list = document.getElementById('conversationList');
