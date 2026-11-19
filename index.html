@@ -324,8 +324,34 @@ align-items: flex-start;
 </div>
 <h3>Dein Bestand</h3>
 <input id="search" placeholder="🔎 Ringnummer suchen..." oninput="render()">
+
 <div id="list"></div>
+
+<div class="card" id="sellPigeonCard">
+  <h3>🐦 Taube verkaufen</h3>
+  <p class="sub">
+    Wähle eine Taube aus deinem Bestand und anschließend den Käufer.
+    Der Verkauf wird erst nach beidseitiger Bestätigung wirksam.
+  </p>
+
+  <label>Welche Taube möchtest du verkaufen?</label>
+  <select id="sellPigeon">
+    <option value="">Bitte Taube auswählen</option>
+  </select>
+
+  <label>Käufer auswählen</label>
+  <select id="sellBuyer">
+    <option value="">Mitglieder werden geladen ...</option>
+  </select>
+
+  <button class="action" onclick="submitPigeonSale()">
+    Verkauf zur Bestätigung einreichen
+  </button>
+
+  <p id="sellPigeonMessage" class="sub"></p>
+</div>
 </section>
+
 
 <section id="pedigree" class="hidden">
 <h2>Stammbaum</h2>
@@ -481,6 +507,10 @@ function show(id,btn){
 
  if (id === 'invitations') {
   loadInvitations();
+   if (id === 'pigeons') {
+  loadPigeons();
+  loadSaleBuyers();
+}
 }
 
 if (id === 'inbox') {
@@ -558,6 +588,53 @@ function esc(s){
  return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+
+async function loadSaleBuyers() {
+  const select = document.getElementById('sellBuyer');
+
+  if (!select) return;
+
+  select.innerHTML =
+    '<option value="">Käufer auswählen</option>';
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  if (!user) return;
+
+  const { data, error } = await supabaseClient
+    .from('breeders')
+    .select('id, display_name, loft_name, country')
+    .eq('status', 'approved')
+    .neq('id', user.id)
+    .order('display_name');
+
+  if (error) {
+    select.innerHTML =
+      '<option value="">Fehler beim Laden</option>';
+    console.error(error);
+    return;
+  }
+
+  (data || []).forEach(breeder => {
+    const option = document.createElement('option');
+    option.value = breeder.id;
+    option.textContent =
+      breeder.display_name +
+      (breeder.loft_name ? ' – ' + breeder.loft_name : '') +
+      (breeder.country ? ' (' + breeder.country + ')' : '');
+
+    select.appendChild(option);
+  });
+
+  if (select.options.length === 1) {
+    select.innerHTML =
+      '<option value="">Keine weiteren Mitglieder vorhanden</option>';
+  }
+}
+
 async function loadPigeons() {
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
@@ -568,30 +645,35 @@ async function loadPigeons() {
     return;
   }
 
-  const { data, error } = await supabaseClient
-    .from('pigeons')
-    .select('id, ring_number, name, sex, color, hatch_date, notes, father_id, mother_id')
-    .eq('owner_id', user.id)
-    .order('created_at', { ascending: false });
 
-  if (error) {
-    alert('Fehler beim Laden der Tauben: ' + error.message);
-    return;
-  }
+const { data, error } = await supabaseClient
+  .from('pigeons')
+  .select('id, ring_number, name, sex, color, hatch_date, notes, father_id, mother_id, pigeon_status')
+  .eq('owner_id', user.id)
+  .order('created_at', { ascending: false });
 
-    pigeons = (data || []).map(p => ({
-    id: p.id,
-    ring: p.ring_number,
-    name: p.name || '',
-    sex: p.sex,
-    color: p.color || '',
-    birth: p.hatch_date || '',
-    notes: p.notes || '',
-    father: p.father_id,
-    mother: p.mother_id
-  }));
+if (error) {
+  alert('Fehler beim Laden der Tauben: ' + error.message);
+  return;
+}
 
-  render();
+
+
+pigeons = (data || []).map(p => ({
+  id: p.id,
+  ring: p.ring_number,
+  name: p.name || '',
+  sex: p.sex,
+  color: p.color || '',
+  birth: p.hatch_date || '',
+  notes: p.notes || '',
+  father: p.father_id,
+  mother: p.mother_id,
+  pigeon_status: p.pigeon_status
+}));
+
+render();
+loadSellablePigeons();
 }
 
 function render(){
@@ -603,7 +685,10 @@ function render(){
  document.getElementById('list').innerHTML=pigeons.filter(p=>p.ring.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)).map(p=>`
  <div class="card pigeon">
  <div class="bird">🕊️</div>
- <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>${esc(p.name)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}</small></div>
+ <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>
+  ${esc(p.name)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}
+  ${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b;">VERKAUFT</strong>' : ''}
+</small></div>
  <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button>
 <button onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
  </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
