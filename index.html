@@ -830,6 +830,28 @@ pigeons = (data || []).map(p => ({
 render();
 loadSellablePigeons();
 }
+function loadSellablePigeons() {
+  const select = document.getElementById('sellPigeon');
+  if (!select) return;
+
+  select.innerHTML = '';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Bitte Taube auswählen';
+  select.appendChild(placeholder);
+
+  const available = pigeons.filter(
+    p => p.pigeon_status === 'in_loft'
+  );
+
+  available.forEach(p => {
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = p.ring + (p.name ? ' – ' + p.name : '');
+    select.appendChild(option);
+  });
+} 
 
 function render(){
  document.getElementById('total').textContent=pigeons.length;
