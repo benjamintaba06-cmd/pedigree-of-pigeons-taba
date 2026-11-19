@@ -605,12 +605,20 @@ async function loadSaleBuyers() {
 
   if (!user) return;
 
-  const { data, error } = await supabaseClient
-    .from('breeders')
-    .select('id, display_name, loft_name, country')
-    .eq('status', 'approved')
-    .neq('id', user.id)
-    .order('display_name');
+const { data, error } = await supabaseClient
+  .from('breeders')
+  .select('id, display_name, loft_name, country')
+  .eq('status', 'approved')
+  .neq('id', user.id)
+  .order('display_name');
+
+const debugMessage = document.getElementById('sellPigeonMessage');
+
+if (debugMessage) {
+  debugMessage.textContent = error
+    ? 'Ladefehler: ' + error.message
+    : 'Angemeldet: ' + user.id + ' | Gefundene Mitglieder: ' + (data || []).length;
+}
 
   if (error) {
     select.innerHTML =
