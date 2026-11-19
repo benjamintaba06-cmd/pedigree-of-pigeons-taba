@@ -689,17 +689,26 @@ function showById(id){
 
 
 async function addPigeon(){
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const user = sessionData.session?.user;
-
-  if (!user) {
-    alert('Bitte zuerst anmelden.');
+  const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+  const user = authData?.user;
+  if (authError || !user) {
+    alert('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich erneut an.');
     return;
   }
 
   const ring = document.getElementById('ring').value.trim();
   if (!ring) {
     alert('Bitte eine Ringnummer eintragen.');
+    return;
+  }
+
+  const { data: approved, error: approvalError } = await supabaseClient.rpc('is_taba_approved');
+  if (approvalError) {
+    alert('Freigabe konnte nicht geprüft werden: ' + approvalError.message);
+    return;
+  }
+  if (approved !== true) {
+    alert('Supabase erkennt deine Anmeldung nicht als freigeschalteten Züchter. Bitte einmal abmelden und erneut anmelden. Es wurden keine Daten gespeichert.');
     return;
   }
 
@@ -713,16 +722,24 @@ async function addPigeon(){
     notes: document.getElementById('notes').value.trim() || null
   };
 
-  // Die Ringnummer ist je Züchter eindeutig. Existiert sie bereits,
-  // wird der vorhandene Datensatz aktualisiert statt ein Duplikat anzulegen.
-  const { data, error } = await supabaseClient
-    .from('pigeons')
-    .upsert(pigeon, { onConflict: 'owner_id,ring_number' })
-    .select('id')
-    .single();
+  const { data: existing, error: lookupError } = await supabaseClient
+    .from('pigeons').select('id')
+    .eq('owner_id', user.id).eq('ring_number', ring).maybeSingle();
 
-  if (error) {
-    alert('Fehler beim Speichern: ' + error.message);
+  if (lookupError) {
+    alert('Vorhandene Taube konnte nicht geprüft werden: ' + lookupError.message);
+    return;
+  }
+
+  const saveResult = existing
+    ? await supabaseClient.from('pigeons').update({
+        name: pigeon.name, sex: pigeon.sex, color: pigeon.color,
+        hatch_date: pigeon.hatch_date, notes: pigeon.notes
+      }).eq('id', existing.id).eq('owner_id', user.id)
+    : await supabaseClient.from('pigeons').insert(pigeon);
+
+  if (saveResult.error) {
+    alert('Fehler beim Speichern: ' + saveResult.error.message);
     return;
   }
 
@@ -730,9 +747,8 @@ async function addPigeon(){
     const field = document.getElementById(id);
     if (field) field.value = '';
   });
-
   await loadPigeons();
-  alert('Taube wurde gespeichert bzw. aktualisiert!');
+  alert(existing ? 'Taube wurde aktualisiert!' : 'Taube wurde gespeichert!');
 }
 
 function esc(s){
@@ -838,8 +854,9 @@ async function respondToSale(saleId, response) {
 }
 
   async function loadPigeons() {
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const user = sessionData.session?.user;
+  const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+  const user = authData?.user;
+  if (authError) console.warn('Authentifizierung beim Laden:', authError.message);
 
   if (!user) {
     pigeons = [];
@@ -901,10 +918,14 @@ function loadSellablePigeons() {
 } 
 
 function render(){
- document.getElementById('total').textContent=pigeons.length;
- document.getElementById('males').textContent=pigeons.filter(p=>p.sex==='male').length;
- document.getElementById('females').textContent=pigeons.filter(p=>p.sex==='female').length;
- document.getElementById('trees').textContent=pigeons.filter(p=>p.father||p.mother).length;
+ const totalEl = document.getElementById('total');
+ const malesEl = document.getElementById('males');
+ const femalesEl = document.getElementById('females');
+ const treesEl = document.getElementById('trees');
+ if (totalEl) totalEl.textContent = pigeons.length;
+ if (malesEl) malesEl.textContent = pigeons.filter(p=>p.sex==='male').length;
+ if (femalesEl) femalesEl.textContent = pigeons.filter(p=>p.sex==='female').length;
+ if (treesEl) treesEl.textContent = pigeons.filter(p=>p.father||p.mother).length;
  let q=(document.getElementById('search')?.value||'').toLowerCase();
  document.getElementById('list').innerHTML=pigeons.filter(p=>(p.ring||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)).map(p=>`
  <div class="card pigeon">
