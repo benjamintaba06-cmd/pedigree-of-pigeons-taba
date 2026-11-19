@@ -693,13 +693,11 @@ async function addPigeon(){
   const user = sessionData.session?.user;
 
   if (!user) {
-
     alert('Bitte zuerst anmelden.');
     return;
   }
 
   const ring = document.getElementById('ring').value.trim();
-
   if (!ring) {
     alert('Bitte eine Ringnummer eintragen.');
     return;
@@ -708,16 +706,20 @@ async function addPigeon(){
   const pigeon = {
     owner_id: user.id,
     ring_number: ring,
-    name: document.getElementById('name').value.trim(),
+    name: document.getElementById('name').value.trim() || null,
     sex: document.getElementById('sex').value,
-    color: document.getElementById('color').value.trim(),
+    color: document.getElementById('color').value.trim() || null,
     hatch_date: document.getElementById('birth').value || null,
-    notes: document.getElementById('notes').value.trim()
+    notes: document.getElementById('notes').value.trim() || null
   };
 
-  const { error } = await supabaseClient
+  // Die Ringnummer ist je Züchter eindeutig. Existiert sie bereits,
+  // wird der vorhandene Datensatz aktualisiert statt ein Duplikat anzulegen.
+  const { data, error } = await supabaseClient
     .from('pigeons')
-    .insert(pigeon);
+    .upsert(pigeon, { onConflict: 'owner_id,ring_number' })
+    .select('id')
+    .single();
 
   if (error) {
     alert('Fehler beim Speichern: ' + error.message);
@@ -725,14 +727,13 @@ async function addPigeon(){
   }
 
   ['ring','name','color','birth','notes'].forEach(id => {
-    document.getElementById(id).value = '';
+    const field = document.getElementById(id);
+    if (field) field.value = '';
   });
 
   await loadPigeons();
-
-  alert('Taube wurde in deiner TABA-Datenbank gespeichert!');
+  alert('Taube wurde gespeichert bzw. aktualisiert!');
 }
-
 
 function esc(s){
  return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
