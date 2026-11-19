@@ -452,6 +452,8 @@ align-items: flex-start;
 <input id="birth" type="date">
 <label>Notizen</label>
 <textarea id="notes" placeholder="Herkunft, Leistung, Bemerkungen..."></textarea>
+<label>Taubenfoto</label>
+<input id="pigeonPhoto" type="file" accept="image/*">
 <button class="action" onclick="addPigeon()">Taube speichern</button>
 </div>
 <h3>Dein Bestand</h3>
@@ -752,17 +754,29 @@ async function addPigeon(){
         name: pigeon.name, sex: pigeon.sex, color: pigeon.color,
         hatch_date: pigeon.hatch_date, notes: pigeon.notes
       }).eq('id', existing.id).eq('owner_id', user.id)
-    : await supabaseClient.from('pigeons').insert(pigeon);
+    : await supabaseClient.from('pigeons').insert(pigeon).select('id').single();
 
   if (saveResult.error) {
     alert('Fehler beim Speichern: ' + saveResult.error.message);
     return;
   }
 
+  const photoFile = document.getElementById('pigeonPhoto')?.files?.[0];
+  if (photoFile) {
+    if (!photoFile.type.startsWith('image/') || photoFile.size > 8*1024*1024) { alert('Bitte ein Bild bis maximal 8 MB auswählen.'); return; }
+    const pigeonId = existing?.id || saveResult.data?.id;
+    const path = `${user.id}/${pigeonId}/${Date.now()}-${photoFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error: uploadError } = await supabaseClient.storage.from('pigeon-photos').upload(path, photoFile, { contentType: photoFile.type });
+    if (uploadError) { alert('Taube gespeichert, aber Foto-Upload fehlgeschlagen: ' + uploadError.message); return; }
+    const { error: photoDbError } = await supabaseClient.from('pigeons').update({ photo_path: path }).eq('id', pigeonId).eq('owner_id', user.id);
+    if (photoDbError) { alert('Foto hochgeladen, aber Zuordnung fehlgeschlagen: ' + photoDbError.message); return; }
+  }
+
   ['ring','name','color','birth','notes'].forEach(id => {
     const field = document.getElementById(id);
     if (field) field.value = '';
   });
+  const photoInput=document.getElementById('pigeonPhoto'); if(photoInput) photoInput.value='';
   await loadPigeons();
   alert(existing ? 'Taube wurde aktualisiert!' : 'Taube wurde gespeichert!');
 }
@@ -883,7 +897,7 @@ async function respondToSale(saleId, response) {
 
 const { data, error } = await supabaseClient
   .from('pigeons')
-  .select('id, ring_number, name, sex, color, hatch_date, notes, father_id, mother_id, pigeon_status')
+  .select('id, ring_number, name, sex, color, hatch_date, notes, father_id, mother_id, pigeon_status, photo_path')
   .eq('owner_id', user.id)
   .order('created_at', { ascending: false });
 
@@ -904,9 +918,17 @@ pigeons = (data || []).map(p => ({
   notes: p.notes || '',
   father: p.father_id,
   mother: p.mother_id,
-  pigeon_status: p.pigeon_status
+  pigeon_status: p.pigeon_status,
+  photo_path: p.photo_path || null,
+  photo_url: null
 }));
 
+for (const bird of pigeons) {
+  if (bird.photo_path) {
+    const { data: signed } = await supabaseClient.storage.from('pigeon-photos').createSignedUrl(bird.photo_path, 3600);
+    bird.photo_url = signed?.signedUrl || null;
+  }
+}
 render();
 loadSellablePigeons();
 }
@@ -945,12 +967,12 @@ function render(){
  let q=(document.getElementById('search')?.value||'').toLowerCase();
  document.getElementById('list').innerHTML=pigeons.filter(p=>(p.ring||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)).map(p=>`
  <div class="card pigeon">
- <div class="bird">🕊️</div>
+ <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
  <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>
   ${esc(p.name)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}
   ${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b;">VERKAUFT</strong>' : ''}
 </small></div>
- <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button>
+ <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button><button onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
 <button onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
  </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
  let sel=document.getElementById('selected');
@@ -987,6 +1009,23 @@ async function removePigeon(id) {
   await loadPigeons();
 
   alert('Taube wurde gelöscht.');
+}
+
+async function changePigeonPhoto(id){
+ const p=pigeons.find(x=>String(x.id)===String(id)); if(!p)return;
+ const picker=document.createElement('input'); picker.type='file'; picker.accept='image/*';
+ picker.onchange=async()=>{
+  const file=picker.files?.[0]; if(!file)return;
+  if(!file.type.startsWith('image/')||file.size>8*1024*1024){alert('Bitte ein Bild bis maximal 8 MB auswählen.');return;}
+  const {data:{user}}=await supabaseClient.auth.getUser(); if(!user){alert('Bitte erneut anmelden.');return;}
+  const path=`${user.id}/${p.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const {error:upErr}=await supabaseClient.storage.from('pigeon-photos').upload(path,file,{contentType:file.type});
+  if(upErr){alert('Foto-Upload fehlgeschlagen: '+upErr.message);return;}
+  const {error:dbErr}=await supabaseClient.from('pigeons').update({photo_path:path}).eq('id',p.id).eq('owner_id',user.id);
+  if(dbErr){alert('Foto konnte nicht zugeordnet werden: '+dbErr.message);return;}
+  await loadPigeons(); alert('Taubenfoto aktualisiert.');
+ };
+ picker.click();
 }
 
 async function editPigeon(id) {
@@ -1070,11 +1109,11 @@ function tree(){
    });
    generations.push(current);
  }
- let html=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>${esc(p.name||'Ausgewählte Taube')}</div></div>`;
+ let html=`<div class="centerbird"><div>${p.photo_url?`<img src="${p.photo_url}" alt="Taubenfoto" style="width:90px;height:90px;object-fit:cover;border-radius:14px">`:'🕊️'}</div><strong>${esc(p.ring)}</strong><div>${esc(p.name||'Ausgewählte Taube')}</div></div>`;
  for(let i=1;i<generations.length;i++){
    html+=`<div class="tree-generation-label">${i}. Generation · ${generations[i].length} Abstammungsplätze</div><div class="tree-generation">`;
    html+=generations[i].map(entry=>entry.bird
-     ? `<button type="button" class="tree-node-button" onclick="selectPedigreeBird('${entry.bird.id}')">${entry.label}<strong>${esc(entry.bird.ring)}</strong>${entry.bird.name?`<span>${esc(entry.bird.name)}</span>`:''}<small>Als Mittelpunkt öffnen ↗</small></button>`
+     ? `<button type="button" class="tree-node-button" onclick="selectPedigreeBird('${entry.bird.id}')">${entry.bird.photo_url?`<img src="${entry.bird.photo_url}" alt="" style="width:58px;height:58px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 6px">`:'🕊️'}${entry.label}<strong>${esc(entry.bird.ring)}</strong>${entry.bird.name?`<span>${esc(entry.bird.name)}</span>`:''}<small>Als Mittelpunkt öffnen ↗</small></button>`
      : `<button type="button" class="tree-node-button parent" onclick="assignTreeSlot('${entry.parent?.id||''}','${entry.relation||''}')">${entry.label}<br><strong>EMPTY</strong><small>＋ Taube hinzufügen</small></button>`
    ).join('');
    html+='</div>';
@@ -1147,17 +1186,26 @@ async function sharePedigreeWithBreeder(){
  try{
   await startConversation(breederId);
   const input=document.getElementById('messageInput');
-  if(input){input.value='Ich teile meinen Stammbaum mit dir:\\n\\n'+report;msg.textContent='Nachricht vorbereitet. Bitte im DM-Fenster auf „Senden“ tippen.';}
+  if(input){
+    const root=pigeons.find(x=>String(x.id)===String(document.getElementById('selected')?.value));
+    let level=[root], family=[root];
+    for(let g=0;g<3;g++){const next=[];level.forEach(b=>{next.push(b?pigeons.find(x=>String(x.id)===String(b.father))||null:null,b?pigeons.find(x=>String(x.id)===String(b.mother))||null:null);});family.push(...next);level=next;}
+    const photoLines=[];
+    for(const bird of family){if(bird?.photo_path){const {data}=await supabaseClient.storage.from('pigeon-photos').createSignedUrl(bird.photo_path,3600);if(data?.signedUrl)photoLines.push(`${bird.ring}: ${data.signedUrl}`);}}
+    input.value='Ich teile meinen Stammbaum mit dir:\\n\\n'+report+(photoLines.length?'\\n\\nTaubenfotos (Links 1 Stunde gültig):\\n'+photoLines.join('\\n'):'');
+    msg.textContent='Stammbaum und Fotolinks vorbereitet. Bitte im DM-Fenster auf „Senden“ tippen.';
+  }
   else msg.textContent='Unterhaltung geöffnet. Bitte den Stammbaumtext dort einfügen.';
  }catch(e){msg.textContent='Die Unterhaltung konnte nicht geöffnet werden: '+e.message;}
 }
 function downloadPedigreePDF(){
- const report=pedigreeTextReport();
- if(!report)return;
- const win=window.open('','_blank');
- if(!win){alert('Bitte Pop-ups für diese Seite erlauben und erneut versuchen.');return;}
- win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Tauben-Stammbaum</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#173b32}h1{font-size:24px}pre{white-space:pre-wrap;font:14px/1.7 Arial,sans-serif} @media print{button{display:none}}</style></head><body><h1>Pedigree of Pigeons by TABA</h1><pre>${esc(report)}</pre><button onclick="window.print()">Als PDF speichern / Drucken</button><script>window.onload=()=>window.print()<\/script></body></html>`);
- win.document.close();
+ const report=pedigreeTextReport(); if(!report)return;
+ const root=pigeons.find(x=>String(x.id)===String(document.getElementById('selected')?.value));
+ const levels=[[root]];
+ for(let gen=1;gen<4;gen++){const next=[];levels[gen-1].forEach(b=>{next.push(b?pigeons.find(x=>String(x.id)===String(b.father))||null:null,b?pigeons.find(x=>String(x.id)===String(b.mother))||null:null);});levels.push(next);}
+ const cards=levels.map((level,i)=>`<section><h2>${i===0?'Ausgangspunkt':i+'. Generation'}</h2><div class="birds">${level.map(b=>`<article>${b?.photo_url?`<img src="${b.photo_url}">`:'<div class="empty">EMPTY</div>'}<b>${b?esc(b.ring):'EMPTY'}</b><span>${b?esc(b.name||''):''}</span></article>`).join('')}</div></section>`).join('');
+ const win=window.open('','_blank');if(!win){alert('Bitte Pop-ups für diese Seite erlauben.');return;}
+ win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Tauben-Stammbaum</title><style>body{font-family:Arial;padding:22px;color:#173b32}h1{font-size:22px}h2{font-size:16px;margin:18px 0 8px}.birds{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}article{text-align:center;font-size:10px;overflow-wrap:anywhere}article img,.empty{width:100%;height:74px;object-fit:cover;border-radius:7px}.empty{display:grid;place-items:center;background:#eee}article b,article span{display:block;margin-top:3px}pre{white-space:pre-wrap;font:11px/1.5 Arial}@media print{button{display:none}}</style></head><body><h1>Pedigree of Pigeons by TABA</h1>${cards}<pre>${esc(report)}</pre><button onclick="window.print()">Als PDF speichern / Drucken</button><script>window.onload=()=>window.print()<\/script></body></html>`);win.document.close();
 }
 async function createTreeRoot(){
  const ring=prompt('Ringnummer der ersten Taube:');
