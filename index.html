@@ -1026,6 +1026,7 @@ async function loadBreeders() {
   openConversation(newConversation.id);
 }
   async function openConversation(conversationId) {
+    show('inbox', document.querySelectorAll('nav button')[4]);
   const { data: sessionData } =
     await supabaseClient.auth.getSession();
 
