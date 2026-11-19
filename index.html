@@ -76,7 +76,16 @@ header p {
   font-size: 34px;
   line-height: 1;
   filter: drop-shadow(0 2px 2px #0005);
+  cursor: pointer;
+  user-select: none;
 }
+.logo-role-mark:focus { outline: 2px solid #d6bd82; outline-offset: 4px; border-radius: 6px; }
+.community-comments { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e5e9e7; }
+.community-comment { background: #f5f7f4; border-radius: 9px; padding: 9px 11px; margin: 7px 0; }
+.community-comment-form { display: flex; gap: 8px; align-items: flex-start; }
+.community-comment-form textarea { flex: 1; min-width: 0; margin: 0; }
+.community-comment-form button { flex: 0 0 auto; }
+
 .logout-button {
   display: inline-block;
   margin: 12px 0 0 10px;
@@ -280,14 +289,16 @@ align-items: flex-start;
       <div class="member-stat"><span>📝</span><strong id="statPosts">–</strong><small>Beiträge</small></div>
       <div class="member-stat"><span>🤝</span><strong id="statSales">–</strong><small>Verkäufe</small></div>
       <div class="member-stat"><span>🕊️</span><strong id="statPigeons">–</strong><small>Tauben</small></div>
-      <div class="member-stat"><span>💬</span><strong id="statMessages">–</strong><small>Nachrichten</small></div>
     </div>
     <button id="logoutButton" class="logout-button hidden" type="button"
       onclick="logoutTabaAccount()">Abmelden</button>
   </div>
 
   <div class="company-logo" id="companyLogo">
-    <span id="logoRoleMark" class="logo-role-mark hidden" aria-hidden="true"></span>
+    <span id="logoRoleMark" class="logo-role-mark hidden" role="button"
+      tabindex="0" aria-label="Statistiken anzeigen" aria-expanded="false"
+      title="Statistiken anzeigen" onclick="toggleMemberStats()"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMemberStats();}"></span>
     <img src="hinterlaender-hof-logo.jpg_1.jpg"
          alt="Benjamin TABA – Hinterländer Hof">
   </div>
@@ -1247,7 +1258,16 @@ function previewCommunityPostImage(input) {
   if (communityPostPreviewUrl) URL.revokeObjectURL(communityPostPreviewUrl);
   const file = input.files && input.files[0];
   if (!file) { preview.src = ''; preview.classList.add('hidden'); return; }
-  if (!file.type.startsWith('image/')) { alert('Bitte eine Bilddatei auswählen.'); input.value=''; return; }
+  if (!file.type.startsWith('image/')) {
+    alert('Bitte eine Bilddatei auswählen.');
+    input.value = '';
+    return;
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    alert('Das Bild darf höchstens 8 MB groß sein.');
+    input.value = '';
+    return;
+  }
   communityPostPreviewUrl = URL.createObjectURL(file);
   preview.src = communityPostPreviewUrl;
   preview.classList.remove('hidden');
@@ -1265,35 +1285,37 @@ async function publishCommunityPost() {
   if (!user) { message.textContent = 'Bitte zuerst anmelden.'; return; }
 
   message.textContent = 'Beitrag wird veröffentlicht ...';
-  let imageUrl = null;
+  let imagePath = null;
   if (file) {
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
-    const filePath = `${user.id}/${Date.now()}.${ext}`;
-    const upload = await supabaseClient.storage.from('community-posts').upload(filePath, file, { upsert:false, contentType:file.type });
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    imagePath = `${user.id}/${Date.now()}.${ext}`;
+    const upload = await supabaseClient.storage.from('community-posts')
+      .upload(imagePath, file, { upsert: false, contentType: file.type });
     if (upload.error) {
-      message.textContent = 'Bild-Upload nicht möglich. Den Supabase-Speicher „community-posts“ richten wir noch ein: ' + upload.error.message;
+      message.textContent = 'Bild konnte nicht hochgeladen werden: ' + upload.error.message;
       return;
     }
-    const publicResult = supabaseClient.storage.from('community-posts').getPublicUrl(filePath);
-    imageUrl = publicResult.data?.publicUrl || null;
   }
 
   const { error } = await supabaseClient.from('breeder_posts').insert({
     author_id: user.id,
-    content: text || '',
-    image_url: imageUrl
+    body: text,
+    image_path: imagePath
   });
   if (error) {
-    message.textContent = 'Beitrag konnte nicht gespeichert werden. Die Tabelle „breeder_posts“ und Zugriffsregeln richten wir in Supabase noch ein: ' + error.message;
+    if (imagePath) await supabaseClient.storage.from('community-posts').remove([imagePath]);
+    message.textContent = 'Beitrag konnte nicht gespeichert werden: ' + error.message;
     return;
   }
+
   document.getElementById('communityPostText').value = '';
   input.value = '';
   document.getElementById('communityPostPreview').classList.add('hidden');
+  if (communityPostPreviewUrl) URL.revokeObjectURL(communityPostPreviewUrl);
+  communityPostPreviewUrl = null;
   message.textContent = 'Dein Beitrag wurde veröffentlicht.';
   await loadCommunityPosts();
-  const { data: currentSession } = await supabaseClient.auth.getSession();
-  if (currentSession.session?.user) await loadMemberStats(currentSession.session.user.id);
+  await loadMemberStats(user.id);
 }
 
 async function loadCommunityPosts() {
@@ -1301,27 +1323,107 @@ async function loadCommunityPosts() {
   if (!box) return;
   const { data: posts, error } = await supabaseClient
     .from('breeder_posts')
-    .select('id, author_id, content, image_url, created_at')
-    .order('created_at', { ascending:false })
+    .select('id, author_id, body, image_path, created_at')
+    .order('created_at', { ascending: false })
     .limit(50);
+
   if (error) {
-    box.innerHTML = '<p class="sub">Der Beitragsbereich ist vorbereitet. Tabelle und Bildspeicher richten wir in Supabase ein.</p>';
+    box.innerHTML = '<p class="sub">Beiträge konnten nicht geladen werden: ' + esc(error.message) + '</p>';
     return;
   }
   if (!posts || !posts.length) {
     box.innerHTML = '<p class="sub">Noch keine Beiträge im Züchterkreis.</p>';
     return;
   }
+
   const ids = [...new Set(posts.map(post => post.author_id))];
-  const { data: authors } = await supabaseClient.from('breeders').select('id, display_name').in('id', ids);
+  const { data: authors } = await supabaseClient
+    .from('breeders').select('id, display_name').in('id', ids);
   const authorMap = Object.fromEntries((authors || []).map(a => [a.id, a.display_name]));
-  box.innerHTML = posts.map(post => `
-    <article class="card community-post">
-      <strong>${esc(authorMap[post.author_id] || 'TABA-Mitglied')}</strong>
-      <small class="sub"> · ${post.created_at ? new Date(post.created_at).toLocaleString('de-DE') : ''}</small>
-      ${post.content ? `<p>${esc(post.content).replace(/\n/g,'<br>')}</p>` : ''}
-      ${post.image_url ? `<img src="${esc(post.image_url)}" alt="Bild zum Beitrag" loading="lazy">` : ''}
-    </article>`).join('');
+
+  const cards = await Promise.all(posts.map(async post => {
+    let imageHtml = '';
+    if (post.image_path) {
+      const { data: signed, error: signedError } = await supabaseClient.storage
+        .from('community-posts').createSignedUrl(post.image_path, 3600);
+      imageHtml = !signedError && signed?.signedUrl
+        ? `<img src="${esc(signed.signedUrl)}" alt="Bild zum Beitrag" loading="lazy">`
+        : '<p class="sub">Beitragsbild ist momentan nicht verfügbar.</p>';
+    }
+    return `
+      <article class="card community-post">
+        <strong>${esc(authorMap[post.author_id] || 'TABA-Mitglied')}</strong>
+        <small class="sub"> · ${post.created_at ? new Date(post.created_at).toLocaleString('de-DE') : ''}</small>
+        ${post.body ? `<p>${esc(post.body).replace(/\n/g, '<br>')}</p>` : ''}
+        ${imageHtml}
+        <div class="community-comments">
+          <strong>Kommentare</strong>
+          <div id="comments-${post.id}"><p class="sub">Kommentare werden geladen ...</p></div>
+          <div class="community-comment-form">
+            <textarea id="comment-input-${post.id}" rows="2" maxlength="2000" placeholder="Kommentar schreiben ..."></textarea>
+            <button class="action" type="button" onclick="addCommunityComment('${post.id}')">Senden</button>
+          </div>
+          <p id="comment-message-${post.id}" class="sub"></p>
+        </div>
+      </article>`;
+  }));
+  box.innerHTML = cards.join('');
+  await Promise.all(posts.map(post => loadCommunityComments(post.id)));
+}
+
+async function loadCommunityComments(postId) {
+  const target = document.getElementById(`comments-${postId}`);
+  if (!target) return;
+  const { data: comments, error } = await supabaseClient
+    .from('post_comments')
+    .select('id, author_id, body, created_at')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    target.innerHTML = '<p class="sub">Kommentare konnten nicht geladen werden.</p>';
+    console.error('Kommentare konnten nicht geladen werden:', error);
+    return;
+  }
+  if (!comments || !comments.length) {
+    target.innerHTML = '<p class="sub">Noch keine Kommentare.</p>';
+    return;
+  }
+
+  const ids = [...new Set(comments.map(comment => comment.author_id))];
+  const { data: authors } = await supabaseClient
+    .from('breeders').select('id, display_name').in('id', ids);
+  const names = Object.fromEntries((authors || []).map(author => [author.id, author.display_name]));
+  target.innerHTML = comments.map(comment => `
+    <div class="community-comment">
+      <strong>${esc(names[comment.author_id] || 'TABA-Mitglied')}</strong>
+      <small class="sub"> · ${new Date(comment.created_at).toLocaleString('de-DE')}</small>
+      <div>${esc(comment.body).replace(/\n/g, '<br>')}</div>
+    </div>`).join('');
+}
+
+async function addCommunityComment(postId) {
+  const input = document.getElementById(`comment-input-${postId}`);
+  const message = document.getElementById(`comment-message-${postId}`);
+  const body = input?.value.trim();
+  if (!body) { message.textContent = 'Bitte schreibe zuerst einen Kommentar.'; return; }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+  if (!user) { message.textContent = 'Bitte zuerst anmelden.'; return; }
+
+  const { error } = await supabaseClient.from('post_comments').insert({
+    post_id: postId,
+    author_id: user.id,
+    body
+  });
+  if (error) {
+    message.textContent = 'Kommentar konnte nicht gespeichert werden: ' + error.message;
+    return;
+  }
+  input.value = '';
+  message.textContent = 'Kommentar veröffentlicht.';
+  await loadCommunityComments(postId);
 }
 
 async function openBreederProfile(breederId) {
@@ -2178,7 +2280,7 @@ async function loadMemberStats(userId) {
     if (el) el.textContent = Number(value || 0).toLocaleString('de-DE');
   };
 
-  const [posts, sales, pigeonsCount, messages] = await Promise.all([
+  const [posts, sales, pigeonsCount] = await Promise.all([
     supabaseClient.from('breeder_posts')
       .select('id', { count: 'exact', head: true })
       .eq('author_id', userId),
@@ -2188,18 +2290,15 @@ async function loadMemberStats(userId) {
       .eq('status', 'confirmed'),
     supabaseClient.from('pigeons')
       .select('id', { count: 'exact', head: true })
-      .eq('owner_id', userId),
-    supabaseClient.from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('sender_id', userId)
+      .eq('owner_id', userId)
+      .eq('pigeon_status', 'in_loft')
   ]);
 
   setCount('statPosts', posts.error ? 0 : posts.count);
   setCount('statSales', sales.error ? 0 : sales.count);
   setCount('statPigeons', pigeonsCount.error ? 0 : pigeonsCount.count);
-  setCount('statMessages', messages.error ? 0 : messages.count);
 
-  [posts, sales, pigeonsCount, messages].forEach((result, index) => {
+  [posts, sales, pigeonsCount].forEach((result, index) => {
     if (result.error) {
       console.warn('Mitgliederstatistik konnte nicht vollständig geladen werden (' + index + '):', result.error.message);
     }
