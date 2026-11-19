@@ -1280,6 +1280,63 @@ async function loadBreeders() {
     `;
   }).join('');
 }
+
+async function adminReviewSale(saleId, decision) {
+  const isAdmin =
+    (await supabaseClient.auth.getSession())
+      .data.session?.user?.id ===
+    '16248658-5328-4c55-9818-532f3e262bde';
+
+  if (!isAdmin) {
+    alert('Du hast keine Admin-Berechtigung.');
+    return;
+  }
+
+  const actionText =
+    decision === 'confirmed'
+      ? 'endgültig bestätigen'
+      : 'endgültig verwerfen';
+
+  if (!confirm(
+    'Möchtest du diesen Verkauf wirklich ' +
+    actionText + '?'
+  )) {
+    return;
+  }
+
+  const { error } = await supabaseClient.rpc(
+    'admin_decide_sale',
+    {
+      p_sale_id: saleId,
+      p_decision: decision
+    }
+  );
+
+  if (error) {
+    alert('Fehler: ' + error.message);
+    return;
+  }
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const user = sessionData.session?.user;
+
+  await supabaseClient
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('recipient_id', user.id)
+    .eq('related_sale_id', saleId);
+
+  alert(
+    decision === 'confirmed'
+      ? 'Der Verkauf wurde bestätigt!'
+      : 'Der Verkauf wurde verworfen!'
+  );
+
+  await loadNotifications();
+}
+
 async function loadNotifications() {
   const list = document.getElementById('notificationList');
   const badge = document.getElementById('unreadCount');
@@ -1297,7 +1354,7 @@ async function loadNotifications() {
 
   const { data, error } = await supabaseClient
     .from('notifications')
-    .select('id, title, message, created_at, read_at')
+    .select('id, title, message, created_at, read_at, type, related_sale_id')
     .eq('recipient_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -1317,8 +1374,13 @@ async function loadNotifications() {
     return;
   }
 
+  const isAdmin =
+    user.id === '16248658-5328-4c55-9818-532f3e262bde';
+
   list.innerHTML = notifications.map(n => `
-    <div class="card" style="${n.read_at ? 'opacity:0.7;' : 'border-left:4px solid #a58a4e;'}">
+    <div class="card"
+      style="${n.read_at ? 'opacity:0.7;' : 'border-left:4px solid #a58a4e;'}">
+
       <strong>${esc(n.title)}</strong>
 
       <p>${esc(n.message)}</p>
@@ -1330,6 +1392,18 @@ async function loadNotifications() {
       <p class="sub">
         ${n.read_at ? 'Gelesen' : 'Ungelesen'}
       </p>
+
+      ${isAdmin && n.type === 'sale_review' && n.related_sale_id ? `
+        <button class="action"
+          onclick="adminReviewSale('${n.related_sale_id}', 'confirmed')">
+          Verkauf bestätigen
+        </button>
+
+        <button class="action"
+          onclick="adminReviewSale('${n.related_sale_id}', 'rejected')">
+          Verkauf verwerfen
+        </button>
+      ` : ''}
 
       ${!n.read_at ? `
         <button class="action"
