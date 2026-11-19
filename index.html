@@ -319,16 +319,16 @@ align-items: flex-start;
 </div>
 </section>
 
+
 <section id="breeders" class="hidden">
-<h2>Züchterbereich</h2>
-<div class="card">
-<div style="font-size:32px">👥</div>
-<h3>TABA Breeder Community</h3>
-<p class="sub">Eine Plattform für Taubenzüchter. Jeder Züchter verwaltet seinen eigenen Bestand. Stammbäume können später gezielt freigegeben werden.</p>
-<p><span class="tag">Einladung erforderlich</span></p>
-<p class="sub">Die echte Benutzerverwaltung und gemeinsame Freigaben werden im nächsten Entwicklungsschritt eingerichtet.</p>
-</div>
+  <h2>Züchterverzeichnis</h2>
+  <p class="sub">Entdecke die freigegebenen Mitglieder der TABA-Züchtergemeinschaft.</p>
+
+  <div id="breedersList">
+    <p class="sub">Züchter werden geladen ...</p>
+  </div>
 </section>
+
   <section id="inbox" class="hidden">
   <h2>📬 Mein Posteingang</h2>
   <p class="sub">
@@ -442,6 +442,9 @@ function show(id,btn){
 
 if (id === 'inbox') {
   loadNotifications();
+}
+  if (id === 'breeders') {
+  loadBreeders();
 }
 }
 
@@ -882,6 +885,47 @@ async function deactivateInvitation(id) {
 
   badge.textContent = count > 0 ? `(${count})` : '';
 }
+
+async function loadBreeders() {
+  const list = document.getElementById('breedersList');
+
+  list.innerHTML = '<p class="sub">Züchter werden geladen ...</p>';
+
+  const { data, error } = await supabaseClient
+    .from('breeders')
+    .select('id, display_name, location_label, bio, breeding_focus')
+    .eq('status', 'approved')
+    .order('display_name', { ascending: true });
+
+  if (error) {
+    console.error('Fehler beim Laden der Züchter:', error);
+    list.innerHTML =
+      '<p class="sub">Das Züchterverzeichnis konnte nicht geladen werden.</p>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML =
+      '<p class="sub">Aktuell sind noch keine freigegebenen Züchter eingetragen.</p>';
+    return;
+  }
+
+  list.innerHTML = data.map(breeder => `
+    <div class="card">
+      <h3>🕊️ ${esc(breeder.display_name)}</h3>
+      ${breeder.location_label
+        ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>`
+        : ''}
+      ${breeder.breeding_focus
+        ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>`
+        : ''}
+      ${breeder.bio
+        ? `<p>${esc(breeder.bio)}</p>`
+        : ''}
+    </div>
+  `).join('');
+}
+
 async function loadNotifications() {
   const list = document.getElementById('notificationList');
   const badge = document.getElementById('unreadCount');
