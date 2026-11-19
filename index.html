@@ -28,6 +28,18 @@ header p {
   min-width: 220px;
 }
 
+.account-role {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 11px;
+  border: 1px solid #a58a4e;
+  border-radius: 20px;
+  color: #d6bd82;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+}
+
 .developer-credit {
   margin-top: 15px;
   color: #d6bd82;
@@ -59,9 +71,20 @@ header p {
   }
 }
 
-nav{display:flex;gap:8px;overflow-x:auto;padding:12px;background:white;position:sticky;top:0;z-index:5}
-nav button{border:0;border-radius:9px;padding:12px 15px;background:#edf1ed;color:#29443b;white-space:nowrap;font-weight:bold}
+nav{display:flex;gap:14px;overflow-x:auto;padding:12px;background:white;position:sticky;top:0;z-index:5;align-items:stretch}
+.nav-group{display:flex;flex-direction:column;gap:6px;min-width:max-content;padding:4px 8px;border-right:1px solid #e3e9e3}
+.nav-group:last-child{border-right:0}
+.nav-group-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#849188;font-weight:bold;padding:0 5px}
+.nav-group-links{display:flex;gap:6px;align-items:center}
+nav button{border:0;border-radius:9px;padding:10px 13px;background:#edf1ed;color:#29443b;white-space:nowrap;font-weight:bold}
 nav button.active{background:#203d34;color:white}
+.unread-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#d34b43;margin-left:5px;vertical-align:middle;box-shadow:0 0 0 2px #fff}
+.unread-dot.hidden{display:none!important}
+.conversation-unread{display:inline-block;width:9px;height:9px;border-radius:50%;background:#d34b43;margin-left:7px;vertical-align:middle}
+.tree-generation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
+.tree-generation .parent{font-size:12px;padding:9px 5px;overflow-wrap:anywhere}
+.tree-generation-label{font-size:12px;color:#718078;font-weight:bold;margin-top:12px}
+@media(max-width:600px){.tree-generation{grid-template-columns:repeat(2,minmax(0,1fr))}}
 main{padding:20px;max-width:850px;margin:auto}
 h2{font-size:21px}
 .sub{color:#718078;font-size:13px}
@@ -182,6 +205,7 @@ align-items: flex-start;
     <div class="developer-credit">
       Developed by Benjamin TABA · Hinterländer Hof
     </div>
+    <div id="accountRole" class="account-role hidden"></div>
   </div>
 
   <div class="company-logo">
@@ -278,12 +302,22 @@ align-items: flex-start;
 </div>
 
 <nav>
-<button class="active" onclick="show('dashboard',this)">Dashboard</button>
-<button onclick="show('pigeons',this)">Meine Tauben</button>
-<button onclick="show('pedigree',this)">Stammbaum</button>
-<button onclick="show('breeders',this)">Züchter</button>
-<button onclick="show('inbox',this)">📬 Posteingang <span id="unreadCount"></span></button>
-<button onclick="show('invitations',this)">Einladungen</button>
+  <div class="nav-group">
+    <div class="nav-group-title">Dashboard</div>
+    <div class="nav-group-links">
+      <button class="active" onclick="show('dashboard',this)">Übersicht</button>
+      <button onclick="show('pigeons',this)">🕊️ Tauben</button>
+      <button onclick="show('pedigree',this)">🌳 Stammbaum</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Züchterkreis</div>
+    <div class="nav-group-links">
+      <button onclick="show('inbox',this)">📬 Posteingang <span id="unreadCount" class="unread-dot hidden"></span></button>
+      <button onclick="show('breeders',this)">Züchter</button>
+      <button onclick="show('invitations',this)">Einladungen</button>
+    </div>
+  </div>
 </nav>
 
 <main>
@@ -498,45 +532,39 @@ const supabaseClient = window.supabase.createClient(
  let activeConversationId = null;
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
   
-function show(id,btn){
- document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
- document.getElementById(id).classList.remove('hidden');
- document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
- if(btn)btn.classList.add('active');
- render();
+function show(id, btn) {
+  const section = document.getElementById(id);
+  if (!section) return;
 
-  if (id === 'invitations') {
-  loadInvitations();
- }
+  document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+  section.classList.remove('hidden');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
 
- if (id === 'pigeons') {
-  loadPigeons();
-  loadSaleBuyers();
- }
-}
+  if (id === 'invitations') loadInvitations();
 
-if (id === 'inbox') {
-  loadNotifications();
-  loadConversations();
-}
-  if (id === 'breeders') {
-  loadBreeders();
-}
+  if (id === 'pigeons') {
+    loadPigeons();
+    loadSaleBuyers();
+  }
+
+  if (id === 'inbox') {
+    loadNotifications();
+    loadConversations();
+  }
+
+  if (id === 'breeders') loadBreeders();
+
+  render();
 }
 
 function showById(id){
- const buttons = [...document.querySelectorAll('nav button')];
-const index = {
-  dashboard: 0,
-  pigeons: 1,
-  pedigree: 2,
-  breeders: 3,
-  inbox: 4,
-  invitations: 5
-}[id];
-
- if (index === undefined) return;
- show(id, buttons[index]);
+ const button = document.querySelector(`nav button[onclick="show('${id}',this)"]`);
+ if (id === 'dashboard') {
+   show(id, document.querySelector('nav button[onclick="show(\'dashboard\',this)"]'));
+   return;
+ }
+ if (button) show(id, button);
 }
 
 
@@ -592,8 +620,6 @@ function esc(s){
 
 
 async function loadSaleBuyers() {
-  alert('loadSaleBuyers wurde gestartet');
-  console.log('Angemeldeter Benutzer:', (await supabaseClient.auth.getUser()).data.user?.id);
   const select = document.getElementById('sellBuyer');
 
   if (!select) return;
@@ -748,61 +774,7 @@ async function respondToSale(saleId, response) {
   await loadNotifications();
 }
 
-  async function submitPigeonSale() {
-  const pigeonId = document.getElementById('sellPigeon').value;
-  const buyerId = document.getElementById('sellBuyer').value;
-  const message = document.getElementById('sellPigeonMessage');
-
-  if (!pigeonId) {
-    alert('Bitte wähle eine Taube aus.');
-    return;
-  }
-
-  if (!buyerId) {
-    alert('Bitte wähle einen Käufer aus.');
-    return;
-  }
-
-  const pigeon = pigeons.find(p => String(p.id) === String(pigeonId));
-
-  if (!pigeon || pigeon.pigeon_status !== 'in_loft') {
-    alert('Diese Taube ist nicht mehr verfügbar.');
-    await loadPigeons();
-    return;
-  }
-
-  if (!confirm(
-    'Möchtest du die Taube ' + pigeon.ring +
-    ' wirklich zum Verkauf einreichen?'
-  )) {
-    return;
-  }
-
-  message.textContent = 'Verkaufsanfrage wird gesendet ...';
-
-  const { error } = await supabaseClient.rpc(
-    'submit_pigeon_sale',
-    {
-      p_pigeon_id: pigeonId,
-      p_buyer_id: buyerId
-    }
-  );
-
-  if (error) {
-    message.textContent = '';
-    alert('Fehler: ' + error.message);
-    return;
-  }
-
-  message.textContent =
-    'Verkaufsanfrage wurde erfolgreich eingereicht!';
-
-  document.getElementById('sellPigeon').value = '';
-  document.getElementById('sellBuyer').value = '';
-
-  alert('Der Käufer wurde benachrichtigt!');
-}
-async function loadPigeons() {
+  async function loadPigeons() {
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
 
@@ -979,20 +951,35 @@ async function editPigeon(id) {
   alert('Abstammung wurde gespeichert!');
 }
 function tree(){
- let id=document.getElementById('selected').value;
- let p=pigeons.find(x=>String(x.id)===String(id));
- let el=document.getElementById('treeview');
- if(!p){el.innerHTML='<p class="sub">Bitte zuerst eine Taube eintragen.</p>';return}
- function parent(id){
- let x=pigeons.find(a=>a.id===id);
- return x?esc(x.ring):'Nicht eingetragen';
+ const id=document.getElementById('selected').value;
+ const p=pigeons.find(x=>String(x.id)===String(id));
+ const el=document.getElementById('treeview');
+ if(!p){el.innerHTML='<p class="sub">Bitte zuerst eine Taube eintragen.</p>';return;}
+ const generations = [
+   [{bird:p, label:'Ausgewählte Taube'}],
+   [
+     {bird:pigeons.find(x=>String(x.id)===String(p.father)), label:'Vater'},
+     {bird:pigeons.find(x=>String(x.id)===String(p.mother)), label:'Mutter'}
+   ]
+ ];
+ for(let generation=2; generation<=4; generation++){
+   const previous=generations[generation-1];
+   const current=[];
+   previous.forEach(entry=>{
+     const bird=entry.bird;
+     current.push({bird:bird ? pigeons.find(x=>String(x.id)===String(bird.father)) : null,label:'♂ Vater'});
+     current.push({bird:bird ? pigeons.find(x=>String(x.id)===String(bird.mother)) : null,label:'♀ Mutter'});
+   });
+   generations.push(current);
  }
- el.innerHTML=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>Ausgewählte Taube</div></div>
- <div class="tree">
- <div class="parent">♂ Vater<br><strong>${parent(p.father)}</strong></div>
- <div class="parent">♀ Mutter<br><strong>${parent(p.mother)}</strong></div>
- </div>
- <p class="sub">Die Eltern werden über die Bearbeiten-Funktion bei der jeweiligen Taube zugeordnet.</p>`;
+ let html=`<div class="centerbird"><div>🕊️</div><strong>${esc(p.ring)}</strong><div>Ausgewählte Taube</div></div>`;
+ for(let i=1;i<generations.length;i++){
+   html+=`<div class="tree-generation-label">${i}. Generation · ${generations[i].length} Abstammungsplätze</div><div class="tree-generation">`;
+   html+=generations[i].map(entry=>`<div class="parent">${entry.label}<br><strong>${entry.bird ? esc(entry.bird.ring) : 'Nicht eingetragen'}</strong></div>`).join('');
+   html+='</div>';
+ }
+ html+='<p class="sub">Die Abstammung wird über Vater und Mutter der jeweiligen Taube aufgebaut. Nicht zugeordnete Eltern erscheinen als „Nicht eingetragen“.</p>';
+ el.innerHTML=html;
 }
 
 function generateInviteCode() {
@@ -1178,30 +1165,25 @@ async function deactivateInvitation(id) {
   alert('Einladung wurde deaktiviert.');
 }
   async function updateUnreadCount() {
-  const badge = document.getElementById('unreadCount');
-
-  const { data: sessionData } =
-    await supabaseClient.auth.getSession();
-
+  const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
-
-  if (!user) {
-    badge.textContent = '';
-    return;
+  const badge = document.getElementById('unreadCount');
+  if (!user) { badge.classList.add('hidden'); return; }
+  const { data: conversations, error } = await supabaseClient
+    .from('conversations')
+    .select('id')
+    .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`);
+  if (error) { console.error('Ungelesene Unterhaltungen konnten nicht geladen werden:', error); return; }
+  const ids = (conversations || []).map(c => c.id);
+  let unreadMessages = [];
+  if (ids.length) {
+    const result = await supabaseClient.from('messages')
+      .select('id').in('conversation_id', ids)
+      .neq('sender_id', user.id).is('read_at', null);
+    if (result.error) console.error('Ungelesene Nachrichten konnten nicht geladen werden:', result.error);
+    unreadMessages = result.data || [];
   }
-
-  const { count, error } = await supabaseClient
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('recipient_id', user.id)
-    .is('read_at', null);
-
-  if (error) {
-    console.error('Fehler beim Laden der Nachrichtenzahl:', error);
-    return;
-  }
-
-  badge.textContent = count > 0 ? `(${count})` : '';
+  await updateMessageUnreadBadge(user, unreadMessages);
 }
 
 async function loadBreeders() {
@@ -1318,7 +1300,7 @@ async function loadBreeders() {
   openConversation(newConversation.id);
 }
   async function openConversation(conversationId) {
-    show('inbox', document.querySelectorAll('nav button')[4]);
+    showById('inbox');
   const { data: sessionData } =
     await supabaseClient.auth.getSession();
 
@@ -1480,79 +1462,81 @@ async function loadBreeders() {
       console.error('Nachrichten konnten nicht als gelesen markiert werden:', readError);
     }
   }
+  await loadConversations();
 }
   async function loadConversations() {
   const list = document.getElementById('conversationList');
-
   list.innerHTML = '<p class="sub">Unterhaltungen werden geladen ...</p>';
-
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
-
-  if (!user) {
-    list.innerHTML = '<p class="sub">Bitte zuerst anmelden.</p>';
-    return;
-  }
+  if (!user) { list.innerHTML = '<p class="sub">Bitte zuerst anmelden.</p>'; return; }
 
   const { data, error } = await supabaseClient
     .from('conversations')
     .select('id, participant_one_id, participant_two_id, updated_at')
     .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`)
     .order('updated_at', { ascending: false });
-
   if (error) {
     console.error('Fehler beim Laden der Unterhaltungen:', error);
     list.innerHTML = '<p class="sub">Unterhaltungen konnten nicht geladen werden.</p>';
     return;
   }
-
   if (!data || data.length === 0) {
     list.innerHTML = '<p class="sub">Du hast noch keine privaten Unterhaltungen.</p>';
+    await updateMessageUnreadBadge(user, []);
     return;
   }
 
-  const otherIds = data.map(conversation =>
-    conversation.participant_one_id === user.id
-      ? conversation.participant_two_id
-      : conversation.participant_one_id
-  );
+  const conversationIds = data.map(c => c.id);
+  const { data: unreadMessages, error: unreadError } = await supabaseClient
+    .from('messages')
+    .select('id, conversation_id')
+    .in('conversation_id', conversationIds)
+    .neq('sender_id', user.id)
+    .is('read_at', null);
+  if (unreadError) console.error('Ungelesene Nachrichten konnten nicht geladen werden:', unreadError);
+  const unreadByConversation = {};
+  (unreadMessages || []).forEach(m => {
+    unreadByConversation[m.conversation_id] = (unreadByConversation[m.conversation_id] || 0) + 1;
+  });
+  await updateMessageUnreadBadge(user, unreadMessages || []);
 
+  const otherIds = data.map(c => c.participant_one_id === user.id ? c.participant_two_id : c.participant_one_id);
   const { data: breeders, error: breederError } = await supabaseClient
-    .from('breeders')
-    .select('id, display_name')
-    .in('id', otherIds);
-
+    .from('breeders').select('id, display_name').in('id', otherIds);
   if (breederError) {
     console.error('Fehler beim Laden der Mitgliedsnamen:', breederError);
     list.innerHTML = '<p class="sub">Mitgliedsnamen konnten nicht geladen werden.</p>';
     return;
   }
-
   const names = {};
-  (breeders || []).forEach(breeder => {
-    names[breeder.id] = breeder.display_name;
-  });
-
+  (breeders || []).forEach(b => { names[b.id] = b.display_name; });
   list.innerHTML = data.map(conversation => {
-    const otherId =
-      conversation.participant_one_id === user.id
-        ? conversation.participant_two_id
-        : conversation.participant_one_id;
-
+    const otherId = conversation.participant_one_id === user.id ? conversation.participant_two_id : conversation.participant_one_id;
+    const hasUnread = (unreadByConversation[conversation.id] || 0) > 0;
     return `
       <div class="card">
-        <h3>🕊️ ${esc(names[otherId] || 'TABA-Mitglied')}</h3>
-        <p class="sub">
-          Letzte Aktivität:
-          ${new Date(conversation.updated_at).toLocaleString('de-DE')}
-        </p>
-        <button class="action"
-          onclick="openConversation('${conversation.id}')">
-          Unterhaltung öffnen
-        </button>
-      </div>
-    `;
+        <h3>🕊️ ${esc(names[otherId] || 'TABA-Mitglied')}${hasUnread ? '<span class="conversation-unread" title="Ungelesene Nachrichten"></span>' : ''}</h3>
+        <p class="sub">Letzte Aktivität: ${new Date(conversation.updated_at).toLocaleString('de-DE')}</p>
+        ${hasUnread ? '<p class="sub"><strong>Neue Nachricht</strong></p>' : ''}
+        <button class="action" onclick="openConversation('${conversation.id}')">Unterhaltung öffnen</button>
+      </div>`;
   }).join('');
+}
+
+async function updateMessageUnreadBadge(user, unreadMessages) {
+  const badge = document.getElementById('unreadCount');
+  if (!badge) return;
+  let unreadNotifications = 0;
+  const { count, error } = await supabaseClient
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', user.id)
+    .is('read_at', null);
+  if (!error) unreadNotifications = count || 0;
+  const totalUnread = (unreadMessages || []).length + unreadNotifications;
+  badge.classList.toggle('hidden', totalUnread === 0);
+  badge.title = totalUnread ? `${totalUnread} ungelesene Hinweise` : '';
 }
 
 async function adminReviewSale(saleId, decision) {
@@ -1595,12 +1579,24 @@ async function adminReviewSale(saleId, decision) {
     await supabaseClient.auth.getSession();
 
   const user = sessionData.session?.user;
+  if (!user) {
+    alert('Bitte erneut anmelden.');
+    return;
+  }
 
-  await supabaseClient
+  const { error: notificationError } = await supabaseClient
     .from('notifications')
-    .update({ read_at: new Date().toISOString() })
+    .update({
+      read_at: new Date().toISOString(),
+      action_completed_at: new Date().toISOString()
+    })
     .eq('recipient_id', user.id)
-    .eq('related_sale_id', saleId);
+    .eq('related_sale_id', saleId)
+    .eq('type', 'sale_review');
+
+  if (notificationError) {
+    console.error('Admin-Entscheidung gespeichert, Benachrichtigung aber nicht aktualisiert:', notificationError);
+  }
 
   alert(
     decision === 'confirmed'
@@ -1613,8 +1609,6 @@ async function adminReviewSale(saleId, decision) {
 
 async function loadNotifications() {
   const list = document.getElementById('notificationList');
-  const badge = document.getElementById('unreadCount');
-
   const { data: sessionData } =
     await supabaseClient.auth.getSession();
 
@@ -1622,7 +1616,7 @@ async function loadNotifications() {
 
   if (!user) {
     list.textContent = 'Bitte zuerst anmelden.';
-    badge.textContent = '';
+    document.getElementById('unreadCount').classList.add('hidden');
     return;
   }
 
@@ -1638,9 +1632,6 @@ async function loadNotifications() {
   }
 
   const notifications = data || [];
-  const unread = notifications.filter(n => !n.read_at).length;
-
-  badge.textContent = unread > 0 ? `(${unread})` : '';
 
   if (notifications.length === 0) {
     list.innerHTML =
@@ -1677,7 +1668,7 @@ ${n.type === 'sale_confirmation' && n.related_sale_id && !n.action_completed_at 
     Verkauf ablehnen
   </button>
 ` : ''}
-      ${isAdmin && n.type === 'sale_review' && n.related_sale_id ? `
+      ${isAdmin && n.type === 'sale_review' && n.related_sale_id && !n.action_completed_at ? `
         <button class="action"
           onclick="adminReviewSale('${n.related_sale_id}', 'confirmed')">
           Verkauf bestätigen
@@ -1877,6 +1868,21 @@ passwordResetForm.addEventListener('submit', async function(event) {
   passwordResetForm.reset();
   button.disabled = false;
 });
+function updateAccountRole(user) {
+  const badge = document.getElementById('accountRole');
+  if (!badge) return;
+
+  if (!user) {
+    badge.textContent = '';
+    badge.classList.add('hidden');
+    return;
+  }
+
+  const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
+  badge.classList.remove('hidden');
+}
+
 async function verifyTabaAccess(user) {
   const { data: breeder, error } = await supabaseClient
     .from('breeders')
@@ -1885,6 +1891,7 @@ async function verifyTabaAccess(user) {
     .single();
 
   if (error || !breeder || breeder.status !== 'approved') {
+    updateAccountRole(null);
     await supabaseClient.auth.signOut();
 
     const message = document.getElementById('loginMessage');
@@ -1923,6 +1930,7 @@ loginForm.addEventListener('submit', async function(event) {
   alert('Zugang geprüft: ' + allowed);
 
   if (allowed) {
+    updateAccountRole(data.user);
     document.getElementById('loginOverlay').classList.add('hidden');
     await loadPigeons();
     await updateUnreadCount();
