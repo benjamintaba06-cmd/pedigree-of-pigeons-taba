@@ -297,6 +297,31 @@ align-items: flex-start;
 .breeder-open{cursor:pointer}
 .breeder-open:hover{border-color:#a58a4e;box-shadow:0 3px 12px #203d3412}
 
+
+/* Taubenfoto: gut sichtbarer, kompakter hellgrüner Auswahlknopf */
+#pigeonPhoto{display:block;width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e2e8e4;border-radius:10px;background:#fff;min-height:48px}
+#pigeonPhoto::file-selector-button{height:42px;padding:0 18px;margin-right:12px;border:0;border-radius:9px;background:#a9d9bb;color:#173b2d;font:600 15px inherit;cursor:pointer}
+#pigeonPhoto::file-selector-button:hover{background:#96cdaa}
+
+
+.pedigree-share-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pedigree-share-actions button{min-height:48px;padding:12px 16px;font-size:14px;border-radius:9px;font-weight:600}
+.pedigree-pdf-button{background:#a9d9bb!important;color:#173b2d!important;border:0!important}
+.pedigree-pdf-button:hover{background:#96cdaa!important}
+
+
+footer{display:flex;flex-direction:column;align-items:center;gap:10px}
+.footer-invitations-link{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:9px;background:#e4f2e9;color:#24533c;text-decoration:none;font-weight:600;font-size:14px}
+.footer-invitations-link:hover{background:#d3eadb}
+#invitationsPanel{scroll-margin-top:18px}
+
+
+.breeder-subnav{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 22px;padding:12px;background:#f5f8f6;border-radius:12px}
+.breeder-subnav button{flex:1 1 180px;min-height:46px;padding:10px 14px}
+.breeder-subnav button:not(.active){background:#e5f1e9;color:#214b38}
+.breeder-subnav button.active{background:#203d34;color:#fff}
+.breeder-panel{min-width:0}
+
 </style>
 </head>
 <body>
@@ -442,20 +467,21 @@ align-items: flex-start;
 <div class="card">
 <h3>Neue Taube eintragen</h3>
 <label>Ringnummer *</label>
-<input id="ring" placeholder="z.B. DV-01234-2025">
+<input id="ring" placeholder="z.B. DV-01234-2025" required>
 <label>Name</label>
 <input id="name" placeholder="Name der Taube">
 <label>Geschlecht</label>
 <select id="sex"><option value="male">Täuber</option><option value="female">Täubin</option><option value="unknown">Unbekannt</option></select>
 <label>Farbe / Zeichnung</label>
 <input id="color" placeholder="z.B. Blaugehämmert">
-<label>Geburtsdatum</label>
-<input id="birth" type="date">
+<label>Geburtsjahr / Monat</label>
+<input id="birth" type="month">
 <label>Notizen</label>
 <textarea id="notes" placeholder="Herkunft, Leistung, Bemerkungen..."></textarea>
 <label>Taubenfoto</label>
 <input id="pigeonPhoto" type="file" accept="image/*">
 <button class="action" onclick="addPigeon()">Taube speichern</button>
+<p class="sub" style="margin:8px 0 0">* Pflichtfeld</p>
 </div>
 <h3>Dein Bestand</h3>
 <p class="sub">Alle deine eingetragenen Tauben erscheinen hier. Über ✏️ kannst du Angaben bearbeiten und über 🗑️ eine Taube löschen.</p>
@@ -481,8 +507,10 @@ align-items: flex-start;
   <select id="pedigreeBreederSelect" style="width:100%;margin:10px 0">
     <option value="">Züchter auswählen ...</option>
   </select>
-  <button type="button" class="action" onclick="sharePedigreeWithBreeder()">Stammbaum per DM teilen</button>
-  <button type="button" class="secondary" onclick="downloadPedigreePDF()">📄 Als PDF drucken / speichern</button>
+  <div class="pedigree-share-actions">
+    <button type="button" class="action" onclick="sharePedigreeWithBreeder()">Stammbaum per DM teilen</button>
+    <button type="button" class="action pedigree-pdf-button" onclick="downloadPedigreePDF()">📄 PDF drucken / speichern</button>
+  </div>
   <p id="pedigreeShareMessage" class="sub"></p>
 </div>
 </div>
@@ -518,6 +546,14 @@ align-items: flex-start;
   <h2>Züchterkreis</h2>
   <p class="sub">Entdecke Mitglieder der TABA-Züchtergemeinschaft und aktuelle Tauben-Verkaufsanzeigen.</p>
 
+  <div class="breeder-subnav">
+    <button type="button" class="action active" data-breeder-panel="community" onclick="showBreederPanel('community',this)">📝 Beiträge</button>
+    <button type="button" class="action" data-breeder-panel="sales" onclick="showBreederPanel('sales',this)">🐦 Tauben im Angebot</button>
+    <button type="button" class="action" data-breeder-panel="directory" onclick="showBreederPanel('directory',this)">👥 Züchterverzeichnis</button>
+    <button type="button" class="action" data-breeder-panel="invitations" onclick="showBreederPanel('invitations',this)">✉️ Einladungen</button>
+  </div>
+
+  <div id="breederPanel-community" class="breeder-panel">
   <h3>📝 Im Züchterkreis posten</h3>
   <div class="card community-composer">
     <label for="communityPostText">Was möchtest du mit den anderen Züchtern teilen?</label>
@@ -530,10 +566,15 @@ align-items: flex-start;
   </div>
   <div id="communityPosts"><p class="sub">Beiträge werden geladen ...</p></div>
 
+  </div>
+  <div id="breederPanel-sales" class="breeder-panel hidden">
   <h3>🐦 Tauben im Angebot</h3>
   <div id="pigeonListings"><p class="sub">Verkaufsanzeigen werden geladen ...</p></div>
 
+  </div>
+  <div id="breederPanel-directory" class="breeder-panel hidden">
   <h3>👥 Züchterverzeichnis</h3>
+  <input id="breederSearch" type="search" placeholder="🔎 Züchter nach Name, Ort oder Zuchtinteresse suchen ..." oninput="filterBreederDirectory()" style="width:100%;box-sizing:border-box;margin:8px 0 14px">
   <div id="breedersList">
     <p class="sub">Züchter werden geladen ...</p>
   </div>
@@ -542,7 +583,8 @@ align-items: flex-start;
     <div id="breederProfileContent"></div>
   </div>
 
-  <div style="height:1px;background:#e5e9e7;margin:28px 0"></div>
+  </div>
+  <div id="breederPanel-invitations" class="breeder-panel hidden">
     <div class="card" id="invitationsPanel">
 <h3>✉️ Einladungen</h3>
 <p class="sub">Lade neue Züchter in die TABA-Community ein.</p>
@@ -573,6 +615,7 @@ Einladung erstellen
 <p class="sub">Einladungen werden geladen ...</p>
 </div>
 </div>
+  </div>
 </section>
 
   <section id="inbox" class="hidden">
@@ -613,7 +656,10 @@ Einladung erstellen
 
 </main>
 
-<footer>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</footer>
+<footer>
+  <div>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</div>
+  <a href="#invitationsPanel" class="footer-invitations-link" onclick="openInvitations();return false;">✉️ Züchter einladen</a>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -706,6 +752,25 @@ function showById(id){
  if (button) show(id, button);
 }
 
+function showBreederPanel(name, button){
+  document.querySelectorAll('.breeder-panel').forEach(panel=>panel.classList.add('hidden'));
+  const panel=document.getElementById('breederPanel-'+name);
+  if(panel) panel.classList.remove('hidden');
+  document.querySelectorAll('.breeder-subnav button').forEach(btn=>btn.classList.remove('active'));
+  if(button) button.classList.add('active');
+  if(name==='sales') loadPigeonListings();
+  if(name==='directory') loadBreeders();
+  if(name==='invitations') loadInvitations();
+}
+
+function openInvitations(){
+  showById('breeders');
+  const tab=document.querySelector('[data-breeder-panel="invitations"]');
+  showBreederPanel('invitations',tab);
+  const panel=document.getElementById('invitationsPanel');
+  if(panel) setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),120);
+}
+
 
 async function addPigeon(){
   const { data: authData, error: authError } = await supabaseClient.auth.getUser();
@@ -737,7 +802,7 @@ async function addPigeon(){
     name: document.getElementById('name').value.trim() || null,
     sex: document.getElementById('sex').value,
     color: document.getElementById('color').value.trim() || null,
-    hatch_date: document.getElementById('birth').value || null,
+    hatch_date: document.getElementById('birth').value ? document.getElementById('birth').value + '-01' : null,
     notes: document.getElementById('notes').value.trim() || null
   };
 
@@ -1215,13 +1280,55 @@ async function sharePedigreeWithBreeder(){
  }catch(e){msg.textContent='Die Unterhaltung konnte nicht geöffnet werden: '+e.message;}
 }
 function downloadPedigreePDF(){
- const report=pedigreeTextReport(); if(!report)return;
- const root=pigeons.find(x=>String(x.id)===String(document.getElementById('selected')?.value));
+ const id=document.getElementById('selected')?.value;
+ const root=pigeons.find(x=>String(x.id)===String(id));
+ if(!root){alert('Bitte zuerst eine Taube als Ausgangspunkt auswählen.');return;}
  const levels=[[root]];
- for(let gen=1;gen<4;gen++){const next=[];levels[gen-1].forEach(b=>{next.push(b?pigeons.find(x=>String(x.id)===String(b.father))||null:null,b?pigeons.find(x=>String(x.id)===String(b.mother))||null:null);});levels.push(next);}
- const cards=levels.map((level,i)=>`<section><h2>${i===0?'Ausgangspunkt':i+'. Generation'}</h2><div class="birds">${level.map(b=>`<article>${b?.photo_url?`<img src="${b.photo_url}">`:'<div class="empty">EMPTY</div>'}<b>${b?esc(b.ring):'EMPTY'}</b><span>${b?esc(b.name||''):''}</span></article>`).join('')}</div></section>`).join('');
- const win=window.open('','_blank');if(!win){alert('Bitte Pop-ups für diese Seite erlauben.');return;}
- win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Tauben-Stammbaum</title><style>body{font-family:Arial;padding:22px;color:#173b32}h1{font-size:22px}h2{font-size:16px;margin:18px 0 8px}.birds{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}article{text-align:center;font-size:10px;overflow-wrap:anywhere}article img,.empty{width:100%;height:74px;object-fit:cover;border-radius:7px}.empty{display:grid;place-items:center;background:#eee}article b,article span{display:block;margin-top:3px}pre{white-space:pre-wrap;font:11px/1.5 Arial}@media print{button{display:none}}</style></head><body><h1>Pedigree of Pigeons by TABA</h1>${cards}<pre>${esc(report)}</pre><button onclick="window.print()">Als PDF speichern / Drucken</button><script>window.onload=()=>window.print()<\/script></body></html>`);win.document.close();
+ for(let gen=1;gen<=4;gen++){
+   const next=[];
+   levels[gen-1].forEach(b=>{
+     next.push(b?pigeons.find(x=>String(x.id)===String(b.father))||null:null);
+     next.push(b?pigeons.find(x=>String(x.id)===String(b.mother))||null:null);
+   });
+   levels.push(next);
+ }
+ const sections=levels.slice(1).map((level,index)=>{
+   const generation=index+1;
+   const columns=generation===4?8:Math.min(level.length,8);
+   return `<section class="generation"><h2>${generation}. Generation</h2><div class="birds" style="grid-template-columns:repeat(${columns},minmax(0,1fr))">${level.map((bird,i)=>`
+    <article class="bird-card">
+      ${bird?.photo_url?`<img src="${bird.photo_url}" alt="Taubenfoto">`:'<div class="empty">EMPTY</div>'}
+      <strong>${bird?esc(bird.ring_number||bird.ring||''):'EMPTY'}</strong>
+      ${bird?.name?`<span>${esc(bird.name)}</span>`:''}
+      <small>${i%2===0?'♂ Vater':'♀ Mutter'}</small>
+    </article>`).join('')}</div></section>`;
+ }).join('');
+ const win=window.open('','_blank');
+ if(!win){alert('Bitte Pop-ups für diese Seite erlauben und erneut versuchen.');return;}
+ win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Stammbaum – ${esc(root.ring_number||root.ring||'')}</title>
+ <style>
+ @page{size:A4 landscape;margin:10mm}
+ *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#173b32;margin:0}
+ h1{text-align:center;font-size:22px;margin:0 0 4px} .subtitle{text-align:center;color:#65766e;margin:0 0 14px;font-size:12px}
+ .root{display:flex;align-items:center;justify-content:center;gap:14px;background:#eaf1ec;border:1px solid #d5e1d8;border-radius:12px;padding:10px;margin-bottom:12px;text-align:left}
+ .root img{width:68px;height:68px;object-fit:cover;border-radius:10px}
+ .root strong{font-size:16px;display:block}.root span{font-size:12px}
+ .generation{margin:10px 0 0;break-inside:avoid}.generation h2{font-size:13px;margin:0 0 6px;color:#315b49}
+ .birds{display:grid;gap:5px}
+ .bird-card{text-align:center;min-width:0;border:1px solid #dce5df;border-radius:7px;padding:4px 2px;overflow:hidden;font-size:9px;overflow-wrap:anywhere}
+ .bird-card img,.empty{display:block;width:100%;height:48px;object-fit:cover;border-radius:4px}
+ .empty{display:grid;place-items:center;background:#f0f3f0;color:#7a8981;font-weight:bold}
+ .bird-card strong,.bird-card span,.bird-card small{display:block;margin-top:3px}
+ .bird-card small{color:#718078}
+ button{margin-top:14px;padding:10px 18px;border:0;border-radius:8px;background:#203d34;color:white;font-weight:bold}
+ @media print{button{display:none}.generation{break-inside:avoid}}
+ </style></head><body>
+ <h1>Pedigree of Pigeons by TABA</h1><p class="subtitle">Tauben-Stammbaum · Vier Generationen</p>
+ <div class="root">${root.photo_url?`<img src="${root.photo_url}" alt="">`:'<div style="font-size:42px">🕊️</div>'}<div><strong>${esc(root.ring_number||root.ring||'')}</strong><span>${esc(root.name||'Ausgangspunkt')}</span></div></div>
+ ${sections}
+ <div style="text-align:center"><button onclick="window.print()">PDF speichern / Drucken</button></div>
+ <script>window.onload=()=>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+ win.document.close();
 }
 async function createTreeRoot(){
  const ring=prompt('Ringnummer der ersten Taube:');
@@ -1781,6 +1888,38 @@ function closeBreederProfile() {
   document.getElementById('breedersList').classList.remove('hidden');
 }
 
+let breederDirectoryCache = [];
+
+function renderBreederDirectory(data) {
+  const list = document.getElementById('breedersList');
+  if (!list) return;
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p class="sub">Keine passenden Züchter gefunden.</p>';
+    return;
+  }
+  list.innerHTML = data.map(breeder => `
+    <div class="card breeder-card breeder-open" onclick="openBreederProfile('${breeder.id}')">
+      <h3>🕊️ ${esc(breeder.display_name)}</h3>
+      ${breeder.location_label ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>` : ''}
+      ${breeder.breeding_focus ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>` : ''}
+      ${breeder.bio ? `<p>${esc(breeder.bio)}</p>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
+        <button type="button" class="action" style="min-width:190px" onclick="event.stopPropagation();startConversation('${breeder.id}')">✉️ Nachricht schreiben</button>
+        <button type="button" class="action" style="min-width:190px;background:#75b995;color:#123d2d" onclick="event.stopPropagation();openBreederProfile('${breeder.id}')">🌳 Stammbaum ansehen</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterBreederDirectory() {
+  const q = (document.getElementById('breederSearch')?.value || '').trim().toLocaleLowerCase('de');
+  const filtered = breederDirectoryCache.filter(b => 
+    [b.display_name, b.location_label, b.breeding_focus, b.bio]
+      .filter(Boolean).join(' ').toLocaleLowerCase('de').includes(q)
+  );
+  renderBreederDirectory(filtered);
+}
+
 async function loadBreeders() {
   const list = document.getElementById('breedersList');
   const listingBox = document.getElementById('pigeonListings');
@@ -1801,16 +1940,8 @@ async function loadBreeders() {
   } else if (!data || data.length === 0) {
     list.innerHTML = '<p class="sub">Aktuell sind noch keine freigegebenen Züchter eingetragen.</p>';
   } else {
-    list.innerHTML = data.map(breeder => `
-      <div class="card breeder-card breeder-open" onclick="openBreederProfile('${breeder.id}')">
-        <h3>🕊️ ${esc(breeder.display_name)}</h3>
-        ${breeder.location_label ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>` : ''}
-        ${breeder.breeding_focus ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>` : ''}
-        ${breeder.bio ? `<p>${esc(breeder.bio)}</p>` : ''}
-        <button class="action" onclick="event.stopPropagation();startConversation('${breeder.id}')">✉️ Nachricht schreiben</button>
-        <button type="button" class="secondary" onclick="event.stopPropagation();openBreederProfile('${breeder.id}')">Stammbaum ansehen</button>
-      </div>
-    `).join('');
+    breederDirectoryCache = data || [];
+    filterBreederDirectory();
   }
 
   await loadPigeonListings();
@@ -2716,6 +2847,7 @@ async function checkLogin() {
     const allowed = await verifyTabaAccess(data.session.user);
 
    if (allowed) {
+  updateAccountRole(data.session.user);
   document.getElementById('loginOverlay').classList.add('hidden');
   startIdleLogout();
   await loadPigeons();
