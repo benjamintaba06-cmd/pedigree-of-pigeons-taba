@@ -306,41 +306,24 @@ align-items: flex-start;
 
 <nav>
   <div class="nav-group">
-    <div class="nav-group-title">Dashboard</div>
+    <div class="nav-group-title">Mein Bereich</div>
     <div class="nav-group-links">
-      <button class="active" onclick="show('dashboard',this)">Übersicht</button>
-      <button onclick="show('pigeons',this)">🕊️ Tauben</button>
+      <button class="active" onclick="show('pigeons',this)">🕊️ Tauben</button>
       <button onclick="show('pedigree',this)">🌳 Stammbaum</button>
+      <button onclick="show('sellPigeon',this)">🐦 Taube verkaufen</button>
     </div>
   </div>
   <div class="nav-group">
     <div class="nav-group-title">Züchterkreis</div>
     <div class="nav-group-links">
-      <button onclick="show('inbox',this)">📬 Posteingang <span id="unreadCount" class="unread-dot hidden"></span></button>
+      <button onclick="show('inbox',this)">💬 DM’s <span id="unreadCount" class="unread-dot hidden"></span></button>
       <button onclick="show('breeders',this)">Züchter</button>
-      <button onclick="show('invitations',this)">Einladungen</button>
     </div>
   </div>
 </nav>
 
 <main>
-<section id="dashboard">
-<h2>Willkommen bei TABA!</h2>
-<p class="sub">Dein persönliches digitales Zuchtbuch.</p>
-<div class="stats">
-<div class="card"><div>🕊️ Tauben</div><div class="stat" id="total">0</div></div>
-<div class="card"><div>♂ Täuber</div><div class="stat" id="males">0</div></div>
-<div class="card"><div>♀ Täubinnen</div><div class="stat" id="females">0</div></div>
-<div class="card"><div>🌳 Stammbäume</div><div class="stat" id="trees">0</div></div>
-</div>
-<div class="card">
-<h3>Willkommen in deiner Zuchtverwaltung</h3>
-<p class="sub">Erfasse deine Tauben, dokumentiere ihre Abstammung und behalte deine Blutlinien im Blick.</p>
-<button class="action" onclick="showById('pigeons')">+ Erste Taube eintragen</button>
-</div>
-</section>
-
-<section id="pigeons" class="hidden">
+<section id="pigeons">
 <h2>Meine Tauben</h2>
 <p class="sub">Deine persönliche Taubendatenbank.</p>
 <div class="card">
@@ -364,7 +347,24 @@ align-items: flex-start;
 
 <div id="list"></div>
 
-<div class="card" id="sellPigeonCard">
+
+</section>
+
+
+<section id="pedigree" class="hidden">
+<h2>Stammbaum</h2>
+<p class="sub">Wähle eine Taube, um ihre Abstammung zu sehen.</p>
+<div class="card">
+<label>Taube auswählen</label>
+<select id="selected" onchange="tree()"></select>
+<div id="treeview"></div>
+</div>
+</section>
+
+<section id="sellPigeon" class="hidden">
+  <h2>🐦 Taube verkaufen</h2>
+  <p class="sub">Wähle eine Taube aus deinem Bestand und veröffentliche sie als Verkaufsanzeige im Züchterkreis. Interessenten können dich anschließend direkt kontaktieren.</p>
+  <div class="card" id="sellPigeonCard">
   <h3>🐦 Taube verkaufen</h3>
   <p class="sub">
     Wähle eine Taube aus deinem Bestand und veröffentliche sie als Verkaufsanzeige im Züchterkreis. Interessenten können dich anschließend direkt kontaktieren.
@@ -387,18 +387,6 @@ align-items: flex-start;
 </div>
 </section>
 
-
-<section id="pedigree" class="hidden">
-<h2>Stammbaum</h2>
-<p class="sub">Wähle eine Taube, um ihre Abstammung zu sehen.</p>
-<div class="card">
-<label>Taube auswählen</label>
-<select id="selected" onchange="tree()"></select>
-<div id="treeview"></div>
-</div>
-</section>
-
-
 <section id="breeders" class="hidden">
   <h2>Züchterkreis</h2>
   <p class="sub">Entdecke Mitglieder der TABA-Züchtergemeinschaft und aktuelle Tauben-Verkaufsanzeigen.</p>
@@ -410,6 +398,38 @@ align-items: flex-start;
   <div id="breedersList">
     <p class="sub">Züchter werden geladen ...</p>
   </div>
+
+  <div style="height:1px;background:#e5e9e7;margin:28px 0"></div>
+    <div class="card" id="invitationsPanel">
+<h3>✉️ Einladungen</h3>
+<p class="sub">Lade neue Züchter in die TABA-Community ein.</p>
+
+<div class="card">
+<h3>Neue Einladung erstellen</h3>
+
+<p class="sub">
+  Diese Einladung kann jeder verwenden, der den Link oder Zahlencode erhält.
+</p>
+
+<label>Maximale Nutzungen</label>
+<input id="inviteMaxUses" type="number"
+min="1" max="20" value="1">
+
+<label>Gültig bis (optional)</label>
+<input id="inviteExpiry" type="date">
+
+<button class="action" onclick="createInvitation()">
+Einladung erstellen
+</button>
+
+<p id="inviteMessage" class="sub"></p>
+</div>
+
+<h3>Meine Einladungen</h3>
+<div id="invitationList">
+<p class="sub">Einladungen werden geladen ...</p>
+</div>
+</div>
 </section>
 
   <section id="inbox" class="hidden">
@@ -447,36 +467,7 @@ align-items: flex-start;
   <p class="sub">Nachrichten werden geladen ...</p>
 </div>
 </section>
-  <section id="invitations" class="hidden">
-<h2>Einladungen</h2>
-<p class="sub">Lade neue Züchter in die TABA-Community ein.</p>
 
-<div class="card">
-<h3>Neue Einladung erstellen</h3>
-
-<p class="sub">
-  Diese Einladung kann jeder verwenden, der den Link oder Zahlencode erhält.
-</p>
-
-<label>Maximale Nutzungen</label>
-<input id="inviteMaxUses" type="number"
-min="1" max="20" value="1">
-
-<label>Gültig bis (optional)</label>
-<input id="inviteExpiry" type="date">
-
-<button class="action" onclick="createInvitation()">
-Einladung erstellen
-</button>
-
-<p id="inviteMessage" class="sub"></p>
-</div>
-
-<h3>Meine Einladungen</h3>
-<div id="invitationList">
-<p class="sub">Einladungen werden geladen ...</p>
-</div>
-</section>
 </main>
 
 <footer>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</footer>
@@ -546,9 +537,7 @@ function show(id, btn) {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
-  if (id === 'invitations') loadInvitations();
-
-  if (id === 'pigeons') {
+  if (id === 'pigeons' || id === 'sellPigeon') {
     loadPigeons();
   }
 
@@ -557,17 +546,16 @@ function show(id, btn) {
     loadConversations();
   }
 
-  if (id === 'breeders') loadBreeders();
+  if (id === 'breeders') {
+    loadBreeders();
+    loadInvitations();
+  }
 
   render();
 }
 
 function showById(id){
  const button = document.querySelector(`nav button[onclick="show('${id}',this)"]`);
- if (id === 'dashboard') {
-   show(id, document.querySelector('nav button[onclick="show(\'dashboard\',this)"]'));
-   return;
- }
  if (button) show(id, button);
 }
 
