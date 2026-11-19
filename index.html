@@ -470,6 +470,18 @@ align-items: flex-start;
 <label>Ausgangspunkt auswählen</label>
 <select id="selected" onchange="tree()"><option value="">Noch keine Taube vorhanden</option></select>
 <div id="treeview"><p class="sub">Stammbaum wird geladen ...</p></div>
+<div class="card" style="margin-top:16px">
+  <h3>Stammbaum teilen oder herunterladen</h3>
+  <p class="sub">Teile den Stammbaum mit einem freigegebenen Züchter oder erstelle eine druckbare PDF-Datei.</p>
+  <label for="pedigreeBreederSearch">Züchter suchen</label>
+  <input id="pedigreeBreederSearch" placeholder="Name oder Standort eingeben ..." oninput="filterPedigreeBreeders()">
+  <select id="pedigreeBreederSelect" style="width:100%;margin:10px 0">
+    <option value="">Züchter auswählen ...</option>
+  </select>
+  <button type="button" class="action" onclick="sharePedigreeWithBreeder()">Stammbaum per DM teilen</button>
+  <button type="button" class="secondary" onclick="downloadPedigreePDF()">📄 Als PDF drucken / speichern</button>
+  <p id="pedigreeShareMessage" class="sub"></p>
+</div>
 </div>
 </section>
 
@@ -672,6 +684,10 @@ function show(id, btn) {
   if (id === 'inbox') {
     loadNotifications();
     loadConversations();
+  }
+
+  if (id === 'pedigree') {
+    loadPedigreeBreeders();
   }
 
   if (id === 'breeders') {
@@ -1067,6 +1083,82 @@ function tree(){
  el.innerHTML=html;
 }
 
+
+let pedigreeBreederCache=[];
+async function loadPedigreeBreeders(){
+ const select=document.getElementById('pedigreeBreederSelect');
+ if(!select)return;
+ select.innerHTML='<option value="">Züchter werden geladen ...</option>';
+ const {data,error}=await supabaseClient.from('breeders')
+  .select('id, display_name, location_label').eq('status','approved')
+  .order('display_name',{ascending:true});
+ if(error){select.innerHTML='<option value="">Züchter konnten nicht geladen werden</option>';return;}
+ pedigreeBreederCache=data||[];
+ renderPedigreeBreederOptions(pedigreeBreederCache);
+}
+function renderPedigreeBreederOptions(items){
+ const select=document.getElementById('pedigreeBreederSelect');
+ if(!select)return;
+ select.innerHTML='<option value="">Züchter auswählen ...</option>'+items.map(b=>
+  `<option value="${esc(b.id)}">${esc(b.display_name)}${b.location_label?' · '+esc(b.location_label):''}</option>`
+ ).join('');
+}
+function filterPedigreeBreeders(){
+ const q=(document.getElementById('pedigreeBreederSearch')?.value||'').toLowerCase().trim();
+ renderPedigreeBreederOptions(pedigreeBreederCache.filter(b=>
+  `${b.display_name||''} ${b.location_label||''}`.toLowerCase().includes(q)
+ ));
+}
+function pedigreeTextReport(){
+ const id=document.getElementById('selected')?.value;
+ const root=pigeons.find(x=>String(x.id)===String(id));
+ if(!root){alert('Bitte zuerst eine Taube als Ausgangspunkt auswählen.');return null;}
+ const lines=[`STAMMBAUM – ${root.ring_number||root.ring||''}`,`Name: ${root.name||'—'}`,''];
+ let level=[root];
+ for(let gen=1;gen<=4;gen++){
+  lines.push(`${gen}. Generation`);
+  const next=[];
+  level.forEach((bird,i)=>{
+   if(gen===1){
+    ['father','mother'].forEach(rel=>{
+     const p=pigeons.find(x=>String(x.id)===String(bird[rel+'_id']||bird[rel]));
+     lines.push(`${rel==='father'?'Vater':'Mutter'}: ${p?(p.ring_number||p.ring||'')+' '+(p.name||''):'EMPTY'}`);
+     next.push(p||null);
+    });
+   }else{
+    ['father','mother'].forEach(rel=>{
+     const p=bird?pigeons.find(x=>String(x.id)===String(bird[rel+'_id']||bird[rel])):null;
+     lines.push(`${rel==='father'?'Vater':'Mutter'}: ${p?(p.ring_number||p.ring||'')+' '+(p.name||''):'EMPTY'}`);
+     next.push(p||null);
+    });
+   }
+  });
+  lines.push('');
+  level=next;
+ }
+ return lines.join('\n');
+}
+async function sharePedigreeWithBreeder(){
+ const breederId=document.getElementById('pedigreeBreederSelect')?.value;
+ const msg=document.getElementById('pedigreeShareMessage');
+ const report=pedigreeTextReport();
+ if(!report)return;
+ if(!breederId){msg.textContent='Bitte zuerst einen Züchter auswählen.';return;}
+ try{
+  await startConversation(breederId);
+  const input=document.getElementById('messageInput');
+  if(input){input.value='Ich teile meinen Stammbaum mit dir:\\n\\n'+report;msg.textContent='Nachricht vorbereitet. Bitte im DM-Fenster auf „Senden“ tippen.';}
+  else msg.textContent='Unterhaltung geöffnet. Bitte den Stammbaumtext dort einfügen.';
+ }catch(e){msg.textContent='Die Unterhaltung konnte nicht geöffnet werden: '+e.message;}
+}
+function downloadPedigreePDF(){
+ const report=pedigreeTextReport();
+ if(!report)return;
+ const win=window.open('','_blank');
+ if(!win){alert('Bitte Pop-ups für diese Seite erlauben und erneut versuchen.');return;}
+ win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Tauben-Stammbaum</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#173b32}h1{font-size:24px}pre{white-space:pre-wrap;font:14px/1.7 Arial,sans-serif} @media print{button{display:none}}</style></head><body><h1>Pedigree of Pigeons by TABA</h1><pre>${esc(report)}</pre><button onclick="window.print()">Als PDF speichern / Drucken</button><script>window.onload=()=>window.print()<\/script></body></html>`);
+ win.document.close();
+}
 async function createTreeRoot(){
  const ring=prompt('Ringnummer der ersten Taube:');
  if(ring===null) return;
@@ -1082,33 +1174,70 @@ async function createTreeRoot(){
 async function assignTreeSlot(parentId, relation){
  const parent=pigeons.find(x=>String(x.id)===String(parentId));
  if(!parent || !['father','mother'].includes(relation)) return;
- const choice=prompt('Taube zuordnen:\n1 = vorhandene Taube auswählen\n2 = neue Taube eintragen','1');
- if(choice===null) return;
- let birdId=null;
- if(choice.trim()==='1'){
-   const options=pigeons.filter(x=>String(x.id)!==String(parentId)).map((x,i)=>`${i+1}: ${x.ring}${x.name?' – '+x.name:''}`).join('\n');
-   if(!options){alert('Es gibt noch keine andere Taube. Bitte wähle 2, um eine neue anzulegen.');return;}
-   const number=prompt('Welche Taube? Nummer eingeben:\n'+options);
-   if(number===null) return;
-   const chosen=pigeons.filter(x=>String(x.id)!==String(parentId))[Number(number)-1];
-   if(!chosen){alert('Ungültige Auswahl.');return;}
-   birdId=chosen.id;
- } else if(choice.trim()==='2'){
-   const ring=prompt('Ringnummer der neuen Taube:');
-   if(ring===null) return;
-   if(!ring.trim()){alert('Bitte eine Ringnummer eingeben.');return;}
-   const {data:{session}}=await supabaseClient.auth.getSession();
-   if(!session?.user){alert('Bitte zuerst anmelden.');return;}
-   const {data,error}=await supabaseClient.from('pigeons').insert({owner_id:session.user.id,ring_number:ring.trim(),sex:relation==='father'?'male':'female'}).select('id').single();
-   if(error){alert('Taube konnte nicht angelegt werden: '+error.message);return;}
-   birdId=data.id;
- } else { alert('Bitte 1 oder 2 eingeben.'); return; }
- const field=relation==='father'?'father_id':'mother_id';
- const {error}=await supabaseClient.from('pigeons').update({[field]:birdId}).eq('id',parentId);
- if(error){alert('Zuordnung fehlgeschlagen: '+error.message);return;}
- await loadPigeons();
- document.getElementById('selected').value=parentId;
- tree();
+
+ const available=pigeons.filter(x=>String(x.id)!==String(parentId));
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const overlay=document.createElement('div');
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;';
+ const modal=document.createElement('div');
+ modal.style.cssText='background:var(--card,#fff);color:var(--text,#222);width:min(440px,100%);padding:22px;border-radius:16px;box-shadow:0 12px 40px #0005;';
+ const options=available.map(b=>`<option value="${esc(b.id)}">${esc(b.ring||'Ohne Ringnummer')}${b.name?' – '+esc(b.name):''}</option>`).join('');
+ modal.innerHTML=`
+  <h3 style="margin:0 0 16px">Taube zuordnen</h3>
+  <label style="display:block;margin-bottom:7px">Was möchtest du tun?</label>
+  <select id="treeAssignMode" style="width:100%;padding:12px;border-radius:9px;margin-bottom:15px">
+   <option value="existing">Vorhandene Taube auswählen</option>
+   <option value="new">Neue Taube eintragen</option>
+  </select>
+  <div id="treeExistingWrap">
+   <label style="display:block;margin-bottom:7px">Taube auswählen</label>
+   <select id="treeExistingBird" style="width:100%;padding:12px;border-radius:9px">
+    ${options||'<option value="">Noch keine andere Taube vorhanden</option>'}
+   </select>
+  </div>
+  <div id="treeNewWrap" style="display:none">
+   <label style="display:block;margin-bottom:7px">Ringnummer der neuen Taube</label>
+   <input id="treeNewRing" type="text" placeholder="Ringnummer eingeben" style="box-sizing:border-box;width:100%;padding:12px;border-radius:9px">
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+   <button type="button" id="treeAssignCancel" class="secondary">Abbrechen</button>
+   <button type="button" id="treeAssignConfirm">Weiter</button>
+  </div>`;
+ overlay.appendChild(modal);
+ document.body.appendChild(overlay);
+ const mode=modal.querySelector('#treeAssignMode');
+ const existingWrap=modal.querySelector('#treeExistingWrap');
+ const newWrap=modal.querySelector('#treeNewWrap');
+ mode.addEventListener('change',()=>{
+   existingWrap.style.display=mode.value==='existing'?'block':'none';
+   newWrap.style.display=mode.value==='new'?'block':'none';
+ });
+ const close=()=>overlay.remove();
+ modal.querySelector('#treeAssignCancel').addEventListener('click',close);
+ modal.querySelector('#treeAssignConfirm').addEventListener('click',async()=>{
+   let birdId=null;
+   if(mode.value==='existing'){
+     birdId=modal.querySelector('#treeExistingBird').value;
+     if(!birdId){alert('Bitte zuerst eine vorhandene Taube auswählen.');return;}
+   }else{
+     const ring=modal.querySelector('#treeNewRing').value.trim();
+     if(!ring){alert('Bitte eine Ringnummer eingeben.');return;}
+     const {data:{user},error:userError}=await supabaseClient.auth.getUser();
+     if(userError||!user){alert('Bitte zuerst anmelden.');return;}
+     const {data,error}=await supabaseClient.from('pigeons').insert({
+       owner_id:user.id,ring_number:ring,sex:relation==='father'?'male':'female'
+     }).select('id').single();
+     if(error){alert('Taube konnte nicht angelegt werden: '+error.message);return;}
+     birdId=data.id;
+   }
+   const field=relation==='father'?'father_id':'mother_id';
+   const {error}=await supabaseClient.from('pigeons').update({[field]:birdId}).eq('id',parentId);
+   if(error){alert('Zuordnung fehlgeschlagen: '+error.message);return;}
+   close();
+   await loadPigeons();
+   document.getElementById('selected').value=parentId;
+   tree();
+ });
 }
 
 function selectPedigreeBird(birdId) {
