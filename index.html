@@ -495,7 +495,7 @@ align-items: flex-start;
   </p>
 
   <label>Welche Taube möchtest du anbieten?</label>
-  <select id="sellPigeon">
+  <select id="sellPigeonSelect">
     <option value="">Bitte Taube auswählen</option>
   </select>
 
@@ -773,7 +773,7 @@ function esc(s){
 
 
 async function submitPigeonSale() {
-  const pigeonId = document.getElementById('sellPigeon').value;
+  const pigeonId = document.getElementById('sellPigeonSelect').value;
   const priceInput = document.getElementById('sellPrice').value.trim();
   const message = document.getElementById('sellPigeonMessage');
 
@@ -816,7 +816,7 @@ async function submitPigeonSale() {
   }
 
   message.textContent = 'Deine Verkaufsanzeige wurde veröffentlicht (' + priceLabel + ').';
-  document.getElementById('sellPigeon').value = '';
+  document.getElementById('sellPigeonSelect').value = '';
   document.getElementById('sellPrice').value = '';
   await loadPigeons();
   alert('Deine Taube ist jetzt im Züchterkreis zu sehen.');
@@ -911,7 +911,7 @@ render();
 loadSellablePigeons();
 }
 function loadSellablePigeons() {
-  const select = document.getElementById('sellPigeon');
+  const select = document.getElementById('sellPigeonSelect');
   if (!select) return;
 
   select.innerHTML = '';
