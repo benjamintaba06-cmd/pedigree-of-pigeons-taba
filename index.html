@@ -335,9 +335,15 @@ align-items: flex-start;
     Deine persönlichen Nachrichten aus der TABA-Züchtergemeinschaft.
   </p>
 
-  <div id="notificationList">
-    <p class="sub">Nachrichten werden geladen ...</p>
-  </div>
+<h3>Private Unterhaltungen</h3>
+<div id="conversationList">
+  <p class="sub">Unterhaltungen werden geladen ...</p>
+</div>
+
+<h3>Benachrichtigungen</h3>
+<div id="notificationList">
+  <p class="sub">Nachrichten werden geladen ...</p>
+</div>
 </section>
   <section id="invitations" class="hidden">
 <h2>Einladungen</h2>
@@ -442,6 +448,7 @@ function show(id,btn){
 
 if (id === 'inbox') {
   loadNotifications();
+  loadConversations();
 }
   if (id === 'breeders') {
   loadBreeders();
@@ -911,21 +918,98 @@ async function loadBreeders() {
   }
 
   list.innerHTML = data.map(breeder => `
-    <div class="card">
-      <h3>🕊️ ${esc(breeder.display_name)}</h3>
-      ${breeder.location_label
-        ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>`
-        : ''}
-      ${breeder.breeding_focus
-        ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>`
-        : ''}
-      ${breeder.bio
-        ? `<p>${esc(breeder.bio)}</p>`
-        : ''}
-    </div>
+    
+  <div class="card">
+    <h3>🕊️ ${esc(breeder.display_name)}</h3>
+    ${breeder.location_label
+      ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>`
+      : ''}
+    ${breeder.breeding_focus
+      ? `<p><strong>Zuchtinteressen:</strong> ${esc(breeder.breeding_focus)}</p>`
+      : ''}
+    ${breeder.bio
+      ? `<p>${esc(breeder.bio)}</p>`
+      : ''}
+    <button class="action"
+      onclick="startConversation('${breeder.id}')">
+      ✉️ Nachricht schreiben
+    </button>
+  </div>
   `).join('');
 }
+  async function loadConversations() {
+  const list = document.getElementById('conversationList');
 
+  list.innerHTML = '<p class="sub">Unterhaltungen werden geladen ...</p>';
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    list.innerHTML = '<p class="sub">Bitte zuerst anmelden.</p>';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('conversations')
+    .select('id, participant_one_id, participant_two_id, updated_at')
+    .or(`participant_one_id.eq.${user.id},participant_two_id.eq.${user.id}`)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('Fehler beim Laden der Unterhaltungen:', error);
+    list.innerHTML = '<p class="sub">Unterhaltungen konnten nicht geladen werden.</p>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p class="sub">Du hast noch keine privaten Unterhaltungen.</p>';
+    return;
+  }
+
+  const otherIds = data.map(conversation =>
+    conversation.participant_one_id === user.id
+      ? conversation.participant_two_id
+      : conversation.participant_one_id
+  );
+
+  const { data: breeders, error: breederError } = await supabaseClient
+    .from('breeders')
+    .select('id, display_name')
+    .in('id', otherIds);
+
+  if (breederError) {
+    console.error('Fehler beim Laden der Mitgliedsnamen:', breederError);
+    list.innerHTML = '<p class="sub">Mitgliedsnamen konnten nicht geladen werden.</p>';
+    return;
+  }
+
+  const names = {};
+  (breeders || []).forEach(breeder => {
+    names[breeder.id] = breeder.display_name;
+  });
+
+  list.innerHTML = data.map(conversation => {
+    const otherId =
+      conversation.participant_one_id === user.id
+        ? conversation.participant_two_id
+        : conversation.participant_one_id;
+
+    return `
+      <div class="card">
+        <h3>🕊️ ${esc(names[otherId] || 'TABA-Mitglied')}</h3>
+        <p class="sub">
+          Letzte Aktivität:
+          ${new Date(conversation.updated_at).toLocaleString('de-DE')}
+        </p>
+        <button class="action"
+          onclick="openConversation('${conversation.id}')">
+          Unterhaltung öffnen
+        </button>
+      </div>
+    `;
+  }).join('');
+}
 async function loadNotifications() {
   const list = document.getElementById('notificationList');
   const badge = document.getElementById('unreadCount');
