@@ -153,13 +153,11 @@ align-items: flex-start;
   font-weight: bold;
   letter-spacing: 0.4px;
 }
-
 .welcome-track {
   display: inline-flex;
   width: max-content;
-  animation: tabaWelcomeMove 35s linear infinite;
+  animation: tabaWelcomeMove 45s linear infinite;
 }
-
 .welcome-item {
   padding: 0 45px;
 }
@@ -169,9 +167,9 @@ align-items: flex-start;
     transform: translateX(-100%);
   }
   to {
-    transform: translateX(100vw);
+    transform: translateX(calc(100vw + 100%));
   }
-}  
+}
 </style>
 </head>
 <body>
@@ -403,12 +401,27 @@ const supabaseClient = window.supabase.createClient(
     return;
   }
 
-  track.innerHTML = data.map(member => `
-    <span class="welcome-item">
-      🕊️ Herzlich willkommen, ${esc(member.display_name)}!
-      Ein neues Mitglied bereichert unseren Züchterkreis.
-    </span>
-  `).join('');
+  let currentIndex = 0;
+
+  function showWelcomeMember() {
+    const member = data[currentIndex];
+
+    track.innerHTML = `
+      <span class="welcome-item">
+        🕊️ Herzlich willkommen, ${esc(member.display_name)}!
+        Ein neues Mitglied bereichert unseren Züchterkreis.
+      </span>
+    `;
+
+    currentIndex = (currentIndex + 1) % data.length;
+  }
+
+  showWelcomeMember();
+
+  if (!track.dataset.rotationReady) {
+    track.addEventListener('animationiteration', showWelcomeMember);
+    track.dataset.rotationReady = 'true';
+  }
 
   banner.classList.remove('hidden');
 }
@@ -1109,6 +1122,7 @@ async function checkLogin() {
   document.getElementById('loginOverlay').classList.add('hidden');
   await loadPigeons();
      await updateUnreadCount();
+       await loadWelcomeBanner();
 }
   }
 }
