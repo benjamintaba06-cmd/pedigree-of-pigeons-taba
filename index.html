@@ -315,7 +315,7 @@ nav button.active{background:#203d34;color:white}
 .conversation-unread{display:inline-block;width:9px;height:9px;border-radius:50%;background:#d34b43;margin-left:7px;vertical-align:middle}
 .tree-generation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
 .tree-generation-linked{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
-.tree-parent-pair{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:18px;padding-bottom:13px}\n.tree-parent-pair::before{content:'';position:absolute;left:50%;top:0;height:18px;border-left:1px solid #a58a4e}
+.tree-parent-pair{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:24px;padding-bottom:24px}\n.tree-parent-pair::before{content:'';position:absolute;left:50%;top:0;height:24px;border-left:2px solid #a58a4e}
 .tree-pair-connector{position:absolute;left:25%;right:25%;bottom:3px;height:10px;border-top:1px solid #a58a4e}
 .tree-pair-connector span{position:absolute;left:50%;top:-1px;height:10px;border-left:1px solid #a58a4e}
 .tree-slot-locked{opacity:.65;cursor:not-allowed}
@@ -1575,7 +1575,7 @@ function tree(){
    }
    html+='</div>';
  }
- html+='<p class="sub">Vater und Mutter sind als Elternpaar verbunden; der mittige Stamm kennzeichnet die Verbindung zum Kind der vorherigen Generation. Leere Felder können ergänzt werden, sobald die zugehörige Elterntaube angelegt ist.</p>';
+ html+='<p class="sub">Vater und Mutter sind über eine gemeinsame Elternlinie verbunden. Der mittige Verbindungsstamm führt zum Kind der vorherigen Generation und setzt sich für jedes Elternpaar in den folgenden Generationen fort. Leere Felder können ergänzt werden, sobald die zugehörige Elterntaube angelegt ist.</p>';
  el.innerHTML=html;
 }
 
