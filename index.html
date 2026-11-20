@@ -314,12 +314,19 @@ nav button.active{background:#203d34;color:white}
 .unread-dot.hidden{display:none!important}
 .conversation-unread{display:inline-block;width:9px;height:9px;border-radius:50%;background:#d34b43;margin-left:7px;vertical-align:middle}
 .tree-generation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}
-.tree-generation-linked{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
-.tree-parent-pair{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:24px;padding-bottom:24px}\n.tree-parent-pair::before{content:'';position:absolute;left:50%;top:0;height:24px;border-left:2px solid #a58a4e}
-.tree-pair-connector{position:absolute;left:25%;right:25%;bottom:3px;height:10px;border-top:1px solid #a58a4e}
-.tree-pair-connector span{position:absolute;left:50%;top:-1px;height:10px;border-left:1px solid #a58a4e}
+.pedigree-scroll{width:100%;overflow-x:auto;overflow-y:hidden;padding:8px 0 18px;-webkit-overflow-scrolling:touch}
+.pedigree-diagram{position:relative;min-width:1920px;padding:8px 12px 18px}
+.pedigree-connectors{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:visible}
+.pedigree-level{position:relative;z-index:1;margin:0 0 8px}
+.pedigree-grid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));align-items:start;gap:0;min-height:94px}
+.pedigree-cell{padding:0 5px;min-width:0;display:flex;justify-content:center}
+.pedigree-card{min-height:78px;max-width:100%;position:relative;z-index:2}
+.pedigree-root{width:190px;max-width:190px;grid-column:1/-1}
+.pedigree-photo{width:48px;height:48px;object-fit:cover;border-radius:9px;display:block;margin:0 auto 5px}
 .tree-slot-locked{opacity:.65;cursor:not-allowed}
-@media(max-width:600px){.tree-generation-linked{grid-template-columns:1fr}}
+.tree-generation-label{font-size:12px;color:#718078;font-weight:bold;margin:12px 0 8px}
+.pedigree-level:first-child .pedigree-grid{min-height:88px}
+
 .tree-generation .parent{font-size:12px;padding:9px 5px;overflow-wrap:anywhere}
 .tree-generation-label{font-size:12px;color:#718078;font-weight:bold;margin-top:12px}
 .tree-node-button{width:100%;border:1px solid #dce4dc;border-radius:12px;padding:10px 6px;background:#fff;color:#29443b;text-align:center;font-size:12px;cursor:pointer}
@@ -1531,52 +1538,92 @@ async function editPigeon(id) {
   alert('Taube wurde aktualisiert.');
 }
 
+function drawPedigreeConnectors(){
+ const wrap=document.querySelector('#treeview .pedigree-diagram');
+ if(!wrap) return;
+ const svg=wrap.querySelector('.pedigree-connectors');
+ if(!svg) return;
+ const bounds=wrap.getBoundingClientRect();
+ svg.setAttribute('viewBox',`0 0 ${wrap.scrollWidth} ${wrap.scrollHeight}`);
+ svg.setAttribute('width',wrap.scrollWidth);
+ svg.setAttribute('height',wrap.scrollHeight);
+ svg.innerHTML='';
+ for(let level=0;level<4;level++){
+   const parents=[...wrap.querySelectorAll(`[data-level="${level}"]`)];
+   parents.forEach((child,index)=>{
+     const a=wrap.querySelector(`[data-level="${level+1}"][data-index="${index*2}"]`);
+     const b=wrap.querySelector(`[data-level="${level+1}"][data-index="${index*2+1}"]`);
+     if(!a||!b) return;
+     const cr=child.getBoundingClientRect(), ar=a.getBoundingClientRect(), br=b.getBoundingClientRect();
+     const x1=cr.left+cr.width/2-bounds.left+wrap.scrollLeft;
+     const y1=cr.bottom-bounds.top+wrap.scrollTop;
+     const xa=ar.left+ar.width/2-bounds.left+wrap.scrollLeft;
+     const xb=br.left+br.width/2-bounds.left+wrap.scrollLeft;
+     const y2=Math.min(ar.top,br.top)-bounds.top+wrap.scrollTop;
+     const ym=y1+(y2-y1)/2;
+     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+     path.setAttribute('d',`M ${x1} ${y1} V ${ym} H ${xa} M ${x1} ${ym} H ${xb} V ${y2}`);
+     path.setAttribute('fill','none');
+     path.setAttribute('stroke','#a58a4e');
+     path.setAttribute('stroke-width','2');
+     path.setAttribute('stroke-linecap','round');
+     path.setAttribute('stroke-linejoin','round');
+     svg.appendChild(path);
+   });
+ }
+}
 function tree(){
  const id=document.getElementById('selected')?.value;
  const p=pigeons.find(x=>String(x.id)===String(id));
  const el=document.getElementById('treeview');
  if(!el) return;
  if(!p){
-   el.innerHTML=`<div class="centerbird"><div>🕊️</div><strong>Noch keine Taube</strong><div>Ausgangspunkt</div><button type="button" class="tree-node-button" onclick="createTreeRoot()">＋ Erste Taube hinzufügen</button></div>`+
-   [1,2,3,4].map((n)=>`<div class="tree-generation-label">${n}. Generation</div><div class="tree-generation">${Array.from({length:2**n},()=>`<button type="button" class="tree-node-button parent" disabled>EMPTY<br><strong>Hier erscheint eine Taube</strong></button>`).join('')}</div>`).join('');
+   el.innerHTML=`<div class="centerbird"><div>🕊️</div><strong>Noch keine Taube</strong><div>Ausgangspunkt</div><button type="button" class="tree-node-button" onclick="createTreeRoot()">＋ Erste Taube hinzufügen</button></div>`;
    return;
  }
- const generations=[[{bird:p,label:'Ausgewählte Taube'}],[
-   {bird:pigeons.find(x=>String(x.id)===String(p.father)),label:'♂ Vater',parent:p,relation:'father'},
-   {bird:pigeons.find(x=>String(x.id)===String(p.mother)),label:'♀ Mutter',parent:p,relation:'mother'}
- ]];
- for(let gen=2;gen<=4;gen++){
-   const current=[];
-   generations[gen-1].forEach(entry=>{
-     const b=entry.bird;
-     current.push({bird:b?pigeons.find(x=>String(x.id)===String(b.father)):null,label:'♂ Vater',parent:b,relation:'father'});
-     current.push({bird:b?pigeons.find(x=>String(x.id)===String(b.mother)):null,label:'♀ Mutter',parent:b,relation:'mother'});
+ const levels=[[{bird:p,root:true}]];
+ for(let level=1;level<=4;level++){
+   const entries=[];
+   levels[level-1].forEach(entry=>{
+     const bird=entry.bird;
+     entries.push({bird:bird?pigeons.find(x=>String(x.id)===String(bird.father)):null,parent:bird,relation:'father',label:'♂ Vater'});
+     entries.push({bird:bird?pigeons.find(x=>String(x.id)===String(bird.mother)):null,parent:bird,relation:'mother',label:'♀ Mutter'});
    });
-   generations.push(current);
+   levels.push(entries);
  }
- const escText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let html=`<div class="centerbird"><div>${p.photo_url?`<img src="${p.photo_url}" alt="Taubenfoto" style="width:90px;height:90px;object-fit:cover;border-radius:14px">`:'🕊️'}</div><strong>${escText(p.ring)}</strong><div>${escText(p.name||'Ausgewählte Taube')}</div></div>`;
- for(let i=1;i<generations.length;i++){
-   const entries=generations[i];
-   html+=`<div class="tree-generation-label">${i}. Generation · ${entries.length} Abstammungsplätze</div><div class="tree-generation tree-generation-linked">`;
-   for(let j=0;j<entries.length;j+=2){
-     const pair=entries.slice(j,j+2);
-     html+=`<div class="tree-parent-pair" aria-label="Elternpaar mit Verbindung zum Kind der vorherigen Generation">`;
-     pair.forEach(entry=>{
-       if(entry.bird){
-         html+=`<button type="button" class="tree-node-button" onclick="selectPedigreeBird('${entry.bird.id}')">${entry.bird.photo_url?`<img src="${entry.bird.photo_url}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:9px;display:block;margin:0 auto 5px">`:'🕊️'}${entry.label}<strong>${escText(entry.bird.ring)}</strong>${entry.bird.name?`<span>${escText(entry.bird.name)}</span>`:''}<small>Als Mittelpunkt öffnen ↗</small></button>`;
-       }else if(entry.parent){
-         html+=`<button type="button" class="tree-node-button parent" onclick="assignTreeSlot('${entry.parent.id}','${entry.relation}')">${entry.label}<br><strong>EMPTY</strong><small>＋ Taube hinzufügen</small></button>`;
-       }else{
-         html+=`<button type="button" class="tree-node-button parent tree-slot-locked" disabled>${entry.label}<br><strong>EMPTY</strong><small>Zuerst die Elterntaube eintragen</small></button>`;
-       }
-     });
-     html+=`<div class="tree-pair-connector" aria-hidden="true"><span></span></div></div>`;
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const card=(entry,level,index)=>{
+   if(entry.bird){
+     const b=entry.bird;
+     return `<button type="button" class="tree-node-button pedigree-card ${level===0?'pedigree-root':''}" data-level="${level}" data-index="${index}" onclick="selectPedigreeBird('${b.id}')">${b.photo_url?`<img src="${b.photo_url}" alt="" class="pedigree-photo">`:'🕊️'}${level?entry.label:'Ausgewählte Taube'}<strong>${esc(b.ring)}</strong>${b.name?`<span>${esc(b.name)}</span>`:''}${level?'<small>Als Mittelpunkt öffnen ↗</small>':''}</button>`;
    }
-   html+='</div>';
- }
- html+='<p class="sub">Vater und Mutter sind über eine gemeinsame Elternlinie verbunden. Der mittige Verbindungsstamm führt zum Kind der vorherigen Generation und setzt sich für jedes Elternpaar in den folgenden Generationen fort. Leere Felder können ergänzt werden, sobald die zugehörige Elterntaube angelegt ist.</p>';
+   if(entry.parent){
+     return `<button type="button" class="tree-node-button parent pedigree-card" data-level="${level}" data-index="${index}" onclick="assignTreeSlot('${entry.parent.id}','${entry.relation}')">${entry.label}<br><strong>EMPTY</strong><small>＋ Taube hinzufügen</small></button>`;
+   }
+   return `<button type="button" class="tree-node-button parent tree-slot-locked pedigree-card" data-level="${level}" data-index="${index}" disabled>${entry.label}<br><strong>EMPTY</strong><small>Zuerst die Elterntaube eintragen</small></button>`;
+ };
+ let html=`<div class="pedigree-scroll"><div class="pedigree-diagram"><svg class="pedigree-connectors" aria-hidden="true"></svg>`;
+ levels.forEach((entries,level)=>{
+   html+=`<div class="pedigree-level"><div class="tree-generation-label">${level===0?'Ausgewählte Taube':`${level}. Generation · ${entries.length} Abstammungsplätze`}</div><div class="pedigree-grid" data-level-row="${level}">`;
+   entries.forEach((entry,index)=>{
+     const span=16/entries.length;
+     html+=`<div class="pedigree-cell" style="grid-column:${index*span+1}/span ${span}">${card(entry,level,index)}</div>`;
+   });
+   html+='</div></div>';
+ });
+ html+='</div></div><p class="sub">Die Verbindungslinien zeigen für jede Taube Vater und Mutter und führen die Abstammung über alle vier Generationen fort.</p>';
  el.innerHTML=html;
+ const redraw=()=>drawPedigreeConnectors();
+ requestAnimationFrame(redraw);
+ setTimeout(redraw,120);
+ const scroll=el.querySelector('.pedigree-scroll');
+ if(scroll){
+   scroll.addEventListener('scroll',redraw,{passive:true});
+ }
+ if(typeof ResizeObserver!=='undefined'){
+   const observer=new ResizeObserver(redraw);
+   observer.observe(el);
+ }
 }
 
 let pedigreeBreederCache=[];
