@@ -23,12 +23,16 @@ header h1{font-size:23px;margin:0}
   margin: 0;
 }
 .logged-in-user {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #d6bd82;
   font-size: 13px;
   font-weight: 600;
-  margin-top: 9px;
+  margin-top: 0;
+  cursor: pointer;
 }
+.logged-in-user:focus { outline: 2px solid #d6bd82; outline-offset: 3px; border-radius: 5px; }
 .logged-in-user.hidden { display: none !important; }
 
 .main-header {
@@ -476,7 +480,8 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
       <button id="logoutButton" class="logout-button hidden" type="button"
         onclick="logoutTabaAccount()">Abmelden</button>
       <span class="account-user-separator">|</span>
-      <span id="loggedInUser" class="logged-in-user hidden"></span>
+      <span id="loggedInUser" class="logged-in-user hidden" role="button" tabindex="0"
+        onclick="toggleMemberStats()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMemberStats();}"></span>
     </div>
     <div id="roleDescription" class="role-description hidden" aria-live="polite"></div>
     <div id="memberStats" class="member-stats hidden" aria-live="polite">
@@ -774,6 +779,26 @@ Einladung erstellen
   <button type="button" class="action" data-inbox-panel="notifications" onclick="showInboxPanel('notifications',this)">
     🔔 Benachrichtigungen <span id="notificationTabDot" class="unread-dot hidden"></span>
   </button>
+  <button type="button" id="adminBroadcastButton" class="action hidden" onclick="toggleAdminBroadcast()" style="display:none">
+    📢 Benachrichtigung erstellen
+  </button>
+</div>
+<div id="adminBroadcastPanel" class="card hidden" style="display:none">
+  <h3>📢 Gemeinschaft benachrichtigen</h3>
+  <p class="sub">Sende eine Nachricht an alle freigeschalteten Mitglieder oder wähle einzelne Züchter aus.</p>
+  <label for="broadcastTitle">Betreff</label>
+  <input id="broadcastTitle" maxlength="120" placeholder="z. B. Neuigkeiten aus der Gemeinschaft">
+  <label for="broadcastMessage">Nachricht</label>
+  <textarea id="broadcastMessage" maxlength="5000" placeholder="Deine Nachricht an die Gemeinschaft ..."></textarea>
+  <label for="broadcastAudience">Empfänger</label>
+  <select id="broadcastAudience" onchange="toggleBroadcastRecipients()">
+    <option value="all">Alle freigeschalteten Mitglieder</option>
+    <option value="selected">Ausgewählte Mitglieder</option>
+  </select>
+  <div id="broadcastRecipients" class="hidden" style="display:none;max-height:220px;overflow:auto;margin:10px 0"></div>
+  <button type="button" class="action" onclick="sendAdminBroadcast()">Benachrichtigung senden</button>
+  <button type="button" class="action" onclick="toggleAdminBroadcast(false)">Abbrechen</button>
+  <p id="broadcastStatus" class="sub" aria-live="polite"></p>
 </div>
 <div id="inboxPanel-conversations" class="inbox-panel">
   <h3>Private Unterhaltungen</h3>
@@ -2629,6 +2654,81 @@ async function adminReviewSale(saleId, decision) {
   await loadNotifications();
 }
 
+async function toggleAdminBroadcast(forceOpen) {
+  const panel = document.getElementById('adminBroadcastPanel');
+  if (!panel) return;
+  const opening = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !opening);
+  panel.style.display = opening ? 'block' : 'none';
+  if (opening) await loadBroadcastRecipients();
+}
+
+async function loadBroadcastRecipients() {
+  const box = document.getElementById('broadcastRecipients');
+  if (!box) return;
+  box.innerHTML = '<p class="sub">Mitglieder werden geladen ...</p>';
+  const { data, error } = await supabaseClient.from('breeders')
+    .select('id, display_name').eq('status', 'approved').order('display_name');
+  if (error) {
+    box.innerHTML = '<p class="sub">Mitglieder konnten nicht geladen werden: ' + esc(error.message) + '</p>';
+    return;
+  }
+  const currentId = (await supabaseClient.auth.getSession()).data.session?.user?.id;
+  const recipients = (data || []).filter(member => member.id !== currentId);
+  box.innerHTML = recipients.length ? recipients.map(member => `
+    <label style="display:flex;align-items:center;gap:8px;margin:7px 0">
+      <input type="checkbox" class="broadcast-recipient" value="${member.id}" style="width:auto">
+      ${esc(member.display_name || 'TABA-Mitglied')}
+    </label>`).join('') : '<p class="sub">Keine weiteren freigeschalteten Mitglieder gefunden.</p>';
+}
+
+function toggleBroadcastRecipients() {
+  const box = document.getElementById('broadcastRecipients');
+  const selected = document.getElementById('broadcastAudience')?.value === 'selected';
+  if (box) {
+    box.classList.toggle('hidden', !selected);
+    box.style.display = selected ? 'block' : 'none';
+    if (selected && !box.dataset.loaded) loadBroadcastRecipients().then(() => { box.dataset.loaded = 'true'; });
+  }
+}
+
+async function sendAdminBroadcast() {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+  if (!user || user.id !== '16248658-5328-4c55-9818-532f3e262bde') {
+    alert('Diese Funktion ist nur für den Admin verfügbar.');
+    return;
+  }
+  const title = document.getElementById('broadcastTitle').value.trim();
+  const message = document.getElementById('broadcastMessage').value.trim();
+  const audience = document.getElementById('broadcastAudience').value;
+  if (!title || !message) { alert('Bitte Betreff und Nachricht ausfüllen.'); return; }
+  let recipientIds = [];
+  if (audience === 'all') {
+    const { data, error } = await supabaseClient.from('breeders').select('id').eq('status', 'approved').neq('id', user.id);
+    if (error) { alert('Empfängerliste konnte nicht geladen werden: ' + error.message); return; }
+    recipientIds = (data || []).map(row => row.id);
+  } else {
+    recipientIds = Array.from(document.querySelectorAll('.broadcast-recipient:checked')).map(input => input.value);
+  }
+  if (!recipientIds.length) { alert('Bitte mindestens einen Empfänger auswählen.'); return; }
+  if (!confirm(`Diese Benachrichtigung an ${recipientIds.length} Mitglied(er) senden?`)) return;
+  const status = document.getElementById('broadcastStatus');
+  status.textContent = 'Benachrichtigungen werden versendet ...';
+  const rows = recipientIds.map(recipient_id => ({
+    recipient_id, title, message, type: 'admin_broadcast'
+  }));
+  const { error } = await supabaseClient.from('notifications').insert(rows);
+  if (error) {
+    status.textContent = 'Fehler beim Senden: ' + error.message;
+    return;
+  }
+  status.textContent = `Erfolgreich an ${recipientIds.length} Mitglied(er) gesendet.`;
+  document.getElementById('broadcastTitle').value = '';
+  document.getElementById('broadcastMessage').value = '';
+  await loadNotifications();
+}
+
 async function loadNotifications() {
   const list = document.getElementById('notificationList');
   const { data: sessionData } =
@@ -2899,9 +2999,15 @@ function updateAccountRole(user) {
   if (!badge) return;
 
   if (!user) {
+    const broadcastButton = document.getElementById('adminBroadcastButton');
+    if (broadcastButton) { broadcastButton.classList.add('hidden'); broadcastButton.style.display = 'none'; }
+    const broadcastPanel = document.getElementById('adminBroadcastPanel');
+    if (broadcastPanel) { broadcastPanel.classList.add('hidden'); broadcastPanel.style.display = 'none'; }
     if (loggedInUser) {
       loggedInUser.textContent = '';
       loggedInUser.classList.add('hidden');
+      loggedInUser.removeAttribute('data-role');
+      loggedInUser.removeAttribute('aria-label');
     }
     badge.textContent = '';
     badge.removeAttribute('data-tooltip');
@@ -2924,12 +3030,22 @@ function updateAccountRole(user) {
   }
 
   const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  const broadcastButton = document.getElementById('adminBroadcastButton');
+  if (broadcastButton) { broadcastButton.classList.toggle('hidden', !isAdmin); broadcastButton.style.display = isAdmin ? 'inline-block' : 'none'; }
+  const roleIcon = isAdmin ? '👑' : '🕊️';
   if (loggedInUser) {
-    loggedInUser.textContent = (user.email || 'Angemeldet');
+    const accountName = user.email || 'Angemeldet';
+    loggedInUser.textContent = roleIcon + ' ' + accountName;
+    loggedInUser.dataset.role = isAdmin ? 'admin' : 'member';
+    loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + accountName + '. Mitgliederstatistik anzeigen');
+    loggedInUser.title = 'Mitgliederstatistik anzeigen';
     loggedInUser.classList.remove('hidden');
     supabaseClient.from('breeders').select('display_name').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
-        if (data && data.display_name) loggedInUser.textContent = data.display_name;
+        if (data && data.display_name) {
+          loggedInUser.textContent = roleIcon + ' ' + data.display_name;
+          loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + data.display_name + '. Mitgliederstatistik anzeigen');
+        }
       });
   }
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
@@ -2941,11 +3057,10 @@ function updateAccountRole(user) {
   badge.classList.remove('hidden');
 
   if (mark) {
-    mark.textContent = isAdmin ? '👑' : '🕊️';
-    mark.dataset.role = isAdmin ? 'admin' : 'member';
-    mark.dataset.tooltip = 'Dein Beitrag zur Gemeinschaft wird geladen …';
-    mark.setAttribute('aria-label', 'Deine Beiträge zur Gemeinschaft');
-    mark.classList.remove('hidden');
+    mark.textContent = '';
+    mark.classList.add('hidden');
+    mark.removeAttribute('data-role');
+    mark.removeAttribute('data-tooltip');
   }
   if (logoutButton) logoutButton.classList.remove('hidden');
   const stats = document.getElementById('memberStats');
@@ -2956,11 +3071,11 @@ function updateAccountRole(user) {
 
 function toggleMemberStats() {
   const stats = document.getElementById('memberStats');
-  const mark = document.getElementById('logoRoleMark');
-  if (!stats || !mark || mark.classList.contains('hidden')) return;
+  const userLabel = document.getElementById('loggedInUser');
+  if (!stats || !userLabel || userLabel.classList.contains('hidden')) return;
   const willOpen = stats.classList.contains('hidden');
   stats.classList.toggle('hidden', !willOpen);
-  mark.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  userLabel.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
 }
 
 async function loadMemberStats(userId) {
