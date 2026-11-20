@@ -3312,6 +3312,7 @@ async function loadMemberStats(userId) {
 async function logoutTabaAccount() {
   if (!confirm('Möchtest du dich wirklich abmelden?')) return;
   stopIdleLogout();
+  localStorage.removeItem(IDLE_LAST_ACTIVITY_KEY);
   const { error } = await supabaseClient.auth.signOut();
   if (error) {
     alert('Abmeldung fehlgeschlagen: ' + error.message);
@@ -3370,6 +3371,7 @@ loginForm.addEventListener('submit', async function(event) {
   const allowed = await verifyTabaAccess(data.user);
 
   if (allowed) {
+    localStorage.setItem(IDLE_LAST_ACTIVITY_KEY, String(Date.now()));
     updateAccountRole(data.user);
     document.getElementById('loginOverlay').classList.add('hidden');
     startIdleLogout();
@@ -3379,7 +3381,9 @@ loginForm.addEventListener('submit', async function(event) {
   }
 });
 
-// Automatische Abmeldung nach 10 Minuten ohne Nutzeraktivität.
+// Automatische Abmeldung nach 5 Minuten ohne Nutzeraktivität.
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const IDLE_LAST_ACTIVITY_KEY = 'taba_last_activity_at';
 let idleLogoutTimer = null;
 let idleLogoutStarted = false;
 
@@ -3389,38 +3393,67 @@ function stopIdleLogout() {
   idleLogoutStarted = false;
 }
 
+function showIdleLogoutMessage() {
+  updateAccountRole(null);
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.classList.remove('hidden');
+  const message = document.getElementById('loginMessage');
+  if (message) {
+    message.textContent = 'Du wurdest wegen 5 Minuten Inaktivität automatisch abgemeldet. Bitte melde dich erneut an.';
+    message.style.color = '#b33b32';
+  }
+}
+
+async function performIdleLogout() {
+  stopIdleLogout();
+  localStorage.removeItem(IDLE_LAST_ACTIVITY_KEY);
+  await supabaseClient.auth.signOut();
+  showIdleLogoutMessage();
+}
+
 function startIdleLogout() {
   stopIdleLogout();
   idleLogoutStarted = true;
 
   const resetIdleTimer = () => {
     if (!idleLogoutStarted) return;
+    const now = Date.now();
+    localStorage.setItem(IDLE_LAST_ACTIVITY_KEY, String(now));
     if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
-    idleLogoutTimer = setTimeout(async () => {
-      idleLogoutStarted = false;
-      idleLogoutTimer = null;
-      await supabaseClient.auth.signOut();
-      updateAccountRole(null);
-      const overlay = document.getElementById('loginOverlay');
-      if (overlay) overlay.classList.remove('hidden');
-      const message = document.getElementById('loginMessage');
-      if (message) {
-        message.textContent = 'Du wurdest wegen 10 Minuten Inaktivität automatisch abgemeldet. Bitte melde dich erneut an.';
-        message.style.color = '#b33b32';
-      }
-    }, 10 * 60 * 1000);
+    idleLogoutTimer = setTimeout(performIdleLogout, IDLE_TIMEOUT_MS);
+  };
+
+  const checkElapsedInactivity = () => {
+    if (!idleLogoutStarted) return;
+    const lastActivity = Number(localStorage.getItem(IDLE_LAST_ACTIVITY_KEY) || 0);
+    if (!lastActivity || Date.now() - lastActivity >= IDLE_TIMEOUT_MS) {
+      performIdleLogout();
+      return;
+    }
+    if (idleLogoutTimer) clearTimeout(idleLogoutTimer);
+    idleLogoutTimer = setTimeout(performIdleLogout, IDLE_TIMEOUT_MS - (Date.now() - lastActivity));
   };
 
   ['pointerdown', 'keydown', 'touchstart', 'mousemove', 'scroll'].forEach(eventName => {
     document.addEventListener(eventName, resetIdleTimer, { passive: true });
   });
-  resetIdleTimer();
+  window.addEventListener('focus', checkElapsedInactivity);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkElapsedInactivity();
+  });
+  checkElapsedInactivity();
 }
-
 async function checkLogin() {
   const { data } = await supabaseClient.auth.getSession();
 
   if (data.session) {
+    const lastActivity = Number(localStorage.getItem(IDLE_LAST_ACTIVITY_KEY) || 0);
+    if (!lastActivity || Date.now() - lastActivity >= IDLE_TIMEOUT_MS) {
+      await supabaseClient.auth.signOut();
+      localStorage.removeItem(IDLE_LAST_ACTIVITY_KEY);
+      showIdleLogoutMessage();
+      return;
+    }
     const allowed = await verifyTabaAccess(data.session.user);
 
    if (allowed) {
