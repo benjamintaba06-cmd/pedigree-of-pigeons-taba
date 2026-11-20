@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TABA · Admin-Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--green:#183f34;--green2:#245b49;--gold:#b99a59;--ink:#1d2a25;--muted:#718078;--paper:#f5f6f2;--line:#e2e7e1;--white:#fff;--red:#a34238}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:linear-gradient(115deg,#16392f,#285c49);color:#fff;padding:26px max(22px,calc((100vw - 1180px)/2));border-bottom:3px solid var(--gold)}
+.brand{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#e2d3ae}.headrow{display:flex;justify-content:space-between;align-items:center;gap:16px}.headrow h1{margin:5px 0 0;font-size:clamp(24px,4vw,34px);font-weight:650}.headrow p{margin:3px 0;color:#d7e2dc}
+main{max-width:1180px;margin:26px auto;padding:0 20px 50px}.panel{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 30px #1b3a2d0a;margin-bottom:18px}
+h2{font-size:18px;margin:0 0 14px;color:var(--green)}.muted{color:var(--muted)}.small{font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.stat{background:#f8faf7;border:1px solid var(--line);padding:16px;border-radius:13px}.stat strong{display:block;font-size:28px;color:var(--green)}
+label{display:block;font-size:13px;font-weight:650;margin:0 0 6px}input{width:100%;border:1px solid #d6ded7;border-radius:10px;padding:12px 13px;font:inherit;background:#fff;color:var(--ink)}input:focus{outline:2px solid #b99a5960;border-color:var(--gold)}
+button{border:0;border-radius:10px;padding:11px 15px;font:inherit;font-weight:650;cursor:pointer;background:var(--green);color:#fff}button:hover{background:var(--green2)}button.secondary{background:#edf2ee;color:var(--green)}button.danger{background:#fff0ee;color:var(--red)}button:disabled{opacity:.5;cursor:wait}
+.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.field{flex:1;min-width:220px}.hidden{display:none!important}.notice{padding:12px 14px;border-radius:10px;margin:12px 0;background:#eef4ef;color:var(--green)}.notice.err{background:#fff0ee;color:var(--red)}
+.codebox{font:700 24px ui-monospace,monospace;letter-spacing:.08em;color:var(--green);background:#f6f4ed;border:1px dashed var(--gold);border-radius:12px;padding:14px;text-align:center;margin:10px 0}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}td .sub{display:block;font-size:12px;color:var(--muted)}.pill{display:inline-block;padding:4px 9px;border-radius:99px;font-size:12px;font-weight:700;background:#eef2ee;color:var(--green)}.pill.pending{background:#fff5df;color:#876a25}.pill.suspended{background:#fff0ee;color:var(--red)}.actions{display:flex;gap:6px;flex-wrap:wrap}.actions button{padding:7px 10px;font-size:12px}
+#login{max-width:460px;margin:48px auto}footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.headrow{align-items:flex-start;flex-direction:column}.tablewrap{overflow:auto}table{min-width:760px}.panel{padding:17px}}
+</style>
+</head>
+<body>
+<header><div class="headrow"><div><div class="brand">Pedigree of Pigeons · by TABA</div><h1>Administration</h1><p>Mitglieder, Zugänge und Einladungen verwalten</p></div><button id="logout" class="secondary hidden">Abmelden</button></div></header>
+<main>
+<section id="login" class="panel">
+<h2>Admin-Anmeldung</h2><p class="muted">Melde dich mit deinem bestehenden TABA-Administratorkonto an.</p>
+<div style="margin:14px 0"><label for="email">E-Mail</label><input id="email" type="email" autocomplete="username" value="benjamintaba.hinterlaenderhof@gmail.com"></div>
+<div style="margin:14px 0"><label for="password">Passwort</label><input id="password" type="password" autocomplete="current-password"></div>
+<button id="loginBtn">Sicher anmelden</button>
+<button id="forgotBtn" type="button" class="secondary" style="margin-left:8px">Passwort vergessen?</button>
+<div id="loginMsg" class="notice hidden"></div>
+</section>
+<div id="app" class="hidden">
+<div id="globalMsg" class="notice hidden"></div>
+<section class="grid">
+<div class="stat"><span class="muted small">Mitglieder insgesamt</span><strong id="total">–</strong></div>
+<div class="stat"><span class="muted small">Freigeschaltet</span><strong id="approved">–</strong></div>
+<div class="stat"><span class="muted small">Wartend / gesperrt</span><strong id="pending">–</strong></div>
+</section>
+<section class="panel" style="margin-top:18px">
+<h2>Einladungscode erstellen</h2><p class="muted">Jeder Code ist einmalig und exakt 15 Minuten gültig. Optional kann er an eine E-Mail-Adresse gebunden werden.</p>
+<div class="row"><div class="field"><label for="inviteEmail">E-Mail-Bindung (optional)</label><input id="inviteEmail" type="email" placeholder="neuer.zuechter@example.com"></div><button id="createInvite">Code erstellen</button></div>
+<div id="inviteResult" class="hidden"><div class="codebox" id="inviteCode"></div><div class="row"><span id="inviteExpiry" class="muted small"></span><button class="secondary" id="copyCode">Code kopieren</button></div></div>
+</section>
+<section class="panel">
+<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin-bottom:3px">Mitgliederverwaltung</h2><span class="muted small">Freigabe und Sperrung von Züchterkonten</span></div><button class="secondary" id="refresh">Aktualisieren</button></div>
+<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Mitglied</th><th>E-Mail</th><th>Status</th><th>Registriert</th><th>Aktionen</th></tr></thead><tbody id="members"><tr><td colspan="5" class="muted">Noch keine Daten geladen.</td></tr></tbody></table></div>
+</section>
+</div>
+</main><footer>TABA · Geschützter Administrationsbereich</footer>
+<script>
+const SUPABASE_URL="https://zntuhivibdibocuarewa.supabase.co";
+const SUPABASE_KEY="sb_publishable_ZN7AZVgXHek1T7dGUFMU_Q_7UUKXo12";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let members=[];
+function msg(id,text,error=false){const el=$(id);el.textContent=text;el.classList.remove("hidden","err");if(error)el.classList.add("err")}
+function hide(id){$(id).classList.add("hidden")}
+async function callAdmin(action,method="GET",body={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error("Bitte erneut anmelden.");const res=await fetch(SUPABASE_URL+"/functions/v1/taba-admin?action="+encodeURIComponent(action),{method,headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY},body:method==="GET"?undefined:JSON.stringify(body)});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||"Anfrage fehlgeschlagen.");return data}
+function date(v){return v?new Date(v).toLocaleString("de-DE"):"–"}
+function statusPill(s){const label={approved:"Freigeschaltet",pending:"Wartet auf Freigabe",suspended:"Gesperrt"}[s]||s;return `<span class="pill ${s}">${label}</span>`}
+function render(){const approved=members.filter(x=>x.status==="approved").length;const waiting=members.length-approved;$("total").textContent=members.length;$("approved").textContent=approved;$("pending").textContent=waiting;
+$("members").innerHTML=members.map(m=>`<tr><td><strong>${esc(m.display_name||"Ohne Namen")}</strong><span class="sub">${esc(m.loft_name||"")}</span></td><td>${esc(m.email||"–")}</td><td>${m.is_banned?'<span class="pill suspended">Kontozugang gesperrt</span>':statusPill(m.status)}</td><td>${date(m.created_at)}</td><td><div class="actions">${m.is_banned?`<button data-action="unban" data-id="${m.id}">Entsperren</button>`:(m.status!=="approved"?`<button data-action="approve" data-id="${m.id}">Freigeben</button>`:`<button class="secondary" data-action="pending" data-id="${m.id}">Freigabe entziehen</button>`)}${!m.is_banned?`<button class="danger" data-action="ban" data-id="${m.id}">Sperren</button>`:""}</div></td></tr>`).join("")||'<tr><td colspan="5" class="muted">Keine Mitglieder gefunden.</td></tr>'}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function load(){ $("members").innerHTML='<tr><td colspan="5">Lade Mitglieder …</td></tr>';const d=await callAdmin("members");members=d.members||[];render()}
+async function showApp(){const {data:{session}}=await sb.auth.getSession();if(!session){$("login").classList.remove("hidden");$("app").classList.add("hidden");$("logout").classList.add("hidden");return}
+try{const {data:{user}}=await sb.auth.getUser();if(user?.app_metadata?.role!=="admin")throw new Error("Dieses Konto hat keine Admin-Rolle im aktuellen Sitzungstoken. Bitte abmelden und neu anmelden.");$("login").classList.add("hidden");$("app").classList.remove("hidden");$("logout").classList.remove("hidden");await load()}catch(e){$("app").classList.add("hidden");$("login").classList.remove("hidden");$("logout").classList.add("hidden");msg("loginMsg",e.message,true)}}
+$("loginBtn").onclick=async()=>{hide("loginMsg");$("loginBtn").disabled=true;try{const {error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)throw error;await showApp()}catch(e){msg("loginMsg",e.message,true)}finally{$("loginBtn").disabled=false}};
+$("forgotBtn").onclick=async()=>{hide("loginMsg");const email=$("email").value.trim();if(!email){msg("loginMsg","Bitte zuerst deine E-Mail-Adresse eingeben.",true);return} $("forgotBtn").disabled=true;try{const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:"https://pedigree-of-pigeons.com/reset-password.html"});if(error)throw error;msg("loginMsg","Wenn für diese Adresse ein Konto besteht, wurde eine Passwort-Mail angefordert. Bitte auch den Spam-Ordner prüfen.")}catch(e){msg("loginMsg",e.message,true)}finally{$("forgotBtn").disabled=false}};
+$("logout").onclick=async()=>{await sb.auth.signOut();showApp()};
+$("refresh").onclick=async()=>{try{await load();msg("globalMsg","Mitgliederliste aktualisiert.")}catch(e){msg("globalMsg",e.message,true)}};
+$("createInvite").onclick=async()=>{const b=$("createInvite");b.disabled=true;hide("inviteResult");try{const d=await callAdmin("create_invite","POST",{email:$("inviteEmail").value.trim()});$("inviteCode").textContent=d.code;$("inviteExpiry").textContent="Gültig bis: "+date(d.expires_at);$("inviteResult").classList.remove("hidden");msg("globalMsg","Einladungscode wurde erstellt.")}catch(e){msg("globalMsg",e.message,true)}finally{b.disabled=false}};
+$("copyCode").onclick=async()=>{await navigator.clipboard.writeText($("inviteCode").textContent);$("copyCode").textContent="Kopiert ✓";setTimeout(()=>$("copyCode").textContent="Code kopieren",1500)};
+$("members").onclick=async ev=>{const b=ev.target.closest("button[data-action]");if(!b)return;const id=b.dataset.id,act=b.dataset.action;b.disabled=true;try{if(act==="approve"||act==="pending"){await callAdmin("member_status","PATCH",{user_id:id,status:act==="approve"?"approved":"pending"})}else if(act==="ban"){if(!confirm("Dieses Mitglied wirklich sperren?"))return;await callAdmin("ban_member","POST",{user_id:id})}else if(act==="unban"){if(!confirm("Kontozugang entsperren? Das Mitglied wird anschließend wieder auf Freigabe wartend gesetzt."))return;await callAdmin("unban_member","POST",{user_id:id})}await load();msg("globalMsg","Änderung gespeichert.")}catch(e){msg("globalMsg",e.message,true)}finally{b.disabled=false}};
+sb.auth.onAuthStateChange(()=>setTimeout(showApp,0));showApp();
+</script>
+</body></html>
