@@ -445,7 +445,7 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 </div>
 
    
-<p>Noch kein Konto?</p>
+
 
 <div class="login-link" onclick="toggleRegistration()">
   Mit Einladung registrieren
@@ -1034,7 +1034,7 @@ async function respondToSale(saleId, response) {
   await loadNotifications();
 }
 
-  async async function sellPigeonFromInventory(pigeonId) {
+  async function sellPigeonFromInventory(pigeonId) {
   const pigeon = pigeons.find(p => String(p.id) === String(pigeonId));
   if (!pigeon || pigeon.pigeon_status !== 'in_loft') { alert('Diese Taube ist nicht mehr verfügbar.'); return; }
   const { data: existing, error: lookupError } = await supabaseClient.from('sales_listings').select('id').eq('pigeon_id', pigeonId).eq('status', 'active').limit(1);
@@ -1062,7 +1062,7 @@ async function respondToSale(saleId, response) {
   await loadPigeons();
 }
 
-function loadPigeons() {
+async function loadPigeons() {
   const { data: authData, error: authError } = await supabaseClient.auth.getUser();
   const user = authData?.user;
   if (authError) console.warn('Authentifizierung beim Laden:', authError.message);
@@ -1076,7 +1076,7 @@ function loadPigeons() {
 
 const { data, error } = await supabaseClient
   .from('pigeons')
-  .select('id, ring_number, name, sex, color, hatch_date, notes, father_id, mother_id, pigeon_status, photo_path')
+  .select('id, ring_number, name, breed, sex, color, hatch_date, notes, father_id, mother_id, pigeon_status, photo_path')
   .eq('owner_id', user.id)
   .order('created_at', { ascending: false });
 
@@ -1091,6 +1091,7 @@ pigeons = (data || []).map(p => ({
   id: p.id,
   ring: p.ring_number,
   name: p.name || '',
+  breed: p.breed || '',
   sex: p.sex,
   color: p.color || '',
   birth: p.hatch_date || '',
@@ -1109,58 +1110,6 @@ for (const bird of pigeons) {
   }
 }
 render();
-loadSellablePigeons();
-}
-function loadSellablePigeons() {
-  const select = document.getElementById('sellPigeonSelect');
-  if (!select) return;
-
-  select.innerHTML = '';
-
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Bitte Taube auswählen';
-  select.appendChild(placeholder);
-
-  const available = pigeons.filter(
-    p => p.pigeon_status === 'in_loft'
-  );
-
-  available.forEach(p => {
-    const option = document.createElement('option');
-    option.value = p.id;
-    option.textContent = p.ring + (p.name ? ' – ' + p.name : '');
-    select.appendChild(option);
-  });
-} 
-
-function render(){
- const totalEl = document.getElementById('total');
- const malesEl = document.getElementById('males');
- const femalesEl = document.getElementById('females');
- const treesEl = document.getElementById('trees');
- if (totalEl) totalEl.textContent = pigeons.length;
- if (malesEl) malesEl.textContent = pigeons.filter(p=>p.sex==='male').length;
- if (femalesEl) femalesEl.textContent = pigeons.filter(p=>p.sex==='female').length;
- if (treesEl) treesEl.textContent = pigeons.filter(p=>p.father||p.mother).length;
- let q=(document.getElementById('search')?.value||'').toLowerCase();
- document.getElementById('list').innerHTML=pigeons.filter(p=>(p.ring||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q)).map(p=>`
- <div class="card pigeon">
- <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
- <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>
-  ${esc(p.name)} · ${esc(p.breed)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}
-  ${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b;">VERKAUFT</strong>' : ''}
-</small></div>
- ${p.pigeon_status === 'in_loft' ? `<button class="action" style="padding:8px 10px;font-size:13px" onclick="sellPigeonFromInventory('${p.id}')">🐦 Verkaufen</button>` : ''}
- <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button><button onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
-<button onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
- </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
- let sel=document.getElementById('selected');
- let old=sel.value;
- sel.innerHTML='<option value="">Bitte Taube auswählen</option>'+pigeons.map(p=>`<option value="${p.id}">${esc(p.ring)}${p.name ? ' – '+esc(p.name) : ''}</option>`).join('');
- if(pigeons.some(p=>String(p.id)===old)) sel.value=old;
- else if(pigeons.length) sel.value=pigeons[0].id;
- tree();
 }
 async function removePigeon(id) {
   if (!confirm('Diese Taube wirklich löschen?')) {
