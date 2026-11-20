@@ -23,6 +23,7 @@ header h1{font-size:23px;margin:0}
   margin: 0;
 }
 .logged-in-user {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -33,6 +34,30 @@ header h1{font-size:23px;margin:0}
   cursor: pointer;
 }
 .logged-in-user:focus { outline: 2px solid #d6bd82; outline-offset: 3px; border-radius: 5px; }
+.logged-in-user::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 9px);
+  z-index: 30;
+  width: min(340px, 82vw);
+  padding: 10px 12px;
+  border: 1px solid #a58a4e;
+  border-radius: 8px;
+  background: #142e29;
+  color: #fff;
+  font: 12px/1.5 Arial, sans-serif;
+  font-weight: normal;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 4px 14px #0004;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+/* Statistik wird ausschließlich per Klick geöffnet. */
 .logged-in-user.hidden { display: none !important; }
 
 .main-header {
@@ -119,7 +144,7 @@ header p {
   transition: opacity .15s ease;
 }
 .account-role:hover::after,
-.account-role:focus::after { opacity: 1; visibility: visible; }
+.account-role:focus::after { opacity: 0; visibility: hidden; }
 
 .developer-credit {
   margin-top: 15px;
@@ -235,13 +260,9 @@ header p {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  justify-content: center;
-  gap: 9px;
+  display: block;
   margin: 0;
-  padding: 42px 18px 18px;
+  padding: 42px 20px 18px;
   min-width: 260px;
   border: 1px solid rgba(255,255,255,.22);
   border-radius: 16px;
@@ -261,27 +282,18 @@ header p {
   cursor: pointer;
 }
 .member-stat {
-  min-width: 72px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 7px 10px;
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 10px;
-  background: rgba(255,255,255,.09);
+  display: block;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.18);
   color: #fff;
-  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
 }
-.member-stat span { font-size: 17px; line-height: 1.2; }
-.member-stat strong { font-size: 18px; line-height: 1.2; }
-.member-stat small { font-size: 10px; opacity: .82; }
-@media (max-width: 600px) {
-  .member-stats { gap: 6px; }
-  .member-stat { min-width: 60px; padding: 6px 8px; }
-}
-
+.member-stat span { margin-right: 7px; }
+.member-stat strong { font-size: 15px; }
+.member-stat small { margin-left: 5px; font-size: 13px; opacity: .9; }
 @media (max-width: 500px) {
   .company-logo {
     width: 85px;
@@ -476,7 +488,7 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
     </div>
     <div class="brand">BREEDER PLATFORM · Developed by BENJAMIN TABA · HINTERLÄNDER HOF</div>
     <div class="account-actions">
-      <div id="accountRole" class="account-role hidden"></div>
+      <div id="accountRole" class="account-role hidden" role="button" tabindex="0" aria-expanded="false" onclick="toggleRoleDescription()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRoleDescription();}"></div>
       <button id="logoutButton" class="logout-button hidden" type="button"
         onclick="logoutTabaAccount()">Abmelden</button>
       <span class="account-user-separator">|</span>
@@ -938,6 +950,15 @@ function showInboxPanel(name, button){
   if(panel) panel.classList.remove('hidden');
   document.querySelectorAll('.inbox-subnav button').forEach(btn=>btn.classList.remove('active'));
   if(button) button.classList.add('active');
+
+  // Das Admin-Formular gehört nicht dauerhaft zu einem der beiden Posteingänge.
+  // Beim Wechsel zwischen privaten Chats und allgemeinen Benachrichtigungen wird es geschlossen.
+  const broadcastPanel = document.getElementById('adminBroadcastPanel');
+  if (broadcastPanel) {
+    broadcastPanel.classList.add('hidden');
+    broadcastPanel.style.display = 'none';
+  }
+
   if(name==='conversations') loadConversations();
   if(name==='notifications') loadNotifications();
 }
@@ -2657,6 +2678,14 @@ async function adminReviewSale(saleId, decision) {
 async function toggleAdminBroadcast(forceOpen) {
   const panel = document.getElementById('adminBroadcastPanel');
   if (!panel) return;
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+  const isAdmin = user && user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  if (!isAdmin) {
+    panel.classList.add('hidden');
+    panel.style.display = 'none';
+    return;
+  }
   const opening = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('hidden');
   panel.classList.toggle('hidden', !opening);
   panel.style.display = opening ? 'block' : 'none';
@@ -3008,6 +3037,7 @@ function updateAccountRole(user) {
       loggedInUser.classList.add('hidden');
       loggedInUser.removeAttribute('data-role');
       loggedInUser.removeAttribute('aria-label');
+      loggedInUser.removeAttribute('data-tooltip');
     }
     badge.textContent = '';
     badge.removeAttribute('data-tooltip');
@@ -3016,6 +3046,7 @@ function updateAccountRole(user) {
       roleDescription.textContent = '';
       roleDescription.classList.add('hidden');
     }
+    badge.setAttribute('aria-expanded', 'false');
     if (mark) {
       mark.textContent = '';
       mark.classList.add('hidden');
@@ -3038,7 +3069,8 @@ function updateAccountRole(user) {
     loggedInUser.textContent = roleIcon + ' ' + accountName;
     loggedInUser.dataset.role = isAdmin ? 'admin' : 'member';
     loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + accountName + '. Mitgliederstatistik anzeigen');
-    loggedInUser.title = 'Mitgliederstatistik anzeigen';
+    loggedInUser.removeAttribute('title');
+    loggedInUser.removeAttribute('data-tooltip');
     loggedInUser.classList.remove('hidden');
     supabaseClient.from('breeders').select('display_name').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
@@ -3049,11 +3081,13 @@ function updateAccountRole(user) {
       });
   }
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
-  badge.dataset.tooltip = isAdmin
+  const roleText = isAdmin
     ? 'Als Admin betreust du die Plattform: Du prüfst Züchterfreigaben und Verkaufsentscheidungen, achtest auf faire Abläufe und hilfst, dass die Gemeinschaft vertrauenswürdig und gut organisiert bleibt.'
     : 'Als Member trägst du durch gepflegte Taubenprofile und Stammbäume, ehrliche Angebote und Beiträge sowie den Austausch mit anderen Züchtern zu einer hilfreichen und vertrauensvollen Gemeinschaft bei.';
-  badge.setAttribute('tabindex', '0');
-  badge.setAttribute('aria-label', badge.textContent + '. Hinweis: ' + badge.dataset.tooltip);
+  badge.removeAttribute('data-tooltip');
+  badge.setAttribute('aria-label', badge.textContent + '. Rolleninformation anzeigen.');
+  if (roleDescription) roleDescription.textContent = roleText;
+  badge.setAttribute('aria-expanded', 'false');
   badge.classList.remove('hidden');
 
   if (mark) {
@@ -3069,11 +3103,26 @@ function updateAccountRole(user) {
   loadMemberStats(user.id);
 }
 
+function toggleRoleDescription() {
+  const description = document.getElementById('roleDescription');
+  const badge = document.getElementById('accountRole');
+  const stats = document.getElementById('memberStats');
+  if (!description || !badge || badge.classList.contains('hidden')) return;
+  if (stats) stats.classList.add('hidden');
+  const willOpen = description.classList.contains('hidden');
+  description.classList.toggle('hidden', !willOpen);
+  badge.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+}
+
 function toggleMemberStats() {
   const stats = document.getElementById('memberStats');
   const userLabel = document.getElementById('loggedInUser');
   if (!stats || !userLabel || userLabel.classList.contains('hidden')) return;
   const willOpen = stats.classList.contains('hidden');
+  const roleDescription = document.getElementById('roleDescription');
+  const roleBadge = document.getElementById('accountRole');
+  if (roleDescription) roleDescription.classList.add('hidden');
+  if (roleBadge) roleBadge.setAttribute('aria-expanded', 'false');
   stats.classList.toggle('hidden', !willOpen);
   userLabel.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
 }
@@ -3104,6 +3153,14 @@ async function loadMemberStats(userId) {
   setCount('statPosts', posts.error ? 0 : posts.count);
   setCount('statSales', sales.error ? 0 : sales.count);
   setCount('statPigeons', pigeonsCount.error ? 0 : pigeonsCount.count);
+
+  const postCountText = posts.error ? '–' : Number(posts.count || 0).toLocaleString('de-DE');
+  const saleCountText = sales.error ? '–' : Number(sales.count || 0).toLocaleString('de-DE');
+  const pigeonCountText = pigeonsCount.error ? '–' : Number(pigeonsCount.count || 0).toLocaleString('de-DE');
+  const userLabelForStats = document.getElementById('loggedInUser');
+  if (userLabelForStats) {
+    userLabelForStats.setAttribute('aria-label', userLabelForStats.textContent + '. Mitgliederstatistik durch Anklicken anzeigen.');
+  }
 
   const contributionMark = document.getElementById('logoRoleMark');
   if (contributionMark) {
