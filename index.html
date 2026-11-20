@@ -389,6 +389,13 @@ align-items: flex-start;
   margin-top: 8px;
 }
 
+.login-box .contact-close {
+  width: auto !important;
+  margin: 0 !important;
+  min-width: 0;
+  z-index: 2;
+}
+
 .login-logo {
   color: #a58a4e;
   font-size: 12px;
@@ -859,8 +866,9 @@ Einladung erstellen
 <footer>
   <button type="button" class="login-link" style="border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;text-decoration:underline" onclick="openContactModal()">Kontakt</button>
   <div id="contactOverlay" class="login-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle" onclick="if(event.target===this) closeContactModal()">
-    <div class="login-box" style="max-width:560px;text-align:left;position:relative;margin:auto">
-      <button type="button" class="action" style="position:absolute;right:14px;top:14px;padding:6px 10px" onclick="closeContactModal()" aria-label="Kontakt schließen">✕</button>
+    <div class="contact-modal-shell" style="width:100%;max-width:370px;margin:auto">
+      <button type="button" class="action contact-close" style="display:block;width:100%;margin:0 0 0;padding:7px 12px;line-height:1.2;border-radius:12px 12px 0 0;background:#203d34;color:#fff" onclick="closeContactModal()" aria-label="Kontakt schließen">✕</button>
+      <div class="login-box" style="max-width:370px;text-align:left;position:relative;margin:0;padding:22px 24px;border-radius:0 0 18px 18px">
       <h2 id="contactModalTitle">✉️ Kontakt</h2>
       <p class="sub">Du hast Fragen, Anregungen oder möchtest ein Problem melden? Schreib uns gerne.</p>
       <section id="footerContact" style="text-align:left">
@@ -882,6 +890,7 @@ Einladung erstellen
     <button type="button" class="action" onclick="submitContactRequest()">Nachricht senden</button>
     <p id="contactStatus" class="sub" aria-live="polite"></p>
       </section>
+      </div>
     </div>
   </div>
   <div>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</div>
