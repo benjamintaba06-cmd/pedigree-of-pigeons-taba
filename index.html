@@ -768,6 +768,395 @@ button[disabled],
   white-space: normal;
 }
 
+
+/* Definitive pigeon inventory card layout: details get the full row width;
+   action controls move to a separate row instead of squeezing the text. */
+#list > .card.pigeon {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px 12px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+#list > .card.pigeon > .bird {
+  order: 0 !important;
+  width: 88px !important;
+  height: 88px !important;
+  min-width: 88px !important;
+  flex: none !important;
+}
+#list > .card.pigeon > .pigeon-info {
+  order: 1 !important;
+  flex: 1 1 calc(100% - 110px) !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: none !important;
+  text-align: left !important;
+}
+#list > .card.pigeon > .pigeon-info strong,
+#list > .card.pigeon > .pigeon-info small {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  text-align: left !important;
+}
+#list > .card.pigeon > button {
+  order: 2 !important;
+  justify-self: start !important;
+  align-self: center !important;
+  min-width: 42px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+}
+#list > .card.pigeon > button:nth-of-type(1) { grid-column: 1 / -1 !important; }
+#list > .card.pigeon > button:nth-of-type(2) { grid-column: 1 / -1 !important; }
+#list > .card.pigeon > button:nth-of-type(3) { grid-column: 1 / -1 !important; }
+#list > .card.pigeon > button:nth-of-type(4) { grid-column: 1 / -1 !important; }
+#list > .card.pigeon > button:nth-of-type(5) { grid-column: 1 / -1 !important; }
+@media (max-width: 700px) {
+  #list { grid-template-columns: minmax(0, 1fr) !important; }
+  #list > .card.pigeon { padding: 13px !important; }
+  #list > .card.pigeon > .bird {
+    width: 72px !important;
+    height: 72px !important;
+    min-width: 72px !important;
+  }
+}
+
+
+/* TABA requested account/footer styling */
+footer a,
+a[href*="contact"],
+#contactLink {
+  background: transparent !important;
+  color: #245442 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  text-decoration: underline !important;
+}
+
+/* Username/profile identity: gold outline, not a green filled control */
+#userName, #username, #user-name, .user-name, .username,
+#profileName, .profile-name, .user-pill, .profile-pill,
+header .user, header .username, header .user-name {
+  background: transparent !important;
+  color: #245442 !important;
+  border: 1.5px solid #c6a45b !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+/* Logout must be visually distinct and red */
+#logout, #logoutBtn, #logoutButton, .logout, .logout-btn,
+button[onclick*="signOut"], button[onclick*="logout"],
+a[href*="logout"] {
+  background: #b83232 !important;
+  color: #ffffff !important;
+  border: 1px solid #9f2525 !important;
+  box-shadow: none !important;
+}
+#logout:hover, #logoutBtn:hover, #logoutButton:hover,
+.logout:hover, .logout-btn:hover,
+button[onclick*="signOut"]:hover, button[onclick*="logout"]:hover,
+a[href*="logout"]:hover {
+  background: #922626 !important;
+  color: #ffffff !important;
+}
+
+
+/* =========================================================
+   TABA PREMIUM SYSTEM · forest / ivory / antique gold
+   Compact information density, large pigeon photography
+   ========================================================= */
+:root {
+  --taba-forest: #173f34;
+  --taba-forest-deep: #102f28;
+  --taba-forest-soft: #285a49;
+  --taba-ivory: #faf9f5;
+  --taba-paper: #ffffff;
+  --taba-gold: #c6a45b;
+  --taba-gold-pale: #e7d8b2;
+  --taba-ink: #24332e;
+  --taba-muted: #718078;
+  --taba-line: #e5e7df;
+  --taba-danger: #b83232;
+  --taba-shadow: 0 10px 30px rgba(23,63,52,.07);
+}
+html { background: var(--taba-ivory); }
+body {
+  background: var(--taba-ivory) !important;
+  color: var(--taba-ink) !important;
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+  font-size: 14px;
+  line-height: 1.48;
+}
+header.main-header {
+  position: relative;
+  min-height: 0 !important;
+  padding: 22px clamp(16px, 3vw, 38px) !important;
+  background: linear-gradient(115deg, var(--taba-forest-deep), var(--taba-forest) 68%, #285343) !important;
+  border-bottom: 3px solid var(--taba-gold);
+  gap: 18px !important;
+}
+header.main-header h1 {
+  color: #fff !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: clamp(20px, 2.5vw, 29px) !important;
+  letter-spacing: .015em;
+}
+header.main-header .brand {
+  color: var(--taba-gold-pale) !important;
+  letter-spacing: .16em !important;
+  font-size: 10px !important;
+}
+header.main-header p { color: #e1e9e3 !important; }
+.header-brand { min-height: 0 !important; }
+.account-actions {
+  width: auto !important;
+  align-self: auto !important;
+  margin: 16px 0 0 !important;
+  padding: 0 !important;
+  gap: 9px !important;
+}
+.logged-in-user {
+  padding: 7px 13px !important;
+  border: 1.5px solid var(--taba-gold) !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.04) !important;
+  color: #f3e6c4 !important;
+  cursor: default !important;
+  font-size: 12px !important;
+  letter-spacing: .015em;
+}
+.logged-in-user::after { display: none !important; }
+.account-user-separator { color: rgba(255,255,255,.35) !important; }
+.company-logo img {
+  max-width: min(220px, 30vw);
+  max-height: 118px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid rgba(198,164,91,.6);
+  background: rgba(255,255,255,.96);
+  padding: 7px;
+}
+main {
+  width: min(1440px, calc(100% - 32px)) !important;
+  margin: 22px auto !important;
+}
+main > section { margin-bottom: 20px; }
+h2, h3, h4 {
+  color: var(--taba-forest) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  letter-spacing: .005em;
+}
+h2 { font-size: clamp(20px, 2.2vw, 26px) !important; margin: 0 0 10px !important; }
+h3 { font-size: 18px !important; }
+.sub, small, .muted { color: var(--taba-muted) !important; }
+.card, .panel, .login-box, .contact-modal-shell {
+  background: var(--taba-paper) !important;
+  border: 1px solid var(--taba-line) !important;
+  border-radius: 17px !important;
+  box-shadow: var(--taba-shadow) !important;
+}
+.card { padding: 15px !important; }
+button, .action, input, select, textarea {
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+}
+button, button.action, .action, input[type="submit"] {
+  min-height: 38px;
+  border-radius: 11px !important;
+  font-weight: 650 !important;
+  letter-spacing: .005em;
+  transition: background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+button:not(.logout-button):not(.danger-action):not(.stats-close),
+button.action, .action, input[type="submit"] {
+  background: var(--taba-forest) !important;
+  border: 1px solid var(--taba-forest) !important;
+  color: #fff !important;
+}
+button:not(.logout-button):not(.danger-action):not(.stats-close):hover,
+button.action:hover, .action:hover, input[type="submit"]:hover {
+  background: var(--taba-forest-deep) !important;
+  border-color: var(--taba-forest-deep) !important;
+  color: #fff !important;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--taba-gold) !important;
+  outline-offset: 2px;
+}
+button:disabled { opacity: .65; cursor: not-allowed; }
+.logout-button {
+  background: var(--taba-danger) !important;
+  color: #fff !important;
+  border-color: #9f2525 !important;
+  border-radius: 999px !important;
+}
+.logout-button:hover { background: #922626 !important; }
+.danger-action {
+  background: #fff4f2 !important;
+  color: #9f2525 !important;
+  border: 1px solid #e7b5ae !important;
+}
+input, select, textarea {
+  min-height: 42px;
+  border: 1px solid #d9dfd8 !important;
+  border-radius: 11px !important;
+  background: #fff !important;
+  color: var(--taba-ink) !important;
+  padding: 10px 12px !important;
+  max-width: 100%;
+}
+label { color: #42564c !important; font-weight: 650; }
+nav, .nav, .tabs {
+  gap: 7px !important;
+}
+nav button, .nav button, .tabs button {
+  border-radius: 10px !important;
+}
+footer {
+  padding: 22px 16px 30px !important;
+  color: var(--taba-muted) !important;
+  background: transparent !important;
+}
+footer .login-link {
+  background: transparent !important;
+  color: var(--taba-forest) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  text-decoration: underline;
+}
+#list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 390px), 1fr)) !important;
+  gap: 14px !important;
+  align-items: stretch;
+}
+#list > .card.pigeon {
+  display: grid !important;
+  grid-template-columns: 132px minmax(0, 1fr) !important;
+  grid-template-areas: "photo details" "actions actions" !important;
+  gap: 12px 15px !important;
+  align-content: start;
+  align-items: center !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  padding: 13px !important;
+  overflow: hidden;
+}
+#list > .card.pigeon > .bird {
+  grid-area: photo !important;
+  width: 132px !important;
+  height: 132px !important;
+  min-width: 132px !important;
+  border-radius: 13px !important;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #f0f1e9 !important;
+  color: var(--taba-forest) !important;
+  font-size: 36px;
+}
+#list > .card.pigeon > .bird img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+}
+#list > .card.pigeon > .pigeon-info {
+  grid-area: details !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  text-align: left !important;
+  overflow-wrap: anywhere;
+}
+.pigeon-ring {
+  display: block;
+  color: var(--taba-forest) !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(17px, 1.7vw, 21px);
+  line-height: 1.25;
+  font-weight: 700;
+  margin-bottom: 7px;
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.pigeon-details {
+  display: block;
+  color: #66756d !important;
+  font-size: 12px;
+  line-height: 1.55;
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere;
+}
+.pigeon-sold { color: var(--taba-danger) !important; }
+#list > .card.pigeon > .pigeon-actions {
+  grid-area: actions !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+  gap: 7px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+#list > .card.pigeon > .pigeon-actions button {
+  flex: 0 1 auto !important;
+  min-width: 40px;
+  min-height: 35px;
+  padding: 7px 10px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+@media (max-width: 520px) {
+  main { width: calc(100% - 22px) !important; margin: 14px auto !important; }
+  header.main-header { padding: 17px 14px !important; }
+  .company-logo img { max-width: 100px; max-height: 76px; }
+  #list { grid-template-columns: minmax(0, 1fr) !important; }
+  #list > .card.pigeon {
+    grid-template-columns: 112px minmax(0, 1fr) !important;
+    gap: 10px 12px !important;
+    padding: 11px !important;
+  }
+  #list > .card.pigeon > .bird {
+    width: 112px !important;
+    height: 112px !important;
+    min-width: 112px !important;
+  }
+  #list > .card.pigeon > .pigeon-actions { gap: 6px !important; }
+  #list > .card.pigeon > .pigeon-actions button {
+    padding: 7px 8px !important;
+    font-size: 11px !important;
+  }
+}
+@media (max-width: 360px) {
+  #list > .card.pigeon {
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+  }
+  #list > .card.pigeon > .bird {
+    width: 92px !important;
+    height: 92px !important;
+    min-width: 92px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -784,8 +1173,7 @@ button[disabled],
       <button id="logoutButton" class="logout-button hidden" type="button"
         onclick="logoutTabaAccount()">Abmelden</button>
       <span class="account-user-separator">|</span>
-      <span id="loggedInUser" class="logged-in-user hidden" role="button" tabindex="0"
-        onclick="toggleMemberStats()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMemberStats();}"></span>
+      <span id="loggedInUser" class="logged-in-user hidden" aria-live="polite"></span>
     </div>
     <div id="roleDescription" class="role-description hidden" aria-live="polite"></div>
     <div id="memberStats" class="member-stats hidden" aria-live="polite">
@@ -825,9 +1213,14 @@ button[disabled],
 
     <form id="passwordResetForm">
       <label for="newPassword">Neues Passwort</label>
-      <input id="newPassword" type="password"
+      <input id="newPassword" type="password" autocomplete="new-password"
         minlength="10" required
         placeholder="Mindestens 10 Zeichen">
+
+      <label for="confirmNewPassword">Neues Passwort wiederholen</label>
+      <input id="confirmNewPassword" type="password" autocomplete="new-password"
+        minlength="10" required
+        placeholder="Passwort erneut eingeben">
 
       <button class="action" type="submit">
         Passwort speichern
@@ -2022,15 +2415,20 @@ function render(){
       (p.breed || '').toLocaleLowerCase('de-DE').includes(search)
     );
     list.innerHTML = filtered.map(p => `
-      <div class="card pigeon">
-        <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
-        <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>${esc(p.name)} · ${esc(p.breed)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b">VERKAUFT</strong>' : ''}</small></div>
-        ${p.pigeon_status === 'in_loft' ? `<button type="button" class="action" style="padding:8px 10px;font-size:13px" onclick="sellPigeonFromInventory('${p.id}')">🐦 Verkaufen</button>` : ''}
-        <button type="button" onclick="showPigeonQr('${p.id}')" aria-label="Persönlichen QR-Code anzeigen">▦ QR</button>
-        <button type="button" onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button>
-        <button type="button" onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
-        <button type="button" onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
-      </div>`).join('') || '<p class="sub">Noch keine Tauben eingetragen.</p>';
+      <article class="card pigeon">
+        <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}">` : '<span aria-hidden="true">🕊️</span>'}</div>
+        <div class="pigeon-info">
+          <strong class="pigeon-ring">${esc(p.ring)}</strong>
+          <small class="pigeon-details">${esc(p.name || 'Ohne Namen')} · ${esc(p.breed || 'Rasse nicht angegeben')} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color || 'Farbe nicht angegeben')}${p.pigeon_status === 'sold' ? '<br><strong class="pigeon-sold">VERKAUFT</strong>' : ''}</small>
+        </div>
+        <div class="pigeon-actions">
+          ${p.pigeon_status === 'in_loft' ? `<button type="button" class="action" onclick="sellPigeonFromInventory('${p.id}')">🐦 Verkaufen</button>` : ''}
+          <button type="button" onclick="showPigeonQr('${p.id}')" aria-label="Persönlichen QR-Code anzeigen">▦ QR</button>
+          <button type="button" onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️ Bearbeiten</button>
+          <button type="button" onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷 Foto</button>
+          <button type="button" class="danger-action" onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️ Löschen</button>
+        </div>
+      </article>`).join('') || '<p class="sub">Noch keine Tauben eingetragen.</p>';
   }
   const selected = document.getElementById('selected');
   if (selected) {
@@ -3948,7 +4346,7 @@ async function forgotPassword() {
   const { error } = await supabaseClient.auth.resetPasswordForEmail(
     email,
     {
-      redirectTo: window.location.origin + window.location.pathname
+      redirectTo: window.location.origin + '/'
     }
   );
 
@@ -3970,32 +4368,51 @@ passwordResetForm.addEventListener('submit', async function(event) {
   event.preventDefault();
 
   const password = document.getElementById('newPassword').value;
+  const confirmation = document.getElementById('confirmNewPassword').value;
   const message = document.getElementById('passwordResetMessage');
   const button = passwordResetForm.querySelector('button');
 
   if (password.length < 10) {
     message.textContent = 'Das Passwort muss mindestens 10 Zeichen haben.';
+    message.style.color = '#b83232';
+    return;
+  }
+  if (password !== confirmation) {
+    message.textContent = 'Die beiden Passwörter stimmen nicht überein.';
+    message.style.color = '#b83232';
+    document.getElementById('confirmNewPassword').focus();
     return;
   }
 
   button.disabled = true;
-  message.textContent = 'Passwort wird gespeichert ...';
+  message.textContent = 'Passwort wird sicher gespeichert ...';
+  message.style.color = '#245442';
 
-  const { error } = await supabaseClient.auth.updateUser({
-    password: password
-  });
+  const { error } = await supabaseClient.auth.updateUser({ password });
 
   if (error) {
-    message.textContent = 'Fehler: ' + error.message;
+    message.textContent = 'Das Passwort konnte nicht gespeichert werden: ' + error.message;
+    message.style.color = '#b83232';
     button.disabled = false;
     return;
   }
 
-  message.textContent = 'Dein neues Passwort wurde erfolgreich gespeichert!';
-
+  message.textContent = 'Dein neues Passwort wurde erfolgreich gespeichert. Du kannst dich jetzt mit deinem neuen Passwort anmelden.';
+  message.style.color = '#245442';
   passwordResetForm.reset();
   button.disabled = false;
+  await supabaseClient.auth.signOut();
+  setTimeout(() => {
+    document.getElementById('passwordResetBox')?.classList.add('hidden');
+    document.getElementById('loginOverlay')?.classList.remove('hidden');
+    const loginMessage = document.getElementById('loginMessage');
+    if (loginMessage) {
+      loginMessage.textContent = 'Passwort erfolgreich geändert. Bitte melde dich neu an.';
+      loginMessage.style.color = '#245442';
+    }
+  }, 1800);
 });
+
 function updateAccountRole(user) {
   const badge = document.getElementById('accountRole');
   const mark = document.getElementById('logoRoleMark');
@@ -4051,7 +4468,7 @@ function updateAccountRole(user) {
     const accountName = user.email || 'Angemeldet';
     loggedInUser.textContent = roleIcon + ' ' + accountName;
     loggedInUser.dataset.role = isAdmin ? 'admin' : 'member';
-    loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + accountName + '. Mitgliederstatistik anzeigen');
+    loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + accountName);
     loggedInUser.removeAttribute('title');
     loggedInUser.removeAttribute('data-tooltip');
     loggedInUser.classList.remove('hidden');
@@ -4059,7 +4476,7 @@ function updateAccountRole(user) {
       .then(({ data }) => {
         if (data && data.display_name) {
           loggedInUser.textContent = roleIcon + ' ' + data.display_name;
-          loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + data.display_name + '. Mitgliederstatistik anzeigen');
+          loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + data.display_name);
         }
       });
   }
@@ -4428,38 +4845,56 @@ if (passwordRecovery) {
 // Passwort-Wiederherstellung: Supabase verarbeitet den E-Mail-Link (PKCE oder Token-Hash)
 // und meldet PASSWORD_RECOVERY. Dann wird ausschließlich das Formular zum neuen Passwort gezeigt.
 function showTabaPasswordRecovery() {
-  const login = document.getElementById('loginOverlay');
-  const reset = document.getElementById('passwordResetBox');
-  if (login) login.classList.add('hidden');
-  if (reset) reset.classList.remove('hidden');
+  document.getElementById('loginOverlay')?.classList.add('hidden');
+  document.getElementById('passwordResetBox')?.classList.remove('hidden');
   const message = document.getElementById('passwordResetMessage');
-  if (message) message.textContent = 'Der Wiederherstellungslink ist gültig. Bitte lege jetzt ein neues Passwort fest.';
+  if (message) {
+    message.textContent = 'Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.';
+    message.style.color = '#245442';
+  }
 }
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (event === 'PASSWORD_RECOVERY') {
+  if (event === 'PASSWORD_RECOVERY' && session) {
     showTabaPasswordRecovery();
   }
 });
+
 (async function detectRecoveryLink() {
   const params = new URLSearchParams(window.location.search);
-  const hash = window.location.hash || '';
-  const isRecoveryLink = params.has('code') ||
+  const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+  const authError = hashParams.get('error_description') || params.get('error_description');
+  const hasRecoveryMarker = params.has('code') ||
     params.get('type') === 'recovery' ||
-    hash.includes('type=recovery') ||
-    hash.includes('access_token=');
-  if (!isRecoveryLink) return;
-  // With Supabase JS v2's default detectSessionInUrl, PKCE code / hash is exchanged
-  // during client initialization. Wait briefly for the resulting session event.
-  const { data } = await supabaseClient.auth.getSession();
-  if (data?.session) {
+    hashParams.get('type') === 'recovery' ||
+    hashParams.has('access_token');
+
+  if (authError) {
+    document.getElementById('loginOverlay')?.classList.add('hidden');
+    document.getElementById('passwordResetBox')?.classList.remove('hidden');
+    const message = document.getElementById('passwordResetMessage');
+    if (message) {
+      message.textContent = 'Der Passwort-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.';
+      message.style.color = '#b83232';
+    }
+    return;
+  }
+  if (!hasRecoveryMarker) return;
+
+  // Supabase JS v2 verarbeitet den PKCE-Code bzw. den Token-Hash automatisch
+  // beim Initialisieren des Clients (detectSessionInUrl ist standardmäßig aktiv).
+  // Danach prüfen wir die Session, bevor das Formular freigegeben wird.
+  await new Promise(resolve => setTimeout(resolve, 350));
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (!error && data?.session) {
     showTabaPasswordRecovery();
   } else {
+    document.getElementById('loginOverlay')?.classList.add('hidden');
+    document.getElementById('passwordResetBox')?.classList.remove('hidden');
     const message = document.getElementById('passwordResetMessage');
-    if (message) message.textContent = 'Der Link konnte nicht bestätigt werden. Bitte fordere einen neuen Passwort-Link an.';
-    const reset = document.getElementById('passwordResetBox');
-    if (reset) reset.classList.remove('hidden');
-    const login = document.getElementById('loginOverlay');
-    if (login) login.classList.add('hidden');
+    if (message) {
+      message.textContent = 'Der Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Passwort-Link an.';
+      message.style.color = '#b83232';
+    }
   }
 })();
 
