@@ -317,8 +317,8 @@ nav button.active{background:#203d34;color:white}
 .pedigree-scroll{width:100%;overflow-x:auto;overflow-y:hidden;padding:8px 0 18px;-webkit-overflow-scrolling:touch}
 .pedigree-diagram{position:relative;min-width:1920px;padding:8px 12px 18px}
 .pedigree-connectors{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:visible}
-.pedigree-level{position:relative;z-index:1;margin:0 0 8px}
-.pedigree-grid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));align-items:start;gap:0;min-height:94px}
+.pedigree-level{position:relative;z-index:1;margin:0 0 8px;padding-left:220px;min-height:112px}\n.pedigree-level>.tree-generation-label{position:absolute;left:0;top:12px;width:200px;margin:0;padding:5px 7px;background:#fff;border-radius:6px;z-index:3;line-height:1.35}
+.pedigree-grid{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));align-items:start;gap:0;min-height:94px;position:relative;z-index:1}
 .pedigree-cell{padding:0 5px;min-width:0;display:flex;justify-content:center}
 .pedigree-card{min-height:78px;max-width:100%;position:relative;z-index:2}
 .pedigree-root{width:190px;max-width:190px;grid-column:1/-1}
@@ -1562,7 +1562,7 @@ function drawPedigreeConnectors(){
      const y2=Math.min(ar.top,br.top)-bounds.top+wrap.scrollTop;
      const ym=y1+(y2-y1)/2;
      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-     path.setAttribute('d',`M ${x1} ${y1} V ${ym} H ${xa} M ${x1} ${ym} H ${xb} V ${y2}`);
+     path.setAttribute('d',`M ${x1} ${y1} V ${ym} M ${xa} ${ym} H ${xb} M ${xa} ${ym} V ${y2} M ${xb} ${ym} V ${y2}`);
      path.setAttribute('fill','none');
      path.setAttribute('stroke','#a58a4e');
      path.setAttribute('stroke-width','2');
