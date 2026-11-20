@@ -22,6 +22,12 @@ header h1{font-size:23px;margin:0}
 .title-line p {
   margin: 0;
 }
+.logged-in-user {
+  color: #d6bd82;
+  font-size: 13px;
+  font-weight: 600;
+}
+.logged-in-user.hidden { display: none !important; }
 
 .main-header {
   display: flex;
@@ -44,7 +50,9 @@ header p {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: auto;
+  justify-content: flex-end;
+  align-self: stretch;
 }
 .account-role {
   display: inline-flex;
@@ -105,6 +113,29 @@ header p {
   user-select: none;
 }
 .logo-role-mark:focus { outline: 2px solid #d6bd82; outline-offset: 4px; border-radius: 6px; }
+.logo-role-mark::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, 80vw);
+  padding: 10px 12px;
+  border: 1px solid #a58a4e;
+  border-radius: 8px;
+  background: #142e29;
+  color: #fff;
+  font: 12px/1.5 Arial, sans-serif;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 4px 14px #0004;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+.logo-role-mark:hover::after,
+.logo-role-mark:focus::after { opacity: 1; visibility: visible; }
 .community-comments { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e5e9e7; }
 .community-comment { background: #f5f7f4; border-radius: 9px; padding: 9px 11px; margin: 7px 0; }
 .community-comment-form { display: flex; gap: 8px; align-items: flex-start; }
@@ -391,7 +422,8 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
     <div class="brand">BREEDER PLATFORM · Developed by BENJAMIN TABA · HINTERLÄNDER HOF</div>
     <div class="title-line">
       <h1>🕊️ PEDIGREE OF PIGEONS</h1>
-      <p>Every pigeon has a story.</p>
+      <span id="loggedInUser" class="logged-in-user hidden"></span>
+      <p>| Every pigeon has a story.</p>
     </div>
     <div class="account-actions">
       <div id="accountRole" class="account-role hidden"></div>
@@ -2815,9 +2847,14 @@ function updateAccountRole(user) {
   const mark = document.getElementById('logoRoleMark');
   const logoutButton = document.getElementById('logoutButton');
   const roleDescription = document.getElementById('roleDescription');
+  const loggedInUser = document.getElementById('loggedInUser');
   if (!badge) return;
 
   if (!user) {
+    if (loggedInUser) {
+      loggedInUser.textContent = '';
+      loggedInUser.classList.add('hidden');
+    }
     badge.textContent = '';
     badge.classList.add('hidden');
     if (roleDescription) {
@@ -2828,6 +2865,8 @@ function updateAccountRole(user) {
       mark.textContent = '';
       mark.classList.add('hidden');
       mark.removeAttribute('data-role');
+      mark.removeAttribute('data-tooltip');
+      mark.removeAttribute('aria-label');
     }
     if (logoutButton) logoutButton.classList.add('hidden');
     const stats = document.getElementById('memberStats');
@@ -2836,18 +2875,29 @@ function updateAccountRole(user) {
   }
 
   const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  if (loggedInUser) {
+    loggedInUser.textContent = '· ' + (user.email || 'Angemeldet');
+    loggedInUser.classList.remove('hidden');
+    supabaseClient.from('breeders').select('display_name').eq('id', user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data && data.display_name) loggedInUser.textContent = '· ' + data.display_name;
+      });
+  }
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
   badge.classList.remove('hidden');
   if (roleDescription) {
-    roleDescription.textContent = isAdmin
-      ? 'Als Admin betreust du die Plattform: Du prüfst Züchterfreigaben und Verkaufsentscheidungen, achtest auf faire Abläufe und hilfst, dass die Gemeinschaft vertrauenswürdig und gut organisiert bleibt.'
-      : 'Als Member pflegst du deinen Taubenbestand und Stammbäume, teilst Beiträge, bietest Tauben an und tauschst dich mit anderen Züchtern aus. Sorgfältige und ehrliche Angaben schaffen Vertrauen und helfen der Gemeinschaft.';
-    roleDescription.classList.remove('hidden');
+    roleDescription.textContent = '';
+    roleDescription.classList.add('hidden');
   }
 
   if (mark) {
+    const description = isAdmin
+      ? 'Als Admin betreust du die Plattform: Du prüfst Züchterfreigaben und Verkaufsentscheidungen, achtest auf faire Abläufe und hilfst, dass die Gemeinschaft vertrauenswürdig und gut organisiert bleibt.'
+      : 'Als Member pflegst du deinen Taubenbestand und Stammbäume, teilst Beiträge, bietest Tauben an und tauschst dich mit anderen Züchtern aus. Sorgfältige und ehrliche Angaben schaffen Vertrauen und helfen der Gemeinschaft.';
     mark.textContent = isAdmin ? '👑' : '🕊️';
     mark.dataset.role = isAdmin ? 'admin' : 'member';
+    mark.dataset.tooltip = description;
+    mark.setAttribute('aria-label', description);
     mark.classList.remove('hidden');
   }
   if (logoutButton) logoutButton.classList.remove('hidden');
