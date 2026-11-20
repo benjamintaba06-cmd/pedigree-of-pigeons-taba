@@ -501,6 +501,185 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 .conversation-actions .conversation-delete{background:#b94040!important;color:#fff!important;border:0!important}
 .conversation-actions .conversation-delete:hover{background:#9f3030!important}
 
+
+/* TABA Erweiterungsmodule */
+.taba-module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.taba-module-card{background:#fff;border:1px solid #dce4df;border-radius:12px;padding:15px;margin:12px 0}
+.taba-module-card h3{margin-top:0}
+.taba-form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.taba-list-item{padding:10px 0;border-bottom:1px solid #e8ece9}
+.taba-list-item:last-child{border-bottom:0}
+.taba-muted{font-size:12px;color:#687a72}
+.taba-pill{display:inline-block;padding:3px 8px;border-radius:20px;background:#edf2ee;font-size:11px;margin-left:5px}
+
+
+/* TABA DESIGN UPDATE – elegant, professional, pigeon/photo-first */
+:root{
+ --taba-forest:#123b32; --taba-deep:#0b2c26; --taba-green:#287b58;
+ --taba-mint:#eaf3ed; --taba-gold:#c6a96b; --taba-ink:#1c302a;
+ --taba-muted:#73817a; --taba-line:#e5ebe6; --taba-paper:#f5f7f4;
+ --taba-shadow:0 12px 34px rgba(18,59,50,.075);
+}
+html{scroll-behavior:smooth}
+body{background:var(--taba-paper)!important;color:var(--taba-ink)!important;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important}
+header{
+ background:linear-gradient(118deg,var(--taba-deep) 0%,var(--taba-forest) 65%,#245c45 100%)!important;
+ padding:26px clamp(18px,4vw,54px)!important; position:relative; overflow:visible;
+ box-shadow:0 8px 24px rgba(11,44,38,.12)
+}
+header:after{content:"";position:absolute;right:5%;top:-95px;width:290px;height:290px;border:1px solid rgba(198,169,107,.2);border-radius:50%;pointer-events:none}
+header h1{font-size:clamp(23px,2.2vw,32px)!important;letter-spacing:-.6px}
+.brand{color:#e0c88f!important;letter-spacing:3.5px!important;font-size:11px!important}
+header p{color:#d2ded7!important}
+.company-logo{border-radius:18px!important;box-shadow:0 8px 28px #061d1840;border:1px solid #ffffff35}
+nav{
+ background:#fff!important; padding:13px clamp(12px,3vw,42px)!important;
+ border-bottom:1px solid var(--taba-line);box-shadow:0 5px 18px rgba(20,50,40,.045);
+ top:0!important;gap:12px!important
+}
+.nav-group{border-right:1px solid var(--taba-line)!important;padding:3px 12px!important}
+.nav-group-title{color:#9a8863!important;font-size:10px!important;letter-spacing:1.4px!important}
+.nav-group-links button{border-radius:10px!important;padding:10px 13px!important;font-weight:650!important;transition:.18s ease}
+.nav-group-links button:hover{background:var(--taba-mint)!important;color:var(--taba-forest)!important}
+.nav-group-links button.active{background:var(--taba-forest)!important;color:white!important;box-shadow:0 4px 12px #123b3228}
+main{max-width:1440px!important;padding:clamp(18px,3vw,42px)!important}
+section>h2{font-size:clamp(23px,2vw,30px)!important;letter-spacing:-.55px;color:var(--taba-forest);margin:4px 0 7px}
+.sub{color:var(--taba-muted)!important;line-height:1.6!important;font-size:14px!important;margin-bottom:22px!important}
+.card,.taba-module-card{
+ background:#fff!important;border:1px solid var(--taba-line)!important;border-radius:18px!important;
+ box-shadow:var(--taba-shadow)!important;padding:clamp(17px,2vw,25px)!important
+}
+.card h3,.taba-module-card h3{color:var(--taba-forest)!important;font-size:17px!important;letter-spacing:-.2px}
+.stats{gap:16px!important}
+.stat{color:var(--taba-forest)!important;font-size:30px!important}
+button,.action,input,select,textarea{font:inherit}
+button,.action{transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+button:hover,.action:hover{transform:translateY(-1px)}
+.action,button.action{background:var(--taba-green)!important;border-radius:11px!important;padding:11px 16px!important;box-shadow:0 4px 12px #287b5824}
+input,select,textarea{border:1px solid #dce5de!important;border-radius:10px!important;background:#fbfcfb!important;padding:11px 12px!important;color:var(--taba-ink)!important;min-height:42px}
+input:focus,select:focus,textarea:focus{outline:2px solid #287b5830!important;border-color:var(--taba-green)!important}
+label{color:#52665c!important;font-weight:650!important;font-size:12px!important;letter-spacing:.15px}
+.taba-module-grid{gap:17px!important}
+.taba-module-card{padding:20px!important}
+.taba-list-item{border-radius:12px!important}
+table{border-collapse:separate!important;border-spacing:0!important}
+th{background:#edf4ef!important;color:var(--taba-forest)!important}
+td,th{padding:11px!important;border-bottom:1px solid var(--taba-line)!important}
+.hidden{}
+
+/* Taubenlisten: Karten bekommen Luft und eine klare Bild-/Daten-Hierarchie */
+#pigeons .card{margin-bottom:18px}
+#pigeons img{border-radius:14px;object-fit:cover}
+#pigeons .pigeon-card,#pigeons .bird-card,#pigeons .taube-card,
+#pigeons [class*="pigeon"],#pigeons [class*="bird"]{
+ border-radius:16px
+}
+#treeview{overflow-x:auto;padding:8px 2px 16px}
+#treeview>*,#treeview .card{min-width:0}
+#pedigree .card{border-radius:18px!important}
+#breeding .taba-module-card{border-top:3px solid var(--taba-gold)!important}
+#breeding .taba-module-card:nth-child(2n){border-top-color:var(--taba-green)!important}
+hr{border:0;border-top:1px solid var(--taba-line)}
+a{color:var(--taba-green)}
+@media(min-width:1050px){
+ main{padding-top:34px!important}
+ #pigeons{display:block}
+ #pigeons .card{max-width:none}
+ #breeding .taba-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ header{padding:20px 16px!important}
+ .main-header{min-height:0!important;gap:12px!important}
+ .header-brand{min-height:0!important}
+ .company-logo{width:76px!important;height:76px!important}
+ nav{position:sticky!important;overflow-x:auto!important;padding:9px 8px!important}
+ .nav-group{padding:2px 7px!important}
+ .nav-group-title{display:none}
+ .nav-group-links{gap:5px!important}
+ .nav-group-links button{font-size:12px!important;padding:9px 10px!important;white-space:nowrap}
+ main{padding:18px 12px 30px!important}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .card,.taba-module-card{border-radius:15px!important;padding:16px!important}
+ #treeview{margin-left:-8px;margin-right:-8px}
+}
+@media(max-width:430px){
+ .stats{gap:9px!important}
+ .stat{font-size:25px!important}
+ .nav-group-links button{font-size:11px!important;padding:8px!important}
+}
+
+
+/* TABA PREMIUM VISUAL UPDATE — preserves existing application logic */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+:root{
+ --taba-forest:#153b32;--taba-deep:#102e28;--taba-green:#285b49;
+ --taba-gold:#b99a59;--taba-ivory:#f6f4ed;--taba-paper:#fffefa;
+ --taba-ink:#20332e;--taba-muted:#78857d;--taba-line:#e7e4d9;
+ --taba-shadow:0 14px 38px rgba(23,54,44,.08)
+}
+html{scroll-behavior:smooth}
+body{background:var(--taba-ivory);color:var(--taba-ink);font-family:'DM Sans',Arial,sans-serif;letter-spacing:.005em}
+header.main-header{
+ position:relative;isolation:isolate;overflow:hidden;
+ background:radial-gradient(ellipse at 85% 0%,rgba(185,154,89,.18),transparent 36%),linear-gradient(125deg,var(--taba-deep),var(--taba-forest) 62%,#285543);
+ padding:34px clamp(22px,5vw,76px) 30px;border-bottom:3px solid var(--taba-gold)
+}
+header.main-header:after{content:'TABA';position:absolute;right:7%;bottom:-65px;font:700 clamp(110px,20vw,230px)/1 'Playfair Display',serif;color:rgba(255,255,255,.035);letter-spacing:.08em;z-index:-1;pointer-events:none}
+.title-line h1{font:600 clamp(27px,3.6vw,42px)/1.12 'Playfair Display',serif;letter-spacing:.015em;color:#fff}
+.title-line p{font-size:15px;color:#d8dfd8}
+.developer-credit,.brand{color:#d8c28f;font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+.company-logo{width:124px;height:124px;border:1px solid rgba(215,194,143,.55);border-radius:22px;box-shadow:0 12px 30px rgba(0,0,0,.2);background:#fff;padding:9px}
+.account-role{border-color:rgba(215,194,143,.65);background:rgba(255,255,255,.06);color:#ead8a9}
+nav{padding:13px clamp(16px,4vw,54px);gap:20px;background:rgba(255,254,250,.97);border-bottom:1px solid var(--taba-line);box-shadow:0 5px 20px rgba(23,54,44,.045);backdrop-filter:blur(12px)}
+.nav-group{border-right:1px solid var(--taba-line);padding:4px 14px 4px 2px}
+.nav-group-title{font-size:10px;letter-spacing:.17em;color:#9a8a67}
+nav button{border:1px solid transparent;border-radius:999px;padding:11px 17px;background:#f0f1eb;color:#355347;font:600 13px 'DM Sans',sans-serif;transition:all .2s ease}
+nav button:hover{border-color:#d4c49e;background:#f8f5ec;transform:translateY(-1px)}
+nav button.active{background:var(--taba-forest);color:#fff;box-shadow:0 5px 14px rgba(21,59,50,.18)}
+main{max-width:1240px;padding:clamp(22px,4vw,54px) clamp(16px,3vw,34px) 70px}
+main h2{font:600 clamp(27px,3vw,36px)/1.2 'Playfair Display',serif;color:var(--taba-forest);margin:0 0 8px}
+main h3{font:600 20px 'Playfair Display',serif;color:var(--taba-forest)}
+.sub{color:var(--taba-muted);font-size:14px;line-height:1.7}
+.card{background:var(--taba-paper);border:1px solid rgba(218,216,203,.72);border-radius:19px;padding:22px;box-shadow:var(--taba-shadow);margin-bottom:18px}
+.stats{gap:16px}
+.stat{color:var(--taba-forest)}
+.action{background:linear-gradient(135deg,var(--taba-forest),#2b624e);border-radius:11px;padding:13px 20px;box-shadow:0 5px 13px rgba(21,59,50,.14);transition:transform .18s,box-shadow .18s}
+.action:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(21,59,50,.2)}
+input,select,textarea{border:1px solid #dedfd5;border-radius:11px;background:#fffefa;padding:14px 15px;font:15px 'DM Sans',sans-serif;transition:border-color .18s,box-shadow .18s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--taba-gold);box-shadow:0 0 0 3px rgba(185,154,89,.14)}
+label{color:#46584f;font-size:12px;letter-spacing:.025em}
+#pigeons>.card:first-of-type{max-width:850px;margin:24px auto 34px;padding:clamp(20px,3vw,34px);border-top:3px solid var(--taba-gold)}
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:16px;align-items:stretch}
+#list>.card.pigeon{margin:0;min-height:142px;align-items:center;padding:16px;gap:15px;border-radius:17px;transition:transform .2s,border-color .2s,box-shadow .2s}
+#list>.card.pigeon:hover{transform:translateY(-3px);border-color:#c9b47f;box-shadow:0 16px 34px rgba(23,54,44,.12)}
+#list .bird{width:100px;height:100px;flex:0 0 100px;border-radius:14px;background:linear-gradient(145deg,#e8e7dc,#f5f2e8);color:#9d8b5f;font-size:34px;overflow:hidden}
+#list .bird img{width:100%!important;height:100%!important;border-radius:14px!important;object-fit:cover}
+#list .pigeon-info strong{font:600 17px 'Playfair Display',serif;color:var(--taba-forest)}
+#list .pigeon-info small{display:block;margin-top:6px;line-height:1.6;color:#718078}
+#list .pigeon-info{overflow-wrap:anywhere}
+.tag{background:#f1eddf;color:#806b3e}
+.tree-node-button,.parent{border:1px solid var(--taba-line);border-radius:15px;background:var(--taba-paper);box-shadow:0 5px 15px rgba(23,54,44,.045)}
+.centerbird{background:linear-gradient(135deg,var(--taba-forest),#2d624f);border:1px solid var(--taba-gold);border-radius:16px}
+.login-overlay{align-items:center;background:rgba(10,25,21,.62)}
+.login-box{max-width:430px;border:1px solid rgba(185,154,89,.38);border-radius:24px;padding:34px 30px;box-shadow:0 24px 80px rgba(0,0,0,.25)}
+.login-box h2{font:600 29px 'Playfair Display',serif}
+.login-logo{letter-spacing:.25em;color:var(--taba-gold)}
+footer{color:#8b938a}
+@media(max-width:700px){
+ header.main-header{padding:25px 20px 24px;min-height:0}
+ .company-logo{width:84px;height:84px;border-radius:16px}
+ .title-line{display:block}
+ .title-line h1{font-size:27px}
+ .title-line p{margin-top:8px}
+ nav{gap:8px;padding:10px 12px}
+ .nav-group{padding-right:9px}
+ .nav-group-title{font-size:9px}
+ nav button{padding:10px 12px;font-size:12px}
+ #list{grid-template-columns:1fr}
+ #list>.card.pigeon{min-height:126px}
+ #list .bird{width:82px;height:82px;flex-basis:82px}
+}
+
 </style>
 </head>
 <body>
@@ -538,6 +717,14 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
          alt="Benjamin TABA – Hinterländer Hof">
   </div>
 </header>
+
+<div id="tabaAdminShortcut" class="hidden" style="max-width:1180px;margin:14px auto;padding:0 18px">
+  <a href="admin.html" class="action" style="display:inline-flex;align-items:center;gap:9px;text-decoration:none">
+    🛡️ Zur exklusiven Admin-Verwaltung
+  </a>
+  <span style="margin-left:10px;color:var(--taba-muted,#6d7b72);font-size:.9rem">Nur für das TABA-Administratorkonto</span>
+</div>
+
 <!-- TABA Begrüßungsleiste -->
 <div id="welcomeBanner" class="welcome-banner hidden" style="display:none!important">
   <div id="welcomeTrack" class="welcome-track"></div>
@@ -632,6 +819,7 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
     <div class="nav-group-links">
       <button class="active" onclick="show('pigeons',this)">🕊️ Tauben</button>
       <button onclick="show('pedigree',this)">🌳 Stammbaum</button>
+      <button onclick="show('breeding',this);loadBreedingHub()">🧬 Zucht & Gesundheit</button>
     </div>
   </div>
   <div class="nav-group">
@@ -650,7 +838,8 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 <div class="card">
 <h3>Neue Taube eintragen</h3>
 <label>Ringnummer *</label>
-<input id="ring" placeholder="z.B. DV-01234-2025" required>
+<div class="qr-input-row"><input id="ring" placeholder="z.B. DV-01234-2025" required>
+<button type="button" class="qr-scan-button" onclick="openQrScanner('ring')" aria-label="QR-Code für Ringnummer scannen">▦ QR scannen</button></div>
 <label>Name</label>
 <input id="name" placeholder="Name der Taube">
 <label>Rasse *</label>
@@ -670,7 +859,8 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 </div>
 <h3>Dein Bestand</h3>
 <p class="sub">Alle deine eingetragenen Tauben erscheinen hier. ✏️ <strong>Bearbeiten:</strong> Ringnummer, Name, Rasse und weitere Angaben ändern. 🗑️ <strong>Löschen:</strong> Eine Taube dauerhaft aus deinem Bestand entfernen. 🐦 <strong>Verkaufen:</strong> Eine Taube mit Preis oder „VB“ im Züchterkreis zum Verkauf anbieten. Sie erscheint dort als Verkaufsanzeige; bereits angebotene oder verkaufte Tauben können nicht erneut angeboten werden.</p>
-<input id="search" placeholder="🔎 Ringnummer oder Name suchen..." oninput="render()">
+<div class="qr-input-row"><input id="search" placeholder="🔎 Ringnummer oder Name suchen..." oninput="render()">
+<button type="button" class="qr-scan-button" onclick="openQrScanner('search')" aria-label="QR-Code zum Suchen scannen">▦ QR scannen</button></div>
 <div id="list"><p class="sub">Dein Bestand wird geladen ...</p></div>
 
 
@@ -682,7 +872,8 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 <p class="sub">Der Stammbaum zeigt vier Generationen. Klicke auf ein leeres Elternfeld, um eine Taube zuzuordnen oder neu einzutragen.</p>
 <div class="card">
 <label>Ausgangspunkt auswählen</label>
-<select id="selected" onchange="tree()"><option value="">Noch keine Taube vorhanden</option></select>
+<div class="qr-input-row"><select id="selected" onchange="tree()"><option value="">Noch keine Taube vorhanden</option></select>
+<button type="button" class="qr-scan-button" onclick="openQrScanner('selected')" aria-label="QR-Code für Stammbaum-Ausgangspunkt scannen">▦ QR scannen</button></div>
 <div id="treeview"><p class="sub">Stammbaum wird geladen ...</p></div>
 <div class="card" style="margin-top:16px">
   <h3>Stammbaum teilen oder herunterladen</h3>
@@ -699,6 +890,86 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
   <p id="pedigreeShareMessage" class="sub"></p>
 </div>
 </div>
+</section>
+
+
+<section id="breeding" class="hidden">
+ <h2>🧬 Zucht, Gesundheit & Leistung</h2>
+ <p class="sub">Zuchtbuch, Jungtier-Zuordnung, Gesundheitsakte, Flugleistungen, Kalender und kontrollierter Stammbaum-Austausch.</p>
+ <div class="taba-module-grid">
+  <div class="taba-module-card">
+   <h3>1. Zuchtbuch & Zuchtpaare</h3>
+   <label> Täuber </label><select id="pairMale"></select>
+   <label> Täubin </label><select id="pairFemale"></select>
+   <div class="taba-form-row">
+    <div><label>Paarbildung</label><input id="pairStart" type="date"></div>
+    <div><label>Notiz</label><input id="pairNote" placeholder="z. B. Zuchtbox 4"></div>
+   </div>
+   <button class="action" onclick="saveBreedingPair()">Zuchtpaar speichern</button>
+   <div id="pairList" class="taba-list-item taba-muted">Noch nicht geladen.</div>
+  </div>
+  <div class="taba-module-card">
+   <h3>Jungtier erfassen</h3>
+   <label>Ringnummer *</label><input id="youngRing" placeholder="Ringnummer">
+   <label>Name</label><input id="youngName" placeholder="Name (optional)">
+   <div class="taba-form-row">
+    <div><label>Geburtsdatum</label><input id="youngHatch" type="date"></div>
+    <div><label>Geschlecht</label><select id="youngSex"><option value="unknown">Unbekannt</option><option value="male">Täuber</option><option value="female">Täubin</option></select></div>
+   </div>
+   <label>Vater</label><select id="youngFather"></select>
+   <label>Mutter</label><select id="youngMother"></select>
+   <button class="action" onclick="saveYoungPigeon()">Jungtier speichern & Stammbaum verknüpfen</button>
+   <p class="taba-muted">Eltern werden direkt in den Feldern father_id und mother_id der neuen Taube gespeichert.</p>
+  </div>
+  <div class="taba-module-card">
+   <h3>3. Gesundheitsakte</h3>
+   <label>Taube</label><select id="healthPigeon"></select>
+   <div class="taba-form-row">
+    <div><label>Datum</label><input id="healthDate" type="date"></div>
+    <div><label>Gewicht (g)</label><input id="healthWeight" type="number" min="0" step="1"></div>
+   </div>
+   <label>Impfung / Behandlung / Befund</label><input id="healthType" placeholder="z. B. Impfung, Kontrolle">
+   <label>Notizen</label><textarea id="healthNotes" rows="2"></textarea>
+   <button class="action" onclick="saveHealthRecord()">Gesundheitseintrag speichern</button>
+   <div id="healthList" class="taba-muted"></div>
+  </div>
+  <div class="taba-module-card">
+   <h3>2. Flug- & Leistungsprotokoll</h3>
+   <label>Taube</label><select id="flightPigeon"></select>
+   <div class="taba-form-row">
+    <div><label>Flugdatum</label><input id="flightDate" type="date"></div>
+    <div><label>Distanz (km)</label><input id="flightDistance" type="number" min="0" step="0.1"></div>
+   </div>
+   <div class="taba-form-row">
+    <div><label>Flugzeit (Min.)</label><input id="flightDuration" type="number" min="0" step="1"></div>
+    <div><label>Platzierung</label><input id="flightRank" placeholder="z. B. 12"></div>
+   </div>
+   <label>Wettflug / Bemerkung</label><input id="flightNotes" placeholder="Veranstaltung, Wetter, Ergebnis">
+   <button class="action" onclick="saveFlightRecord()">Leistung speichern</button>
+   <div id="flightList" class="taba-muted"></div>
+  </div>
+  <div class="taba-module-card">
+   <h3>4. Zuchtkalender</h3>
+   <p class="taba-muted">Termine werden aus Paarbildung und Zucht-Ereignissen angezeigt. Eigene Erinnerungen kannst du ergänzen.</p>
+   <label>Termin</label><input id="eventTitle" placeholder="z. B. Schlupfkontrolle">
+   <div class="taba-form-row">
+    <div><label>Datum</label><input id="eventDate" type="date"></div>
+    <div><label>Bezug (optional)</label><select id="eventPair"></select></div>
+   </div>
+   <button class="action" onclick="saveBreedingEvent()">Kalendereintrag speichern</button>
+   <div id="calendarList" class="taba-muted"></div>
+  </div>
+  <div class="taba-module-card">
+   <h3>5. Stammbaum-Austausch</h3>
+   <p class="taba-muted">Freigabe an einen bestätigten Züchter. Die Freigabe wird widerrufbar gespeichert; sie ersetzt keine öffentliche QR-Profilseite.</p>
+   <label>Taube / Stammbaum</label><select id="sharePigeon"></select>
+   <label>Empfänger (Züchter-ID)</label><input id="shareBreederId" placeholder="ID des freigeschalteten Züchters">
+   <label>Freigabeumfang</label><select id="shareScope"><option value="pedigree">Stammbaum</option><option value="pedigree_health">Stammbaum + Gesundheitsdaten</option></select>
+   <button class="action" onclick="createPedigreeShare()">Freigabe erteilen</button>
+   <div id="shareList" class="taba-muted"></div>
+  </div>
+ </div>
+ <p id="breedingStatus" class="sub"></p>
 </section>
 
 <section id="sellPigeon" class="hidden">
@@ -842,6 +1113,14 @@ Einladung erstellen
 </div>
 <div id="inboxPanel-conversations" class="inbox-panel">
   <h3>Private Unterhaltungen</h3>
+  <button type="button" class="action" onclick="toggleNewConversationPanel()">＋ Unterhaltung beginnen</button>
+  <div id="newConversationPanel" class="card hidden" style="margin-top:12px">
+    <h3>Neue private Unterhaltung</h3>
+    <p class="sub">Suche einen freigeschalteten Züchter und starte direkt eine private Nachricht.</p>
+    <label for="newConversationSearch">Züchter suchen</label>
+    <input id="newConversationSearch" type="search" placeholder="Name oder Ort eingeben ..." oninput="filterNewConversationBreeders()">
+    <div id="newConversationResults"><p class="sub">Suche nach einem Züchter.</p></div>
+  </div>
   <div id="conversationList">
     <p class="sub">Unterhaltungen werden geladen ...</p>
   </div>
@@ -914,6 +1193,56 @@ Einladung erstellen
   <div>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</div>
 </footer>
 
+<style>
+.qr-input-row{display:flex;align-items:stretch;gap:8px;width:100%;margin:6px 0 12px}
+.qr-input-row>input,.qr-input-row>select{flex:1;min-width:0;margin:0}
+.qr-scan-button{white-space:nowrap;border:1px solid #cbd7d0;border-radius:10px;padding:10px 13px;background:#edf2ee;color:#203d34;font-weight:700;cursor:pointer}
+.qr-scan-button:hover{background:#e0eae3}
+#qrScannerOverlay{position:fixed;inset:0;z-index:99999;background:rgba(10,25,20,.88);display:none;align-items:center;justify-content:center;padding:16px}
+#qrScannerOverlay.open{display:flex}
+.qr-scanner-panel{width:min(560px,100%);background:#fff;border-radius:18px;padding:18px;color:#203d34}
+.qr-scanner-panel video{width:100%;max-height:60vh;object-fit:cover;background:#101815;border-radius:12px}
+.qr-scanner-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.qr-scanner-head button{border:0;background:#edf2ee;border-radius:9px;padding:8px 12px;cursor:pointer}
+#qrScannerStatus{min-height:24px}
+@media(max-width:520px){.qr-input-row{flex-wrap:wrap}.qr-scan-button{width:100%}}
+</style>
+<div id="qrScannerOverlay" role="dialog" aria-modal="true" aria-labelledby="qrScannerTitle">
+ <div class="qr-scanner-panel">
+  <div class="qr-scanner-head"><h3 id="qrScannerTitle">QR-Code scannen</h3>
+   <button type="button" onclick="closeQrScanner()">Schließen ✕</button></div>
+  <p class="sub">Richte die Kamera auf den QR-Code der Tauben-Ringkarte.</p>
+  <video id="qrScannerVideo" autoplay muted playsinline></video>
+  <p id="qrScannerStatus" class="sub" aria-live="polite">Kamera wird vorbereitet ...</p>
+  <button type="button" class="action" onclick="closeQrScanner()">Abbrechen</button>
+ </div>
+</div>
+<style>
+.pigeon-qr-card{position:fixed;inset:0;z-index:100000;background:rgba(10,25,20,.78);display:none;align-items:center;justify-content:center;padding:16px}
+.pigeon-qr-card.open{display:flex}
+.pigeon-qr-sheet{width:min(420px,100%);background:#fff;color:#203d34;border-radius:18px;padding:22px;text-align:center;box-shadow:0 18px 55px rgba(0,0,0,.25)}
+.pigeon-qr-sheet h2{margin:4px 0}
+#pigeonQrCanvas{display:flex;justify-content:center;margin:16px auto;padding:12px;background:#fff}
+#pigeonQrCanvas img,#pigeonQrCanvas canvas{max-width:100%;height:auto}
+.pigeon-qr-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.pigeon-qr-actions button{padding:10px 14px;border:0;border-radius:9px;cursor:pointer}
+@media print{body.qr-printing>*:not(#pigeonQrOverlay){display:none!important}#pigeonQrOverlay{display:flex!important;position:static;background:#fff;padding:0}.pigeon-qr-sheet{box-shadow:none;margin:0 auto}}
+</style>
+<div id="pigeonQrOverlay" class="pigeon-qr-card" role="dialog" aria-modal="true" aria-labelledby="pigeonQrTitle">
+ <div class="pigeon-qr-sheet">
+  <div style="font-size:13px;letter-spacing:2px;color:#74847b">PEDIGREE OF PIGEONS · TABA</div>
+  <h2 id="pigeonQrTitle">Persönliche Tauben-Ringkarte</h2>
+  <div id="pigeonQrIdentity"></div>
+  <div id="pigeonQrCanvas"></div>
+  <p class="sub">QR-Code scannen, um diese Taube in TABA aufzurufen.</p>
+  <div class="pigeon-qr-actions">
+   <button type="button" onclick="downloadPigeonQr()">QR-Code speichern</button>
+   <button type="button" onclick="window.print()">Drucken</button>
+   <button type="button" onclick="closePigeonQr()">Schließen</button>
+  </div>
+ </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://zntuhivibdibocuarewa.supabase.co';
@@ -923,6 +1252,194 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+
+let activePigeonQrId = null;
+
+function pigeonDeepLink(pigeonId) {
+  const url = new URL(window.location.href);
+  url.hash = 'pigeon=' + encodeURIComponent(pigeonId);
+  return url.toString();
+}
+
+function showPigeonQr(pigeonId) {
+  const bird = pigeons.find(p => String(p.id) === String(pigeonId));
+  if (!bird) { alert('Diese Taube wurde in deinem Bestand nicht gefunden.'); return; }
+  if (typeof QRCode === 'undefined') { alert('Der QR-Code-Generator konnte nicht geladen werden. Bitte prüfe deine Internetverbindung.'); return; }
+
+  activePigeonQrId = String(bird.id);
+  document.getElementById('pigeonQrTitle').textContent = 'Persönliche Tauben-Ringkarte';
+  document.getElementById('pigeonQrIdentity').innerHTML =
+    '<strong style="font-size:20px">' + esc(bird.ring) + '</strong>' +
+    (bird.name ? '<div>' + esc(bird.name) + '</div>' : '');
+  const box = document.getElementById('pigeonQrCanvas');
+  box.innerHTML = '';
+  document.getElementById('pigeonQrOverlay').classList.add('open');
+  new QRCode(box, {
+    text: pigeonDeepLink(bird.id),
+    width: 220,
+    height: 220,
+    colorDark: '#203d34',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+function downloadPigeonQr() {
+  const box = document.getElementById('pigeonQrCanvas');
+  const canvas = box?.querySelector('canvas');
+  const img = box?.querySelector('img');
+  const source = canvas?.toDataURL('image/png') || img?.src;
+  if (!source) { alert('Der QR-Code ist noch nicht fertig.'); return; }
+  const bird = pigeons.find(p => String(p.id) === String(activePigeonQrId));
+  const a = document.createElement('a');
+  a.href = source;
+  a.download = 'TABA-QR-' + (bird?.ring || activePigeonQrId) + '.png';
+  a.click();
+}
+
+function closePigeonQr() {
+  document.getElementById('pigeonQrOverlay')?.classList.remove('open');
+  activePigeonQrId = null;
+}
+
+function handlePigeonDeepLink() {
+  const match = window.location.hash.match(/(?:^#|&)pigeon=([^&]+)/);
+  if (!match) return;
+  let id = '';
+  try { id = decodeURIComponent(match[1]); } catch (_) { id = match[1]; }
+  const bird = pigeons.find(p => String(p.id) === String(id));
+  if (!bird) return;
+  const select = document.getElementById('selected');
+  if (select) select.value = String(bird.id);
+  showById('pedigree');
+  tree();
+  document.getElementById('treeview')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// QR-Kamera: benötigt eine sichere HTTPS-Verbindung und Kamerafreigabe.
+let qrStream = null;
+let qrScanFrame = null;
+let qrScanTarget = null;
+let qrDetector = null;
+let qrScanBusy = false;
+
+async function openQrScanner(targetId) {
+  qrScanTarget = targetId;
+  const overlay = document.getElementById('qrScannerOverlay');
+  const video = document.getElementById('qrScannerVideo');
+  const status = document.getElementById('qrScannerStatus');
+  if (!overlay || !video || !status) return;
+  overlay.classList.add('open');
+  status.textContent = 'Kamera wird vorbereitet ...';
+
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    status.textContent = 'Die Kamera benötigt HTTPS und einen aktuellen Browser. Bitte öffne die Website über ihre sichere HTTPS-Adresse.';
+    return;
+  }
+  if (!('BarcodeDetector' in window)) {
+    status.textContent = 'Dieser Browser unterstützt das direkte QR-Scannen leider nicht. Bitte verwende Chrome oder einen aktuellen Android-Browser.';
+    return;
+  }
+  try {
+    qrDetector = new BarcodeDetector({formats:['qr_code']});
+    qrStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}}, audio:false
+    });
+    video.srcObject = qrStream;
+    await video.play();
+    status.textContent = 'Kamera aktiv – QR-Code ruhig in den Rahmen halten.';
+    scanQrFrame();
+  } catch (error) {
+    status.textContent = error?.name === 'NotAllowedError'
+      ? 'Kein Kamerazugriff. Bitte erlaube der Website den Kamerazugriff in den Browser-Einstellungen.'
+      : 'Kamera konnte nicht gestartet werden: ' + (error?.message || 'Unbekannter Fehler');
+    stopQrCamera();
+  }
+}
+
+async function scanQrFrame() {
+  const video = document.getElementById('qrScannerVideo');
+  if (!qrDetector || !video || !qrStream) return;
+  if (!qrScanBusy && video.readyState >= 2) {
+    qrScanBusy = true;
+    try {
+      const codes = await qrDetector.detect(video);
+      if (codes?.length && codes[0].rawValue) {
+        applyScannedQrValue(codes[0].rawValue);
+        closeQrScanner();
+        return;
+      }
+    } catch (error) {
+      // Einzelne nicht lesbare Videoframes sind normal; weiter scannen.
+    } finally {
+      qrScanBusy = false;
+    }
+  }
+  qrScanFrame = requestAnimationFrame(scanQrFrame);
+}
+
+function applyScannedQrValue(rawValue) {
+  const value = String(rawValue || '').trim();
+  if (!value) return;
+  let scannedPigeonId = null;
+  try {
+    const scannedUrl = new URL(value);
+    scannedPigeonId = new URLSearchParams(scannedUrl.hash.replace(/^#/, '')).get('pigeon');
+  } catch (_) {}
+  if (scannedPigeonId) {
+    const bird = pigeons.find(p => String(p.id) === String(scannedPigeonId));
+    if (qrScanTarget === 'selected' && bird) {
+      const select = document.getElementById('selected');
+      if (select) select.value = String(bird.id);
+      tree();
+    } else if (qrScanTarget === 'search' && bird) {
+      const input = document.getElementById('search');
+      if (input) { input.value = bird.ring || ''; input.dispatchEvent(new Event('input',{bubbles:true})); }
+    } else if (qrScanTarget === 'ring' && bird) {
+      document.getElementById('ring').value = bird.ring || '';
+    } else if (!bird) {
+      alert('Der QR-Code verweist auf eine Taube, die nicht in deinem eigenen Bestand gefunden wurde.');
+    }
+    return;
+  }
+  if (qrScanTarget === 'ring') {
+    const input = document.getElementById('ring');
+    if (input) { input.value = value; input.dispatchEvent(new Event('input',{bubbles:true})); input.focus(); }
+    return;
+  }
+  if (qrScanTarget === 'search') {
+    const input = document.getElementById('search');
+    if (input) { input.value = value; input.dispatchEvent(new Event('input',{bubbles:true})); input.focus(); }
+    return;
+  }
+  if (qrScanTarget === 'selected') {
+    const select = document.getElementById('selected');
+    const match = pigeons.find(p => String(p.ring || '').trim().toLocaleLowerCase('de-DE') === value.toLocaleLowerCase('de-DE'));
+    if (select && match) {
+      select.value = String(match.id);
+      tree();
+    } else {
+      alert('Zur gescannten Ringnummer „' + value + '“ wurde in deinem Bestand keine Taube gefunden.');
+    }
+  }
+}
+
+function stopQrCamera() {
+  if (qrScanFrame) cancelAnimationFrame(qrScanFrame);
+  qrScanFrame = null;
+  const video = document.getElementById('qrScannerVideo');
+  if (video) { video.pause(); video.srcObject = null; }
+  if (qrStream) qrStream.getTracks().forEach(track => track.stop());
+  qrStream = null;
+  qrDetector = null;
+  qrScanBusy = false;
+}
+
+function closeQrScanner() {
+  stopQrCamera();
+  document.getElementById('qrScannerOverlay')?.classList.remove('open');
+  qrScanTarget = null;
+}
 function openContactModal() {
   const overlay = document.getElementById('contactOverlay');
   if (!overlay) return;
@@ -976,7 +1493,7 @@ async function submitContactRequest() {
 
 async function loadAdminContactRequests() {
   const { data: authData } = await supabaseClient.auth.getUser();
-  if (authData?.user?.id !== '16248658-5328-4c55-9818-532f3e262bde') return;
+  if (authData?.user?.app_metadata?.role !== 'admin') return;
   const list = document.getElementById('adminContactRequestList');
   if (!list) return;
   const { data, error } = await supabaseClient.from('contact_requests')
@@ -999,7 +1516,7 @@ async function loadAdminContactRequests() {
 
 async function closeContactRequest(id) {
   const { data: authData } = await supabaseClient.auth.getUser();
-  if (authData?.user?.id !== '16248658-5328-4c55-9818-532f3e262bde') return;
+  if (authData?.user?.app_metadata?.role !== 'admin') return;
   const { error } = await supabaseClient.from('contact_requests').update({ status: 'closed' }).eq('id', id);
   if (error) { alert('Die Anfrage konnte nicht aktualisiert werden.'); console.error(error); return; }
   loadAdminContactRequests();
@@ -1403,6 +1920,7 @@ for (const bird of pigeons) {
   }
 }
 render();
+handlePigeonDeepLink();
 }
 
 // Baut die Bestandsliste und die Auswahl für den Stammbaum aus den geladenen Supabase-Daten auf.
@@ -1420,6 +1938,7 @@ function render(){
         <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
         <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>${esc(p.name)} · ${esc(p.breed)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b">VERKAUFT</strong>' : ''}</small></div>
         ${p.pigeon_status === 'in_loft' ? `<button type="button" class="action" style="padding:8px 10px;font-size:13px" onclick="sellPigeonFromInventory('${p.id}')">🐦 Verkaufen</button>` : ''}
+        <button type="button" onclick="showPigeonQr('${p.id}')" aria-label="Persönlichen QR-Code anzeigen">▦ QR</button>
         <button type="button" onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button>
         <button type="button" onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
         <button type="button" onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
@@ -2532,6 +3051,63 @@ async function loadPigeonListings() {
   box.innerHTML = cards.filter(Boolean).join('') || '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
 }
 
+
+let newConversationBreederCache = null;
+
+function toggleNewConversationPanel(forceOpen) {
+  const panel = document.getElementById('newConversationPanel');
+  if (!panel) return;
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !shouldOpen);
+  if (shouldOpen) {
+    const input = document.getElementById('newConversationSearch');
+    input?.focus();
+    loadNewConversationBreeders();
+  }
+}
+
+async function loadNewConversationBreeders() {
+  const results = document.getElementById('newConversationResults');
+  if (!results) return;
+  results.innerHTML = '<p class="sub">Züchter werden geladen ...</p>';
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+  if (!user) { results.innerHTML = '<p class="sub">Bitte zuerst anmelden.</p>'; return; }
+
+  const { data, error } = await supabaseClient
+    .from('breeders')
+    .select('id, display_name, location_label')
+    .eq('status', 'approved')
+    .neq('id', user.id)
+    .order('display_name', {ascending:true});
+
+  if (error) {
+    results.innerHTML = '<p class="sub">Züchter konnten nicht geladen werden: ' + esc(error.message) + '</p>';
+    return;
+  }
+  newConversationBreederCache = data || [];
+  filterNewConversationBreeders();
+}
+
+function filterNewConversationBreeders() {
+  const results = document.getElementById('newConversationResults');
+  const input = document.getElementById('newConversationSearch');
+  if (!results) return;
+  if (!newConversationBreederCache) {
+    results.innerHTML = '<p class="sub">Bitte kurz warten, Züchter werden geladen ...</p>';
+    return;
+  }
+  const query = (input?.value || '').trim().toLocaleLowerCase('de-DE');
+  const matches = newConversationBreederCache.filter(b =>
+    (b.display_name || '').toLocaleLowerCase('de-DE').includes(query) ||
+    (b.location_label || '').toLocaleLowerCase('de-DE').includes(query)
+  ).slice(0,30);
+  results.innerHTML = matches.map(b => `
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0">
+      <div><strong>${esc(b.display_name)}</strong>${b.location_label ? `<div class="sub">${esc(b.location_label)}</div>` : ''}</div>
+      <button type="button" class="action" onclick="startConversation('${b.id}')">Unterhaltung beginnen</button>
+    </div>`).join('') || '<p class="sub">Kein passender freigeschalteter Züchter gefunden.</p>';
+}
   async function startConversation(breederId) {
   const { data: sessionData } =
     await supabaseClient.auth.getSession();
@@ -2896,8 +3472,8 @@ async function updateMessageUnreadBadge(user, unreadMessages) {
 async function adminReviewSale(saleId, decision) {
   const isAdmin =
     (await supabaseClient.auth.getSession())
-      .data.session?.user?.id ===
-    '16248658-5328-4c55-9818-532f3e262bde';
+      .data.session?.user?.app_metadata?.role ===
+    'admin';
 
   if (!isAdmin) {
     alert('Du hast keine Admin-Berechtigung.');
@@ -2966,7 +3542,7 @@ async function toggleAdminBroadcast(forceOpen) {
   if (!panel) return;
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
-  const isAdmin = user && user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  const isAdmin = user && user.app_metadata?.role === 'admin';
   if (!isAdmin) {
     panel.classList.add('hidden');
     panel.style.display = 'none';
@@ -3010,7 +3586,7 @@ function toggleBroadcastRecipients() {
 async function sendAdminBroadcast() {
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const user = sessionData.session?.user;
-  if (!user || user.id !== '16248658-5328-4c55-9818-532f3e262bde') {
+  if (!user || user.app_metadata?.role !== 'admin') {
     alert('Diese Funktion ist nur für den Admin verfügbar.');
     return;
   }
@@ -3077,7 +3653,7 @@ async function loadNotifications() {
   }
 
   const isAdmin =
-    user.id === '16248658-5328-4c55-9818-532f3e262bde';
+    user.app_metadata?.role === 'admin';
 
   list.innerHTML = notifications.map(n => `
     <div class="card"
@@ -3313,6 +3889,8 @@ function updateAccountRole(user) {
   const loggedInUser = document.getElementById('loggedInUser');
   if (!badge) return;
 
+  const adminShortcut = document.getElementById('tabaAdminShortcut');
+  if (adminShortcut) adminShortcut.classList.toggle('hidden', !(user && user.app_metadata?.role === 'admin'));
   if (!user) {
     prepareContactForm(null);
     const broadcastButton = document.getElementById('adminBroadcastButton');
@@ -3347,7 +3925,7 @@ function updateAccountRole(user) {
     return;
   }
 
-  const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  const isAdmin = user.app_metadata?.role === 'admin';
   prepareContactForm(user);
   const broadcastButton = document.getElementById('adminBroadcastButton');
   if (broadcastButton) { broadcastButton.classList.toggle('hidden', !isAdmin); broadcastButton.style.display = isAdmin ? 'inline-block' : 'none'; }
@@ -3541,6 +4119,103 @@ loginForm.addEventListener('submit', async function(event) {
 });
 
 // Automatische Abmeldung nach 5 Minuten ohne Nutzeraktivität.
+
+// ===== TABA Erweiterungen: Zuchtbuch, Kalender, Gesundheitsakte, Leistung, Freigaben =====
+const tabaToday = () => new Date().toISOString().slice(0,10);
+const tabaVal = id => (document.getElementById(id)?.value || '').trim();
+const tabaSet = (id,v) => { const e=document.getElementById(id); if(e) e.value=v ?? ''; };
+function tabaOptions(id, rows, placeholder='Bitte auswählen') {
+  const el=document.getElementById(id); if(!el) return;
+  const old=el.value;
+  el.innerHTML='<option value="">'+placeholder+'</option>'+(rows||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.ring)}${p.name?' – '+esc(p.name):''}</option>`).join('');
+  if((rows||[]).some(p=>String(p.id)===String(old))) el.value=old;
+}
+function tabaStatus(msg, bad=false) {
+ const e=document.getElementById('breedingStatus'); if(e){e.textContent=msg;e.style.color=bad?'#a94339':'#28734f';}
+}
+async function tabaUser() {
+ const {data,error}=await supabaseClient.auth.getUser();
+ if(error||!data?.user){tabaStatus('Bitte anmelden, um die Erweiterungen zu verwenden.',true);return null;}
+ return data.user;
+}
+async function loadBreedingHub() {
+ const user=await tabaUser(); if(!user)return;
+ const birds=pigeons||[];
+ tabaOptions('pairMale',birds.filter(p=>p.sex==='male'),'Täuber auswählen');
+ tabaOptions('pairFemale',birds.filter(p=>p.sex==='female'),'Täubin auswählen');
+ ['youngFather','youngMother','healthPigeon','flightPigeon','sharePigeon'].forEach(id=>tabaOptions(id,birds));
+ const pairSel=document.getElementById('eventPair');
+ if(pairSel) pairSel.innerHTML='<option value="">Ohne Paarbezug</option>';
+ ['pairStart','healthDate','flightDate','eventDate'].forEach(id=>{if(!tabaVal(id))tabaSet(id,tabaToday());});
+ const [pairs,health,flights,events,shares]=await Promise.all([
+  supabaseClient.from('taba_breeding_pairs').select('id,male_id,female_id,pair_date,note,created_at').eq('owner_id',user.id).order('pair_date',{ascending:false}),
+  supabaseClient.from('taba_pigeon_health').select('id,pigeon_id,record_date,weight_grams,record_type,notes').eq('owner_id',user.id).order('record_date',{ascending:false}).limit(30),
+  supabaseClient.from('taba_flight_results').select('id,pigeon_id,flight_date,distance_km,duration_minutes,placement,notes').eq('owner_id',user.id).order('flight_date',{ascending:false}).limit(30),
+  supabaseClient.from('taba_breeding_events').select('id,title,event_date,pair_id').eq('owner_id',user.id).order('event_date',{ascending:true}),
+  supabaseClient.from('taba_pedigree_shares').select('id,pigeon_id,shared_with,scope,created_at').eq('owner_id',user.id).order('created_at',{ascending:false})
+ ]);
+ const errs=[pairs,health,flights,events,shares].filter(x=>x.error);
+ if(errs.length){tabaStatus('Supabase-Erweiterungstabellen fehlen oder sind nicht freigegeben. Bitte die beigefügte SQL-Migration im Supabase SQL Editor ausführen. Details: '+errs[0].error.message,true);return;}
+ const birdLabel=id=>{const p=birds.find(x=>String(x.id)===String(id));return p?`${p.ring}${p.name?' – '+p.name:''}`:'Taube nicht im Bestand';};
+ const pairData=pairs.data||[];
+ if(pairSel) pairSel.innerHTML='<option value="">Ohne Paarbezug</option>'+pairData.map(p=>`<option value="${p.id}">${esc(birdLabel(p.male_id))} × ${esc(birdLabel(p.female_id))}</option>`).join('');
+ document.getElementById('pairList').innerHTML=pairData.map(p=>`<div class="taba-list-item"><strong>${esc(birdLabel(p.male_id))} × ${esc(birdLabel(p.female_id))}</strong><div class="taba-muted">${esc(p.pair_date||'')} ${esc(p.note||'')}</div></div>`).join('')||'Noch keine Zuchtpaare gespeichert.';
+ document.getElementById('healthList').innerHTML=(health.data||[]).map(r=>`<div class="taba-list-item"><strong>${esc(birdLabel(r.pigeon_id))}</strong> · ${esc(r.record_date||'')}<div>${esc(r.record_type||'Eintrag')} ${r.weight_grams?`· ${r.weight_grams} g`:''}</div><div class="taba-muted">${esc(r.notes||'')}</div></div>`).join('')||'Noch keine Gesundheitsdaten.';
+ document.getElementById('flightList').innerHTML=(flights.data||[]).map(r=>`<div class="taba-list-item"><strong>${esc(birdLabel(r.pigeon_id))}</strong> · ${esc(r.flight_date||'')}<div>${r.distance_km??'–'} km · ${r.duration_minutes??'–'} Min. · Platz ${esc(r.placement||'–')}</div><div class="taba-muted">${esc(r.notes||'')}</div></div>`).join('')||'Noch keine Flugleistungen.';
+ document.getElementById('calendarList').innerHTML=(events.data||[]).map(e=>`<div class="taba-list-item"><strong>${esc(e.event_date)}</strong> · ${esc(e.title)}</div>`).join('')||'Noch keine Termine.';
+ document.getElementById('shareList').innerHTML=(shares.data||[]).map(s=>`<div class="taba-list-item">Taube ${esc(birdLabel(s.pigeon_id))} · Empfänger ${esc(s.shared_with)} · ${esc(s.scope)} <button type="button" onclick="revokePedigreeShare('${s.id}')">Widerrufen</button></div>`).join('')||'Noch keine Freigaben.';
+}
+async function saveBreedingPair(){
+ const user=await tabaUser();if(!user)return;
+ const male=tabaVal('pairMale'),female=tabaVal('pairFemale');
+ if(!male||!female||male===female){tabaStatus('Bitte einen Täuber und eine andere Täubin auswählen.',true);return;}
+ const {error}=await supabaseClient.from('taba_breeding_pairs').insert({owner_id:user.id,male_id:male,female_id:female,pair_date:tabaVal('pairStart')||tabaToday(),note:tabaVal('pairNote')||null});
+ if(error){tabaStatus(error.message,true);return;}tabaSet('pairNote','');tabaStatus('Zuchtpaar gespeichert.');await loadBreedingHub();
+}
+async function saveYoungPigeon(){
+ const user=await tabaUser();if(!user)return;
+ const ring=tabaVal('youngRing'),father=tabaVal('youngFather')||null,mother=tabaVal('youngMother')||null;
+ if(!ring){tabaStatus('Bitte eine Ringnummer eintragen.',true);return;}
+ if(father&&mother&&father===mother){tabaStatus('Vater und Mutter müssen unterschiedliche Tauben sein.',true);return;}
+ const {data,error}=await supabaseClient.from('pigeons').insert({owner_id:user.id,ring_number:ring,name:tabaVal('youngName')||null,sex:tabaVal('youngSex')||'unknown',hatch_date:tabaVal('youngHatch')||null,father_id:father,mother_id:mother,pigeon_status:'in_loft'}).select('id').single();
+ if(error){tabaStatus('Jungtier konnte nicht gespeichert werden: '+error.message,true);return;}
+ tabaSet('youngRing','');tabaSet('youngName','');tabaStatus('Jungtier gespeichert und mit den ausgewählten Eltern im Stammbaum verknüpft.');await loadPigeons();await loadBreedingHub();
+}
+async function saveHealthRecord(){
+ const user=await tabaUser();if(!user)return;const pigeon=tabaVal('healthPigeon');
+ if(!pigeon){tabaStatus('Bitte eine Taube auswählen.',true);return;}
+ const weight=tabaVal('healthWeight');
+ const {error}=await supabaseClient.from('taba_pigeon_health').insert({owner_id:user.id,pigeon_id:pigeon,record_date:tabaVal('healthDate')||tabaToday(),weight_grams:weight?Number(weight):null,record_type:tabaVal('healthType')||null,notes:tabaVal('healthNotes')||null});
+ if(error){tabaStatus(error.message,true);return;}tabaSet('healthType','');tabaSet('healthNotes','');tabaSet('healthWeight','');tabaStatus('Gesundheitseintrag gespeichert.');await loadBreedingHub();
+}
+async function saveFlightRecord(){
+ const user=await tabaUser();if(!user)return;const pigeon=tabaVal('flightPigeon');
+ if(!pigeon){tabaStatus('Bitte eine Taube auswählen.',true);return;}
+ const dist=tabaVal('flightDistance'),dur=tabaVal('flightDuration');
+ const {error}=await supabaseClient.from('taba_flight_results').insert({owner_id:user.id,pigeon_id:pigeon,flight_date:tabaVal('flightDate')||tabaToday(),distance_km:dist?Number(dist):null,duration_minutes:dur?Number(dur):null,placement:tabaVal('flightRank')||null,notes:tabaVal('flightNotes')||null});
+ if(error){tabaStatus(error.message,true);return;}tabaSet('flightNotes','');tabaStatus('Flugleistung gespeichert.');await loadBreedingHub();
+}
+async function saveBreedingEvent(){
+ const user=await tabaUser();if(!user)return;const title=tabaVal('eventTitle'),date=tabaVal('eventDate');
+ if(!title||!date){tabaStatus('Bitte Titel und Datum für den Termin angeben.',true);return;}
+ const {error}=await supabaseClient.from('taba_breeding_events').insert({owner_id:user.id,title,event_date:date,pair_id:tabaVal('eventPair')||null});
+ if(error){tabaStatus(error.message,true);return;}tabaSet('eventTitle','');tabaStatus('Termin im Zuchtkalender gespeichert.');await loadBreedingHub();
+}
+async function createPedigreeShare(){
+ const user=await tabaUser();if(!user)return;const pigeon=tabaVal('sharePigeon'),recipient=tabaVal('shareBreederId');
+ if(!pigeon||!recipient){tabaStatus('Bitte Taube und Empfänger-ID angeben.',true);return;}
+ if(recipient===user.id){tabaStatus('Eine Freigabe an das eigene Konto ist nicht nötig.',true);return;}
+ const {error}=await supabaseClient.from('taba_pedigree_shares').insert({owner_id:user.id,pigeon_id:pigeon,shared_with:recipient,scope:tabaVal('shareScope')||'pedigree'});
+ if(error){tabaStatus('Freigabe nicht gespeichert: '+error.message,true);return;}
+ tabaStatus('Freigabe-Eintrag gespeichert. Die Empfängeransicht für freigegebene Stammbäume ist der nächste Ausbauschritt.');await loadBreedingHub();
+}
+async function revokePedigreeShare(id){
+ const user=await tabaUser();if(!user)return;
+ const {error}=await supabaseClient.from('taba_pedigree_shares').delete().eq('id',id).eq('owner_id',user.id);
+ if(error){tabaStatus(error.message,true);return;}tabaStatus('Freigabe widerrufen.');await loadBreedingHub();
+}
+
+
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const IDLE_LAST_ACTIVITY_KEY = 'taba_last_activity_at';
 let idleLogoutTimer = null;
@@ -3634,6 +4309,45 @@ if (passwordRecovery) {
   document.getElementById('passwordResetBox')
     .classList.remove('hidden');
 }
+
+// Passwort-Wiederherstellung: Supabase verarbeitet den E-Mail-Link (PKCE oder Token-Hash)
+// und meldet PASSWORD_RECOVERY. Dann wird ausschließlich das Formular zum neuen Passwort gezeigt.
+function showTabaPasswordRecovery() {
+  const login = document.getElementById('loginOverlay');
+  const reset = document.getElementById('passwordResetBox');
+  if (login) login.classList.add('hidden');
+  if (reset) reset.classList.remove('hidden');
+  const message = document.getElementById('passwordResetMessage');
+  if (message) message.textContent = 'Der Wiederherstellungslink ist gültig. Bitte lege jetzt ein neues Passwort fest.';
+}
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    showTabaPasswordRecovery();
+  }
+});
+(async function detectRecoveryLink() {
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash || '';
+  const isRecoveryLink = params.has('code') ||
+    params.get('type') === 'recovery' ||
+    hash.includes('type=recovery') ||
+    hash.includes('access_token=');
+  if (!isRecoveryLink) return;
+  // With Supabase JS v2's default detectSessionInUrl, PKCE code / hash is exchanged
+  // during client initialization. Wait briefly for the resulting session event.
+  const { data } = await supabaseClient.auth.getSession();
+  if (data?.session) {
+    showTabaPasswordRecovery();
+  } else {
+    const message = document.getElementById('passwordResetMessage');
+    if (message) message.textContent = 'Der Link konnte nicht bestätigt werden. Bitte fordere einen neuen Passwort-Link an.';
+    const reset = document.getElementById('passwordResetBox');
+    if (reset) reset.classList.remove('hidden');
+    const login = document.getElementById('loginOverlay');
+    if (login) login.classList.add('hidden');
+  }
+})();
+
 checkLogin();
 
 
