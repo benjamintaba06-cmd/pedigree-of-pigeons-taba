@@ -89,17 +89,45 @@ header p {
 
 .logout-button {
   display: inline-block;
-  margin: 10px 0 0 8px;
-  padding: 7px 12px;
+  margin: 10px 0 0 0;
+  padding: 6px 11px;
   border: 1px solid #e7b5ae;
-  border-radius: 8px;
+  border-radius: 20px;
   background: #a94339;
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
+  letter-spacing: 0.4px;
   cursor: pointer;
+  vertical-align: middle;
 }
+.logout-button:hover { background: #91372f; }
 .logout-button.hidden { display: none; }
+.role-description {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, 82vw);
+  max-width: 320px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid rgba(214,189,130,.65);
+  border-radius: 10px;
+  background: #17352e;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,.24);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  pointer-events: none;
+}
+.logo-role-mark:hover + .role-description,
+.logo-role-mark:focus + .role-description {
+  display: block;
+}
 .member-stats {
   position: fixed;
   z-index: 1000;
@@ -356,6 +384,7 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
       tabindex="0" aria-label="Statistiken anzeigen" aria-expanded="false"
       title="Statistiken anzeigen" onclick="toggleMemberStats()"
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMemberStats();}"></span>
+    <div id="roleDescription" class="role-description hidden" role="tooltip"></div>
     <img src="hinterlaender-hof-logo.jpg_1.jpg"
          alt="Benjamin TABA – Hinterländer Hof">
   </div>
@@ -454,7 +483,6 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
     <div class="nav-group-links">
       <button class="active" onclick="show('pigeons',this)">🕊️ Tauben</button>
       <button onclick="show('pedigree',this)">🌳 Stammbaum</button>
-      <button onclick="show('sellPigeon',this)">🐦 Taube verkaufen</button>
     </div>
   </div>
   <div class="nav-group">
@@ -632,11 +660,20 @@ Einladung erstellen
     Deine persönlichen Nachrichten aus der TABA-Züchtergemeinschaft.
   </p>
 
-<h3>Private Unterhaltungen</h3>
-<div id="conversationList">
-  <p class="sub">Unterhaltungen werden geladen ...</p>
+<div class="breeder-subnav inbox-subnav">
+  <button type="button" class="action active" data-inbox-panel="conversations" onclick="showInboxPanel('conversations',this)">
+    💬 Private Unterhaltungen <span id="conversationTabDot" class="unread-dot hidden"></span>
+  </button>
+  <button type="button" class="action" data-inbox-panel="notifications" onclick="showInboxPanel('notifications',this)">
+    🔔 Benachrichtigungen <span id="notificationTabDot" class="unread-dot hidden"></span>
+  </button>
 </div>
-<div id="conversationView" class="card hidden">
+<div id="inboxPanel-conversations" class="inbox-panel">
+  <h3>Private Unterhaltungen</h3>
+  <div id="conversationList">
+    <p class="sub">Unterhaltungen werden geladen ...</p>
+  </div>
+  <div id="conversationView" class="card hidden">
   <h3 id="conversationTitle">Private Unterhaltung</h3>
 
   <div id="messageList">
@@ -655,10 +692,13 @@ Einladung erstellen
   <button class="action" onclick="closeConversation()">
     Zurück zur Unterhaltungsliste
   </button>
+  </div>
 </div>
-<h3>Benachrichtigungen</h3>
-<div id="notificationList">
-  <p class="sub">Nachrichten werden geladen ...</p>
+<div id="inboxPanel-notifications" class="inbox-panel hidden">
+  <h3>Benachrichtigungen</h3>
+  <div id="notificationList">
+    <p class="sub">Nachrichten werden geladen ...</p>
+  </div>
 </div>
 </section>
 
@@ -738,8 +778,9 @@ function show(id, btn) {
   }
 
   if (id === 'inbox') {
+    const tab = document.querySelector('[data-inbox-panel="conversations"]');
+    showInboxPanel('conversations', tab);
     loadNotifications();
-    loadConversations();
   }
 
   if (id === 'pedigree') {
@@ -757,6 +798,16 @@ function show(id, btn) {
 function showById(id){
  const button = document.querySelector(`nav button[onclick="show('${id}',this)"]`);
  if (button) show(id, button);
+}
+
+function showInboxPanel(name, button){
+  document.querySelectorAll('.inbox-panel').forEach(panel=>panel.classList.add('hidden'));
+  const panel=document.getElementById('inboxPanel-'+name);
+  if(panel) panel.classList.remove('hidden');
+  document.querySelectorAll('.inbox-subnav button').forEach(btn=>btn.classList.remove('active'));
+  if(button) button.classList.add('active');
+  if(name==='conversations') loadConversations();
+  if(name==='notifications') loadNotifications();
 }
 
 function showBreederPanel(name, button){
@@ -978,7 +1029,35 @@ async function respondToSale(saleId, response) {
   await loadNotifications();
 }
 
-  async function loadPigeons() {
+  async async function sellPigeonFromInventory(pigeonId) {
+  const pigeon = pigeons.find(p => String(p.id) === String(pigeonId));
+  if (!pigeon || pigeon.pigeon_status !== 'in_loft') { alert('Diese Taube ist nicht mehr verfügbar.'); return; }
+  const { data: existing, error: lookupError } = await supabaseClient.from('sales_listings').select('id').eq('pigeon_id', pigeonId).eq('status', 'active').limit(1);
+  if (lookupError) { alert('Vorhandene Verkaufsanzeige konnte nicht geprüft werden: ' + lookupError.message); return; }
+  if (existing && existing.length) { alert('Diese Taube ist bereits im Züchterkreis zum Verkauf angeboten.'); return; }
+  const rawPrice = prompt('Verkaufspreis in Euro (leer lassen für VB):', '');
+  if (rawPrice === null) return;
+  let price = null;
+  if (rawPrice.trim() !== '') {
+    price = Number(rawPrice.replace(',', '.'));
+    if (!Number.isFinite(price) || price < 0) { alert('Bitte gib einen gültigen Preis ab 0 € ein oder lasse das Feld leer.'); return; }
+  }
+  const priceLabel = price === null ? 'VB' : price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  if (!confirm('Möchtest du ' + pigeon.ring + ' für ' + priceLabel + ' als Verkaufsanzeige im Züchterkreis veröffentlichen?')) return;
+  const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+  const user = authData?.user;
+  if (authError || !user) { alert('Bitte melde dich erneut an.'); return; }
+  const { error } = await supabaseClient.from('sales_listings').insert({
+    owner_id: user.id, pigeon_id: pigeonId,
+    price_type: price === null ? 'negotiable' : 'fixed',
+    price, pedigree_public: false, status: 'active'
+  });
+  if (error) { alert('Die Verkaufsanzeige konnte nicht veröffentlicht werden: ' + error.message); return; }
+  alert(pigeon.ring + ' wurde für ' + priceLabel + ' im Züchterkreis angeboten.');
+  await loadPigeons();
+}
+
+function loadPigeons() {
   const { data: authData, error: authError } = await supabaseClient.auth.getUser();
   const user = authData?.user;
   if (authError) console.warn('Authentifizierung beim Laden:', authError.message);
@@ -1067,6 +1146,7 @@ function render(){
   ${esc(p.name)} · ${esc(p.breed)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}
   ${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b;">VERKAUFT</strong>' : ''}
 </small></div>
+ ${p.pigeon_status === 'in_loft' ? `<button class="action" style="padding:8px 10px;font-size:13px" onclick="sellPigeonFromInventory('${p.id}')">🐦 Verkaufen</button>` : ''}
  <button onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button><button onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
 <button onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
  </div>`).join('')||'<p class="sub">Noch keine Tauben eingetragen.</p>';
@@ -2373,18 +2453,25 @@ async function loadConversations() {
 }
 
 async function updateMessageUnreadBadge(user, unreadMessages) {
-  const badge = document.getElementById('unreadCount');
-  if (!badge) return;
-  let unreadNotifications = 0;
+  const navBadge = document.getElementById('unreadCount');
+  const conversationDot = document.getElementById('conversationTabDot');
+  const notificationDot = document.getElementById('notificationTabDot');
+  const unreadConversationCount = (unreadMessages || []).length;
+
   const { count, error } = await supabaseClient
     .from('notifications')
     .select('id', { count: 'exact', head: true })
     .eq('recipient_id', user.id)
     .is('read_at', null);
-  if (!error) unreadNotifications = count || 0;
-  const totalUnread = (unreadMessages || []).length + unreadNotifications;
-  badge.classList.toggle('hidden', totalUnread === 0);
-  badge.title = totalUnread ? `${totalUnread} ungelesene Hinweise` : '';
+  const unreadNotificationCount = error ? 0 : (count || 0);
+
+  if (conversationDot) conversationDot.classList.toggle('hidden', unreadConversationCount === 0);
+  if (notificationDot) notificationDot.classList.toggle('hidden', unreadNotificationCount === 0);
+  if (navBadge) {
+    const totalUnread = unreadConversationCount + unreadNotificationCount;
+    navBadge.classList.toggle('hidden', totalUnread === 0);
+    navBadge.title = totalUnread ? `${totalUnread} ungelesene Hinweise` : '';
+  }
 }
 
 async function adminReviewSale(saleId, decision) {
@@ -2720,11 +2807,16 @@ function updateAccountRole(user) {
   const badge = document.getElementById('accountRole');
   const mark = document.getElementById('logoRoleMark');
   const logoutButton = document.getElementById('logoutButton');
+  const roleDescription = document.getElementById('roleDescription');
   if (!badge) return;
 
   if (!user) {
     badge.textContent = '';
     badge.classList.add('hidden');
+    if (roleDescription) {
+      roleDescription.textContent = '';
+      roleDescription.classList.add('hidden');
+    }
     if (mark) {
       mark.textContent = '';
       mark.classList.add('hidden');
@@ -2739,6 +2831,12 @@ function updateAccountRole(user) {
   const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
   badge.classList.remove('hidden');
+  if (roleDescription) {
+    roleDescription.textContent = isAdmin
+      ? 'Als Admin betreust du die Plattform: Du prüfst Züchterfreigaben und Verkaufsentscheidungen, achtest auf faire Abläufe und hilfst, dass die Gemeinschaft vertrauenswürdig und gut organisiert bleibt.'
+      : 'Als Member pflegst du deinen Taubenbestand und Stammbäume, teilst Beiträge, bietest Tauben an und tauschst dich mit anderen Züchtern aus. Sorgfältige und ehrliche Angaben schaffen Vertrauen und helfen der Gemeinschaft.';
+    roleDescription.classList.remove('hidden');
+  }
 
   if (mark) {
     mark.textContent = isAdmin ? '👑' : '🕊️';
