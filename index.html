@@ -1709,51 +1709,96 @@ function downloadPedigreePDF(){
  const id=document.getElementById('selected')?.value;
  const root=pigeons.find(x=>String(x.id)===String(id));
  if(!root){alert('Bitte zuerst eine Taube als Ausgangspunkt auswählen.');return;}
- const levels=[[root]];
- for(let gen=1;gen<=4;gen++){
-   const next=[];
-   levels[gen-1].forEach(b=>{
-     next.push(b?pigeons.find(x=>String(x.id)===String(b.father))||null:null);
-     next.push(b?pigeons.find(x=>String(x.id)===String(b.mother))||null:null);
-   });
-   levels.push(next);
+
+ const treeElement=document.getElementById('treeview');
+ if(!treeElement || !treeElement.querySelector('.pedigree-diagram')){
+   alert('Der Stammbaum ist noch nicht aufgebaut. Bitte kurz warten und erneut versuchen.');
+   return;
  }
- const sections=levels.slice(1).map((level,index)=>{
-   const generation=index+1;
-   const columns=generation===4?8:Math.min(level.length,8);
-   return `<section class="generation"><h2>${generation}. Generation</h2><div class="birds" style="grid-template-columns:repeat(${columns},minmax(0,1fr))">${level.map((bird,i)=>`
-    <article class="bird-card">
-      ${bird?.photo_url?`<img src="${bird.photo_url}" alt="Taubenfoto">`:'<div class="empty">EMPTY</div>'}
-      <strong>${bird?esc(bird.ring_number||bird.ring||''):'EMPTY'}</strong>
-      ${bird?.name?`<span>${esc(bird.name)}</span>`:''}
-      <small>${i%2===0?'♂ Vater':'♀ Mutter'}</small>
-    </article>`).join('')}</div></section>`;
- }).join('');
+
+ // Vor dem Kopieren die Verbindungslinien in der Website-Ansicht aktualisieren.
+ if(typeof drawPedigreeConnectors==='function') drawPedigreeConnectors();
+
  const win=window.open('','_blank');
  if(!win){alert('Bitte Pop-ups für diese Seite erlauben und erneut versuchen.');return;}
- win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Stammbaum – ${esc(root.ring_number||root.ring||'')}</title>
+
+ const ring=esc(root.ring_number||root.ring||'');
+ const name=esc(root.name||'Ausgangspunkt');
+
+ // Vorhandene Stylesheets übernehmen, damit die PDF dieselben Karten,
+ // Generationen, Abstände, Farben und Verbindungslinien wie die Website nutzt.
+ const headAssets=[...document.head.querySelectorAll('style,link[rel="stylesheet"]')]
+   .map(node=>node.outerHTML).join('\n');
+ const treeMarkup=treeElement.innerHTML;
+
+ win.document.open();
+ win.document.write(`<!doctype html>
+ <html lang="de">
+ <head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Stammbaum – ${ring}</title>
+ ${headAssets}
  <style>
- @page{size:A4 landscape;margin:10mm}
- *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#173b32;margin:0}
- h1{text-align:center;font-size:22px;margin:0 0 4px} .subtitle{text-align:center;color:#65766e;margin:0 0 14px;font-size:12px}
- .root{display:flex;align-items:center;justify-content:center;gap:14px;background:#eaf1ec;border:1px solid #d5e1d8;border-radius:12px;padding:10px;margin-bottom:12px;text-align:left}
- .root img{width:68px;height:68px;object-fit:cover;border-radius:10px}
- .root strong{font-size:16px;display:block}.root span{font-size:12px}
- .generation{margin:10px 0 0;break-inside:avoid}.generation h2{font-size:13px;margin:0 0 6px;color:#315b49}
- .birds{display:grid;gap:5px}
- .bird-card{text-align:center;min-width:0;border:1px solid #dce5df;border-radius:7px;padding:4px 2px;overflow:hidden;font-size:9px;overflow-wrap:anywhere}
- .bird-card img,.empty{display:block;width:100%;height:48px;object-fit:cover;border-radius:4px}
- .empty{display:grid;place-items:center;background:#f0f3f0;color:#7a8981;font-weight:bold}
- .bird-card strong,.bird-card span,.bird-card small{display:block;margin-top:3px}
- .bird-card small{color:#718078}
- button{margin-top:14px;padding:10px 18px;border:0;border-radius:8px;background:#203d34;color:white;font-weight:bold}
- @media print{button{display:none}.generation{break-inside:avoid}}
- </style></head><body>
- <h1>Pedigree of Pigeons by TABA</h1><p class="subtitle">Tauben-Stammbaum · Vier Generationen</p>
- <div class="root">${root.photo_url?`<img src="${root.photo_url}" alt="">`:'<div style="font-size:42px">🕊️</div>'}<div><strong>${esc(root.ring_number||root.ring||'')}</strong><span>${esc(root.name||'Ausgangspunkt')}</span></div></div>
- ${sections}
- <div style="text-align:center"><button onclick="window.print()">PDF speichern / Drucken</button></div>
- <script>window.onload=()=>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+   @page { size: A3 landscape; margin: 8mm; }
+   html, body { margin:0 !important; padding:0 !important; background:#fff !important; }
+   body { color:#20332e; font-family:Arial,sans-serif; }
+   .pdf-heading { text-align:center; margin:0 0 12px; color:#173b32; }
+   .pdf-heading h1 { font-size:20px; margin:0 0 4px; }
+   .pdf-heading p { margin:0; color:#65766e; font-size:11px; }
+   main { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; }
+   #treeview { width:100% !important; max-width:none !important; }
+   .pedigree-scroll { width:100% !important; overflow:visible !important; padding:0 !important; }
+   .pedigree-diagram {
+     width:1944px !important;
+     min-width:1944px !important;
+     max-width:none !important;
+     margin:0 auto !important;
+     overflow:visible !important;
+     print-color-adjust:exact;
+     -webkit-print-color-adjust:exact;
+   }
+   .pedigree-level, .pedigree-cell, .pedigree-card {
+     break-inside:avoid !important;
+     page-break-inside:avoid !important;
+   }
+   .pedigree-connectors { overflow:visible !important; }
+   .pedigree-card { cursor:default !important; }
+   .pedigree-card:hover { background:#fff !important; border-color:#dce4dc !important; }
+   .pedigree-scroll + .sub { margin-top:8px; }
+   button { -webkit-appearance:none; appearance:none; }
+   .pdf-actions { text-align:center; margin:14px 0 0; }
+   .pdf-actions button {
+     padding:9px 16px; border:0; border-radius:8px;
+     background:#203d34; color:#fff; font-weight:bold; cursor:pointer;
+   }
+   @media print {
+     .pdf-actions { display:none !important; }
+     body { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+   }
+ </style>
+ </head>
+ <body>
+   <main>
+     <div class="pdf-heading">
+       <h1>Pedigree of Pigeons by TABA</h1>
+       <p>Stammbaum · ${ring}${name && name!=='Ausgangspunkt' ? ' · '+name : ''}</p>
+     </div>
+     <div id="treeview">${treeMarkup}</div>
+     <div class="pdf-actions"><button type="button" onclick="window.print()">PDF speichern / Drucken</button></div>
+   </main>
+   <script>
+     // Die SVG-Verbindungslinien aus der Website werden mitgedruckt.
+     // Erst drucken, wenn die kopierten Fotos geladen sind.
+     window.addEventListener('load', () => {
+       const images=[...document.images];
+       Promise.all(images.map(img => img.complete ? Promise.resolve() :
+         new Promise(resolve => { img.onload=img.onerror=resolve; })))
+         .then(() => setTimeout(() => window.print(), 350));
+     });
+   <\/script>
+ </body>
+ </html>`);
  win.document.close();
 }
 async function createTreeRoot(){
