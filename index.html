@@ -794,6 +794,9 @@ Einladung erstellen
   <button type="button" id="adminBroadcastButton" class="action hidden" onclick="toggleAdminBroadcast()" style="display:none">
     📢 Benachrichtigung erstellen
   </button>
+  <button type="button" id="adminContactRequestsButton" class="action hidden" data-inbox-panel="contactRequests" onclick="showInboxPanel('contactRequests',this)" style="display:none">
+    📥 Kontaktanfragen <span id="contactRequestsTabCount"></span>
+  </button>
 </div>
 <div id="adminBroadcastPanel" class="card hidden" style="display:none">
   <h3>📢 Gemeinschaft benachrichtigen</h3>
@@ -844,11 +847,43 @@ Einladung erstellen
     <p class="sub">Nachrichten werden geladen ...</p>
   </div>
 </div>
+<div id="inboxPanel-contactRequests" class="inbox-panel hidden">
+  <h3>📥 Kontaktanfragen</h3>
+  <p class="sub">Eingehende Fragen und Vorschläge von Besuchern und Mitgliedern.</p>
+  <div id="adminContactRequestList"><p class="sub">Kontaktanfragen werden geladen ...</p></div>
+</div>
 </section>
 
 </main>
 
 <footer>
+  <button type="button" class="login-link" style="border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;text-decoration:underline" onclick="openContactModal()">Kontakt</button>
+  <div id="contactOverlay" class="login-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle" onclick="if(event.target===this) closeContactModal()">
+    <div class="login-box" style="max-width:560px;text-align:left;position:relative;margin:auto">
+      <button type="button" class="action" style="position:absolute;right:14px;top:14px;padding:6px 10px" onclick="closeContactModal()" aria-label="Kontakt schließen">✕</button>
+      <h2 id="contactModalTitle">✉️ Kontakt</h2>
+      <p class="sub">Du hast Fragen, Anregungen oder möchtest ein Problem melden? Schreib uns gerne.</p>
+      <section id="footerContact" style="text-align:left">
+    <label for="contactReason">Kontaktgrund</label>
+    <select id="contactReason">
+      <option value="Allgemeine Frage">Allgemeine Frage</option>
+      <option value="Technisches Problem">Technisches Problem</option>
+      <option value="Mitgliedschaft / Züchterfreigabe">Mitgliedschaft / Züchterfreigabe</option>
+      <option value="Verbesserungsvorschlag">Verbesserungsvorschlag</option>
+      <option value="Sonstiges">Sonstiges</option>
+    </select>
+    <label for="contactName">Name</label>
+    <input id="contactName" maxlength="100" placeholder="Dein Name">
+    <label for="contactEmail">E-Mail-Adresse</label>
+    <input id="contactEmail" type="email" maxlength="254" placeholder="Deine E-Mail-Adresse">
+    <label for="contactMessage">Nachricht</label>
+    <textarea id="contactMessage" maxlength="5000" rows="5" placeholder="Wie können wir dir helfen?"></textarea>
+    <input id="contactWebsite" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px" placeholder="Nicht ausfüllen">
+    <button type="button" class="action" onclick="submitContactRequest()">Nachricht senden</button>
+    <p id="contactStatus" class="sub" aria-live="polite"></p>
+      </section>
+    </div>
+  </div>
   <div>© 2026 PEDIGREE OF PIGEONS BY TABA · MADE FOR BREEDERS</div>
 </footer>
 
@@ -861,6 +896,88 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+function openContactModal() {
+  const overlay = document.getElementById('contactOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  const first = document.getElementById('contactReason');
+  if (first) first.focus();
+}
+function closeContactModal() {
+  const overlay = document.getElementById('contactOverlay');
+  if (!overlay) return;
+  overlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeContactModal();
+});
+
+async function prepareContactForm(user) {
+  const nameInput = document.getElementById('contactName');
+  const emailInput = document.getElementById('contactEmail');
+  if (user) {
+    if (emailInput && !emailInput.value) emailInput.value = user.email || '';
+    const { data } = await supabaseClient.from('breeders').select('display_name').eq('id', user.id).maybeSingle();
+    if (nameInput && !nameInput.value) nameInput.value = data?.display_name || '';
+  }
+}
+
+async function submitContactRequest() {
+  const status = document.getElementById('contactStatus');
+  const name = document.getElementById('contactName').value.trim();
+  const email = document.getElementById('contactEmail').value.trim();
+  const message = document.getElementById('contactMessage').value.trim();
+  const reason = document.getElementById('contactReason').value;
+  if (document.getElementById('contactWebsite').value.trim()) return;
+  if (!name || !email || !message) { status.textContent = 'Bitte fülle Name, E-Mail-Adresse und Nachricht aus.'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { status.textContent = 'Bitte gib eine gültige E-Mail-Adresse ein.'; return; }
+  const button = document.querySelector('#footerContact button');
+  button.disabled = true; status.textContent = 'Nachricht wird gesendet ...';
+  const { data: authData } = await supabaseClient.auth.getUser();
+  const user = authData?.user;
+  const { error } = await supabaseClient.from('contact_requests').insert({
+    sender_id: user?.id || null, sender_name: name, sender_email: email,
+    reason, message
+  });
+  button.disabled = false;
+  if (error) { console.error(error); status.textContent = 'Die Nachricht konnte nicht gesendet werden. Bitte versuche es später erneut.'; return; }
+  document.getElementById('contactMessage').value = '';
+  status.textContent = 'Vielen Dank! Deine Nachricht wurde erfolgreich übermittelt.';
+}
+
+async function loadAdminContactRequests() {
+  const { data: authData } = await supabaseClient.auth.getUser();
+  if (authData?.user?.id !== '16248658-5328-4c55-9818-532f3e262bde') return;
+  const list = document.getElementById('adminContactRequestList');
+  if (!list) return;
+  const { data, error } = await supabaseClient.from('contact_requests')
+    .select('id, sender_name, sender_email, reason, message, status, created_at')
+    .order('created_at', { ascending: false }).limit(100);
+  if (error) { list.textContent = 'Kontaktanfragen konnten nicht geladen werden.'; console.error(error); return; }
+  if (!data?.length) { list.innerHTML = '<p class="sub">Noch keine Kontaktanfragen vorhanden.</p>'; return; }
+  list.innerHTML = data.map(item => {
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const date = new Date(item.created_at).toLocaleString('de-DE');
+    return `<article class="card" style="margin:10px 0;padding:14px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>${esc(item.reason)}</strong><span class="sub">${esc(date)}</span></div>
+      <p><strong>${esc(item.sender_name)}</strong> · <a href="mailto:${encodeURIComponent(item.sender_email)}">${esc(item.sender_email)}</a></p>
+      <p style="white-space:pre-wrap">${esc(item.message)}</p>
+      <p class="sub">Status: ${esc(item.status)}</p>
+      ${item.status === 'open' ? `<button type="button" class="action" onclick="closeContactRequest('${item.id}')">Als erledigt markieren</button>` : ''}
+    </article>`;
+  }).join('');
+}
+
+async function closeContactRequest(id) {
+  const { data: authData } = await supabaseClient.auth.getUser();
+  if (authData?.user?.id !== '16248658-5328-4c55-9818-532f3e262bde') return;
+  const { error } = await supabaseClient.from('contact_requests').update({ status: 'closed' }).eq('id', id);
+  if (error) { alert('Die Anfrage konnte nicht aktualisiert werden.'); console.error(error); return; }
+  loadAdminContactRequests();
+}
+
   async function loadWelcomeBanner() {
   const banner = document.getElementById('welcomeBanner');
   const track = document.getElementById('welcomeTrack');
@@ -961,6 +1078,7 @@ function showInboxPanel(name, button){
 
   if(name==='conversations') loadConversations();
   if(name==='notifications') loadNotifications();
+  if(name==='contactRequests') loadAdminContactRequests();
 }
 
 function showBreederPanel(name, button){
@@ -3028,6 +3146,7 @@ function updateAccountRole(user) {
   if (!badge) return;
 
   if (!user) {
+    prepareContactForm(null);
     const broadcastButton = document.getElementById('adminBroadcastButton');
     if (broadcastButton) { broadcastButton.classList.add('hidden'); broadcastButton.style.display = 'none'; }
     const broadcastPanel = document.getElementById('adminBroadcastPanel');
@@ -3061,8 +3180,11 @@ function updateAccountRole(user) {
   }
 
   const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
+  prepareContactForm(user);
   const broadcastButton = document.getElementById('adminBroadcastButton');
   if (broadcastButton) { broadcastButton.classList.toggle('hidden', !isAdmin); broadcastButton.style.display = isAdmin ? 'inline-block' : 'none'; }
+  const contactRequestsButton = document.getElementById('adminContactRequestsButton');
+  if (contactRequestsButton) { contactRequestsButton.classList.toggle('hidden', !isAdmin); contactRequestsButton.style.display = isAdmin ? 'inline-block' : 'none'; }
   const roleIcon = isAdmin ? '👑' : '🕊️';
   if (loggedInUser) {
     const accountName = user.email || 'Angemeldet';
