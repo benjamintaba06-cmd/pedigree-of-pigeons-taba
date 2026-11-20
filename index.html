@@ -465,7 +465,8 @@ align-items: flex-start;
 .community-post{max-width:900px;margin:12px auto}
 .community-post img{display:block;max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin-top:12px}
 .profile-tree{max-width:100%;overflow-x:auto}
-.profile-tree .tree-generation{min-width:520px}
+.profile-tree .pedigree-scroll{width:100%;overflow-x:auto}
+.profile-tree .pedigree-diagram{min-width:1920px}
 .breeder-open{cursor:pointer}
 .breeder-open:hover{border-color:#a58a4e;box-shadow:0 3px 12px #203d3412}
 
@@ -1542,8 +1543,8 @@ async function editPigeon(id) {
   alert('Taube wurde aktualisiert.');
 }
 
-function drawPedigreeConnectors(){
- const wrap=document.querySelector('#treeview .pedigree-diagram');
+function drawPedigreeConnectors(container=document.getElementById('treeview')){
+ const wrap=container?.querySelector('.pedigree-diagram');
  if(!wrap) return;
  const svg=wrap.querySelector('.pedigree-connectors');
  if(!svg) return;
@@ -2295,7 +2296,7 @@ async function openBreederProfile(breederId) {
 
   const [{ data: breeder, error: breederError }, { data: birds, error: birdsError }] = await Promise.all([
     supabaseClient.from('breeders').select('id, display_name, location_label, bio, breeding_focus').eq('id', breederId).single(),
-    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, father_id, mother_id, notes').eq('owner_id', breederId)
+    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, father_id, mother_id, photo_url, notes').eq('owner_id', breederId)
   ]);
   if (breederError || !breeder) {
     content.innerHTML = '<p class="sub">Dieses Mitgliederprofil konnte nicht geladen werden.</p>';
@@ -2303,7 +2304,8 @@ async function openBreederProfile(breederId) {
   }
   const memberBirds = (birds || []).map(b => ({
     id:b.id, ring:b.ring_number, name:b.name || '', sex:b.sex, color:b.color || '',
-    birth:b.hatch_date || '', father:b.father_id, mother:b.mother_id, notes:b.notes || ''
+    birth:b.hatch_date || '', father:b.father_id, mother:b.mother_id,
+    photo_url:b.photo_url || '', notes:b.notes || ''
   }));
   content.innerHTML = `<h2>🕊️ ${esc(breeder.display_name)}</h2>
     ${breeder.location_label ? `<p class="sub">📍 ${esc(breeder.location_label)}</p>` : ''}
@@ -2328,9 +2330,12 @@ function renderMemberTree() {
   const bird = birds.find(b => String(b.id) === String(selected));
   const target = document.getElementById('memberTreeView');
   if (!bird || !target) return;
+
   const find = id => birds.find(b => String(b.id) === String(id));
   const generations = [[{bird, label:'Ausgewählte Taube'}]];
-  for (let gen=1; gen<4; gen++) {
+
+  // Wie im eigenen Stammbaum werden vier Abstammungsgenerationen aufgebaut.
+  for (let gen=1; gen<=4; gen++) {
     const next=[];
     generations[gen-1].forEach(item => {
       next.push({bird:item.bird ? find(item.bird.father) : null, label:'♂ Vater'});
@@ -2338,15 +2343,56 @@ function renderMemberTree() {
     });
     generations.push(next);
   }
-  let html=`<div class="centerbird"><strong>${esc(bird.ring)}</strong><div>${esc(bird.name || 'Mittelpunkt')}</div></div>`;
-  for (let i=1;i<4;i++) {
-    html+=`<div class="tree-generation-label">${i}. Generation</div><div class="tree-generation">`;
-    html+=generations[i].map(item => item.bird
-      ? `<button class="tree-node-button" onclick="focusMemberAncestor('${item.bird.id}')">${item.label}<strong>${esc(item.bird.ring)}</strong><small>Als Mittelpunkt öffnen ↗</small></button>`
-      : `<div class="parent">${item.label}<br><strong>Nicht eingetragen</strong></div>`).join('');
-    html+='</div>';
-  }
+
+  const card = (item, level, index) => {
+    if (item.bird) {
+      const b=item.bird;
+      return `<button type="button" class="tree-node-button pedigree-card ${level===0?'pedigree-root':''}"
+        data-level="${level}" data-index="${index}"
+        ${level ? `onclick="focusMemberAncestor('${b.id}')"` : 'disabled'}
+        >${b.photo_url ? `<img src="${esc(b.photo_url)}" alt="" class="pedigree-photo">` : '🕊️'}
+        ${level ? item.label : 'Ausgewählte Taube'}
+        <strong>${esc(b.ring || 'Ohne Ringnummer')}</strong>
+        ${b.name ? `<span>${esc(b.name)}</span>` : ''}
+        ${level ? '<small>Als Mittelpunkt öffnen ↗</small>' : ''}
+      </button>`;
+    }
+    return `<div class="tree-node-button parent pedigree-card tree-slot-locked"
+      data-level="${level}" data-index="${index}">
+      ${item.label}<br><strong>Nicht eingetragen</strong>
+    </div>`;
+  };
+
+  let html=`<div class="pedigree-scroll"><div class="pedigree-diagram">
+    <svg class="pedigree-connectors" aria-hidden="true"></svg>`;
+
+  generations.forEach((entries,level) => {
+    html+=`<div class="pedigree-level pedigree-generation-${level}">
+      <div class="tree-generation-label">${level===0?'Ausgewählte Taube':`${level}. Generation · ${entries.length} Abstammungsplätze`}</div>
+      <div class="pedigree-grid" data-level-row="${level}">`;
+    entries.forEach((item,index) => {
+      const span=16/entries.length;
+      html+=`<div class="pedigree-cell" style="grid-column:${index*span+1}/span ${span}">
+        ${card(item,level,index)}
+      </div>`;
+    });
+    html+='</div></div>';
+  });
+
+  html+='</div></div><p class="sub">Die Verbindungslinien zeigen Vater und Mutter und führen die Abstammung über vier Generationen fort.</p>';
   target.innerHTML=html;
+
+  const redraw=()=>drawPedigreeConnectors(target);
+  requestAnimationFrame(redraw);
+  setTimeout(redraw,120);
+
+  const scroll=target.querySelector('.pedigree-scroll');
+  if(scroll) scroll.addEventListener('scroll',redraw,{passive:true});
+
+  if(typeof ResizeObserver!=='undefined'){
+    const observer=new ResizeObserver(redraw);
+    observer.observe(target);
+  }
 }
 function focusMemberAncestor(id) {
   const select=document.getElementById('memberTreeSelect');
