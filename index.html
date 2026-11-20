@@ -34,6 +34,7 @@ header h1{font-size:23px;margin:0}
 .main-header {
   display: flex;
   align-items: stretch;
+  min-height: 230px;
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
@@ -42,6 +43,8 @@ header h1{font-size:23px;margin:0}
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  align-self: stretch;
+  min-height: 182px;
 }
 .header-brand .title-line { order: 1; }
 .header-brand .logged-in-user { order: 2; }
@@ -63,12 +66,13 @@ header p {
   margin-top: auto;
   margin-bottom: -24px;
   margin-left: -20px;
-  padding: 0 0 24px 20px;
+  padding: 0 0 0 20px;
   justify-content: flex-start;
   align-self: stretch;
   width: calc(100% + 20px);
 }
 .account-role {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +89,33 @@ header p {
   letter-spacing: 0.4px;
   line-height: 1.2;
   vertical-align: middle;
+  cursor: help;
 }
+.account-role::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 9px);
+  z-index: 20;
+  width: min(340px, 82vw);
+  padding: 10px 12px;
+  border: 1px solid #a58a4e;
+  border-radius: 8px;
+  background: #142e29;
+  color: #fff;
+  font: 12px/1.5 Arial, sans-serif;
+  font-weight: normal;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 4px 14px #0004;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+.account-role:hover::after,
+.account-role:focus::after { opacity: 1; visibility: visible; }
 
 .developer-credit {
   margin-top: 15px;
@@ -131,8 +161,9 @@ header p {
   content: attr(data-tooltip);
   position: absolute;
   top: 42px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0;
+  left: auto;
+  transform: none;
   width: min(320px, 80vw);
   padding: 10px 12px;
   border: 1px solid #a58a4e;
@@ -252,6 +283,8 @@ header p {
     width: 85px;
     height: 85px;
   }
+  .main-header { min-height: 230px; }
+  .header-brand { min-height: 182px; }
 }
 
 nav{display:flex;gap:14px;overflow-x:auto;padding:12px;background:white;position:sticky;top:0;z-index:5;align-items:stretch}
@@ -2870,6 +2903,7 @@ function updateAccountRole(user) {
       loggedInUser.classList.add('hidden');
     }
     badge.textContent = '';
+    badge.removeAttribute('data-tooltip');
     badge.classList.add('hidden');
     if (roleDescription) {
       roleDescription.textContent = '';
@@ -2898,20 +2932,18 @@ function updateAccountRole(user) {
       });
   }
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
+  badge.dataset.tooltip = isAdmin
+    ? 'Als Admin betreust du die Plattform: Du prüfst Züchterfreigaben und Verkaufsentscheidungen, achtest auf faire Abläufe und hilfst, dass die Gemeinschaft vertrauenswürdig und gut organisiert bleibt.'
+    : 'Als Member trägst du durch gepflegte Taubenprofile und Stammbäume, ehrliche Angebote und Beiträge sowie den Austausch mit anderen Züchtern zu einer hilfreichen und vertrauensvollen Gemeinschaft bei.';
+  badge.setAttribute('tabindex', '0');
+  badge.setAttribute('aria-label', badge.textContent + '. Hinweis: ' + badge.dataset.tooltip);
   badge.classList.remove('hidden');
-  if (roleDescription) {
-    roleDescription.textContent = '';
-    roleDescription.classList.add('hidden');
-  }
 
   if (mark) {
-    const description = isAdmin
-      ? 'Als Admin betreust du die Plattform: Du prüfst Züchterfreigaben und Verkaufsentscheidungen, achtest auf faire Abläufe und hilfst, dass die Gemeinschaft vertrauenswürdig und gut organisiert bleibt.'
-      : 'Als Member pflegst du deinen Taubenbestand und Stammbäume, teilst Beiträge, bietest Tauben an und tauschst dich mit anderen Züchtern aus. Sorgfältige und ehrliche Angaben schaffen Vertrauen und helfen der Gemeinschaft.';
     mark.textContent = isAdmin ? '👑' : '🕊️';
     mark.dataset.role = isAdmin ? 'admin' : 'member';
-    mark.dataset.tooltip = description;
-    mark.setAttribute('aria-label', description);
+    mark.dataset.tooltip = 'Dein Beitrag zur Gemeinschaft wird geladen …';
+    mark.setAttribute('aria-label', 'Deine Beiträge zur Gemeinschaft');
     mark.classList.remove('hidden');
   }
   if (logoutButton) logoutButton.classList.remove('hidden');
@@ -2956,6 +2988,15 @@ async function loadMemberStats(userId) {
   setCount('statPosts', posts.error ? 0 : posts.count);
   setCount('statSales', sales.error ? 0 : sales.count);
   setCount('statPigeons', pigeonsCount.error ? 0 : pigeonsCount.count);
+
+  const contributionMark = document.getElementById('logoRoleMark');
+  if (contributionMark) {
+    const postCount = posts.error ? '–' : Number(posts.count || 0).toLocaleString('de-DE');
+    const saleCount = sales.error ? '–' : Number(sales.count || 0).toLocaleString('de-DE');
+    const pigeonCount = pigeonsCount.error ? '–' : Number(pigeonsCount.count || 0).toLocaleString('de-DE');
+    contributionMark.dataset.tooltip = `Dein bisheriger Beitrag zur Gemeinschaft: ${postCount} Beiträge, ${saleCount} bestätigte Verkäufe und ${pigeonCount} eigene Tauben im Bestand. Danke, dass du Pedigree of Pigeons mitgestaltest!`;
+    contributionMark.setAttribute('aria-label', contributionMark.dataset.tooltip);
+  }
 
   [posts, sales, pigeonsCount].forEach((result, index) => {
     if (result.error) {
