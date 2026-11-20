@@ -23,19 +23,29 @@ header h1{font-size:23px;margin:0}
   margin: 0;
 }
 .logged-in-user {
+  display: block;
   color: #d6bd82;
   font-size: 13px;
   font-weight: 600;
+  margin-top: 9px;
 }
 .logged-in-user.hidden { display: none !important; }
 
 .main-header {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
 }
+.header-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.header-brand .title-line { order: 1; }
+.header-brand .logged-in-user { order: 2; }
+.header-brand .account-actions { order: 3; }
 header p {
   color: #cbd7d0;
   font-size: 13px;
@@ -51,8 +61,12 @@ header p {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: auto;
-  justify-content: flex-end;
+  margin-bottom: -24px;
+  margin-left: -20px;
+  padding: 0 0 24px 20px;
+  justify-content: flex-start;
   align-self: stretch;
+  width: calc(100% + 20px);
 }
 .account-role {
   display: inline-flex;
@@ -422,9 +436,9 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
     <div class="brand">BREEDER PLATFORM · Developed by BENJAMIN TABA · HINTERLÄNDER HOF</div>
     <div class="title-line">
       <h1>🕊️ PEDIGREE OF PIGEONS</h1>
-      <span id="loggedInUser" class="logged-in-user hidden"></span>
       <p>| Every pigeon has a story.</p>
     </div>
+    <span id="loggedInUser" class="logged-in-user hidden"></span>
     <div class="account-actions">
       <div id="accountRole" class="account-role hidden"></div>
       <button id="logoutButton" class="logout-button hidden" type="button"
@@ -2876,11 +2890,11 @@ function updateAccountRole(user) {
 
   const isAdmin = user.id === '16248658-5328-4c55-9818-532f3e262bde';
   if (loggedInUser) {
-    loggedInUser.textContent = '· ' + (user.email || 'Angemeldet');
+    loggedInUser.textContent = (user.email || 'Angemeldet');
     loggedInUser.classList.remove('hidden');
     supabaseClient.from('breeders').select('display_name').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
-        if (data && data.display_name) loggedInUser.textContent = '· ' + data.display_name;
+        if (data && data.display_name) loggedInUser.textContent = data.display_name;
       });
   }
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
