@@ -11,7 +11,17 @@
 body{margin:0;background:#f3f5f2;color:#20332e;font-family:Arial,sans-serif}
 header{background:#142e29;color:white;padding:24px 20px}
 .brand{font-size:12px;letter-spacing:3px;color:#d6bd82}
-header h1{font-size:23px;margin:12px 0 5px}
+header h1{font-size:23px;margin:0}
+.title-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+.title-line p {
+  margin: 0;
+}
 
 .main-header {
   display: flex;
@@ -29,9 +39,21 @@ header p {
   min-width: 220px;
 }
 
-.account-role {
-  display: inline-block;
+.account-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 10px;
+}
+.account-role {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 38px;
+  min-height: 38px;
+  margin: 0;
   padding: 6px 11px;
   border: 1px solid #a58a4e;
   border-radius: 20px;
@@ -39,6 +61,8 @@ header p {
   font-size: 12px;
   font-weight: bold;
   letter-spacing: 0.4px;
+  line-height: 1.2;
+  vertical-align: middle;
 }
 
 .developer-credit {
@@ -88,8 +112,13 @@ header p {
 .community-comment-form button { flex: 0 0 auto; }
 
 .logout-button {
-  display: inline-block;
-  margin: 10px 0 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 38px;
+  min-height: 38px;
+  margin: 0;
   padding: 6px 11px;
   border: 1px solid #e7b5ae;
   border-radius: 20px;
@@ -98,36 +127,28 @@ header p {
   font-size: 12px;
   font-weight: bold;
   letter-spacing: 0.4px;
+  line-height: 1.2;
   cursor: pointer;
   vertical-align: middle;
 }
 .logout-button:hover { background: #91372f; }
 .logout-button.hidden { display: none; }
 .role-description {
-  display: none;
-  position: absolute;
-  z-index: 30;
-  top: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(320px, 82vw);
-  max-width: 320px;
-  margin: 0;
-  padding: 11px 14px;
-  border: 1px solid rgba(214,189,130,.65);
-  border-radius: 10px;
-  background: #17352e;
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(0,0,0,.24);
+  display: block;
+  position: static;
+  width: min(520px, 100%);
+  max-width: 520px;
+  margin: 8px 0 0 0;
+  padding: 9px 12px;
+  border-left: 3px solid #d6bd82;
+  border-radius: 0 8px 8px 0;
+  background: rgba(255,255,255,.08);
+  color: #e4ebe6;
   font-size: 12px;
   line-height: 1.5;
   text-align: left;
-  pointer-events: none;
 }
-.logo-role-mark:hover + .role-description,
-.logo-role-mark:focus + .role-description {
-  display: block;
-}
+.role-description.hidden { display: none !important; }
 .member-stats {
   position: fixed;
   z-index: 1000;
@@ -367,29 +388,30 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 
 <header class="main-header">
   <div class="header-brand">
-    <div class="brand">TABA · BREEDER PLATFORM</div>
-    <h1>🕊️ PEDIGREE OF PIGEONS</h1>
-    <p>Every pigeon has a story.</p>
-    <div class="developer-credit">
-      Developed by Benjamin TABA · Hinterländer Hof
+    <div class="brand">BREEDER PLATFORM · Developed by BENJAMIN TABA · HINTERLÄNDER HOF</div>
+    <div class="title-line">
+      <h1>🕊️ PEDIGREE OF PIGEONS</h1>
+      <p>Every pigeon has a story.</p>
     </div>
-    <div id="accountRole" class="account-role hidden"></div>
+    <div class="account-actions">
+      <div id="accountRole" class="account-role hidden"></div>
+      <button id="logoutButton" class="logout-button hidden" type="button"
+        onclick="logoutTabaAccount()">Abmelden</button>
+    </div>
+    <div id="roleDescription" class="role-description hidden" aria-live="polite"></div>
     <div id="memberStats" class="member-stats hidden" aria-live="polite">
       <button type="button" class="stats-close" aria-label="Statistik schließen" onclick="toggleMemberStats()">×</button>
       <div class="member-stat"><span>📝</span><strong id="statPosts">–</strong><small>Beiträge</small></div>
       <div class="member-stat"><span>🤝</span><strong id="statSales">–</strong><small>Verkäufe</small></div>
       <div class="member-stat"><span>🕊️</span><strong id="statPigeons">–</strong><small>Tauben</small></div>
     </div>
-    <button id="logoutButton" class="logout-button hidden" type="button"
-      onclick="logoutTabaAccount()">Abmelden</button>
   </div>
 
   <div class="company-logo" id="companyLogo">
     <span id="logoRoleMark" class="logo-role-mark hidden" role="button"
-      tabindex="0" aria-label="Statistiken anzeigen" aria-expanded="false"
-      title="Statistiken anzeigen" onclick="toggleMemberStats()"
+      tabindex="0" aria-label="Mitgliederstatistik anzeigen" aria-expanded="false"
+      title="Mitgliederstatistik anzeigen" onclick="toggleMemberStats()"
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMemberStats();}"></span>
-    <div id="roleDescription" class="role-description hidden" role="tooltip"></div>
     <img src="hinterlaender-hof-logo.jpg_1.jpg"
          alt="Benjamin TABA – Hinterländer Hof">
   </div>
@@ -525,7 +547,7 @@ footer{display:flex;flex-direction:column;align-items:center;gap:10px}
 <p class="sub" style="margin:8px 0 0">* Pflichtfeld</p>
 </div>
 <h3>Dein Bestand</h3>
-<p class="sub">Alle deine eingetragenen Tauben erscheinen hier. Über ✏️ kannst du Angaben bearbeiten und über 🗑️ eine Taube löschen.</p>
+<p class="sub">Alle deine eingetragenen Tauben erscheinen hier. ✏️ <strong>Bearbeiten:</strong> Ringnummer, Name, Rasse und weitere Angaben ändern. 🗑️ <strong>Löschen:</strong> Eine Taube dauerhaft aus deinem Bestand entfernen. 🐦 <strong>Verkaufen:</strong> Eine Taube mit Preis oder „VB“ im Züchterkreis zum Verkauf anbieten. Sie erscheint dort als Verkaufsanzeige; bereits angebotene oder verkaufte Tauben können nicht erneut angeboten werden.</p>
 <input id="search" placeholder="🔎 Ringnummer oder Name suchen..." oninput="render()">
 <div id="list"><p class="sub">Dein Bestand wird geladen ...</p></div>
 
@@ -912,7 +934,7 @@ async function addPigeon(){
     if (photoDbError) { alert('Foto hochgeladen, aber Zuordnung fehlgeschlagen: ' + photoDbError.message); return; }
   }
 
-  ['ring','name','color','birth','notes'].forEach(id => {
+  ['ring','name','breed','color','birth','notes'].forEach(id => {
     const field = document.getElementById(id);
     if (field) field.value = '';
   });
@@ -1111,6 +1133,37 @@ for (const bird of pigeons) {
 }
 render();
 }
+
+// Baut die Bestandsliste und die Auswahl für den Stammbaum aus den geladenen Supabase-Daten auf.
+function render(){
+  const list = document.getElementById('list');
+  const search = (document.getElementById('search')?.value || '').trim().toLocaleLowerCase('de-DE');
+  if (list) {
+    const filtered = pigeons.filter(p =>
+      (p.ring || '').toLocaleLowerCase('de-DE').includes(search) ||
+      (p.name || '').toLocaleLowerCase('de-DE').includes(search) ||
+      (p.breed || '').toLocaleLowerCase('de-DE').includes(search)
+    );
+    list.innerHTML = filtered.map(p => `
+      <div class="card pigeon">
+        <div class="bird">${p.photo_url ? `<img src="${p.photo_url}" alt="Foto ${esc(p.ring)}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
+        <div class="pigeon-info"><strong>${esc(p.ring)}</strong><small>${esc(p.name)} · ${esc(p.breed)} · ${p.sex==='male'?'Täuber':p.sex==='female'?'Täubin':'Unbekannt'} · ${esc(p.color)}${p.pigeon_status === 'sold' ? '<br><strong style="color:#c0392b">VERKAUFT</strong>' : ''}</small></div>
+        ${p.pigeon_status === 'in_loft' ? `<button type="button" class="action" style="padding:8px 10px;font-size:13px" onclick="sellPigeonFromInventory('${p.id}')">🐦 Verkaufen</button>` : ''}
+        <button type="button" onclick="editPigeon('${p.id}')" aria-label="Bearbeiten">✏️</button>
+        <button type="button" onclick="changePigeonPhoto('${p.id}')" aria-label="Foto ändern">📷</button>
+        <button type="button" onclick="removePigeon('${p.id}')" aria-label="Löschen">🗑️</button>
+      </div>`).join('') || '<p class="sub">Noch keine Tauben eingetragen.</p>';
+  }
+  const selected = document.getElementById('selected');
+  if (selected) {
+    const oldValue = selected.value;
+    selected.innerHTML = '<option value="">Bitte Taube auswählen</option>' + pigeons.map(p => `<option value="${p.id}">${esc(p.ring)}${p.name ? ' – ' + esc(p.name) : ''}</option>`).join('');
+    if (pigeons.some(p => String(p.id) === String(oldValue))) selected.value = oldValue;
+    else if (pigeons.length) selected.value = String(pigeons[0].id);
+  }
+  if (typeof tree === 'function') tree();
+}
+
 async function removePigeon(id) {
   if (!confirm('Diese Taube wirklich löschen?')) {
     return;
