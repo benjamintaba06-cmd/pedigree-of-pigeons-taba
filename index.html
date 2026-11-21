@@ -2471,14 +2471,18 @@ async function loadTabaPublicEvents() {
   const target = document.getElementById('publicEventsList');
   if (!target || !supabaseClient) return;
   target.textContent = 'Kalender wird geladen …';
+  const today = new Date().toLocaleDateString('en-CA', { timeZone:'Europe/Berlin' });
   const { data, error } = await supabaseClient.from('taba_public_events')
-    .select('id,title,description,event_date,start_time,end_time,location')
-    .gte('event_date', new Date().toISOString().slice(0,10))
-    .order('event_date', { ascending: true }).limit(100);
+    .select('id,title,description,event_date,start_date,end_date,start_time,end_time,location')
+    .gte('end_date', today)
+    .order('start_date', { ascending: true }).limit(100);
   if (error) { target.textContent = 'Die Termine konnten nicht geladen werden.'; console.error(error); return; }
   if (!data?.length) { target.textContent = 'Aktuell sind keine bevorstehenden Events eingetragen.'; return; }
   target.innerHTML = data.map(event => {
-    const dateLabel = new Date(event.event_date + 'T12:00:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+    const startDate = event.start_date || event.event_date;
+    const endDate = event.end_date || startDate;
+    const fmt = value => new Date(value + 'T12:00:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+    const dateLabel = startDate === endDate ? fmt(startDate) : `${fmt(startDate)} – ${fmt(endDate)}`;
     const timeLabel = event.start_time ? event.start_time.slice(0,5) + (event.end_time ? '–' + event.end_time.slice(0,5) : ' Uhr') : '';
     return `<article class="taba-list-item"><strong>📅 ${esc(dateLabel)}${timeLabel ? ' · ' + esc(timeLabel) : ''}</strong><h3>${esc(event.title)}</h3>${event.location ? `<div class="taba-muted">📍 ${esc(event.location)}</div>` : ''}${event.description ? `<p>${esc(event.description)}</p>` : ''}</article>`;
   }).join('');
