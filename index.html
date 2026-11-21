@@ -1744,6 +1744,21 @@ footer a[href*="contact"],
 @media(max-width:760px){#publicEventsList.calendar-five-grid{gap:7px!important;padding:3px 0!important}#publicEventsList .calendar-mini-day{padding:11px 7px!important;min-height:116px!important;gap:8px!important}#publicEventsList .calendar-mini-day>strong{font-size:10px!important}}
 @media(max-width:420px){#publicEventsList.calendar-five-grid{gap:5px!important}#publicEventsList .calendar-mini-day{padding:9px 5px!important;min-height:108px!important;border-radius:11px!important}#publicEventsList .calendar-mini-day>strong{font-size:9px!important}#publicEventsList .calendar-mini-day .calendar-mini-count{font-size:10px!important}}
 </style>
+<style id="taba-calendar-inline-edit">
+/* Persönliche Termine direkt über ihren Text bearbeiten */
+#publicEventsList .calendar-mini-entry.is-personal{display:block!important;min-width:0!important}
+#publicEventsList .calendar-mini-entry .calendar-personal-event{
+ display:block!important;width:100%!important;min-width:0!important;padding:5px 4px!important;
+ border-radius:6px!important;color:#354d41!important;cursor:pointer!important;
+ overflow-wrap:anywhere!important;transition:background-color .15s ease,color .15s ease!important;
+}
+#publicEventsList .calendar-mini-entry .calendar-personal-event:hover,
+#publicEventsList .calendar-mini-entry .calendar-personal-event:focus-visible,
+#publicEventsList .calendar-mini-entry .calendar-personal-event:active{
+ background:#f3e6c5!important;color:#173f34!important;outline:none!important;
+}
+#publicEventsList .calendar-mini-entry button{display:none!important}
+</style>
 </head>
 <body>
 
@@ -2793,7 +2808,7 @@ async function loadTabaPublicEvents() {
       <strong>${esc(tabaCalendarFormatDate(day))}</strong>
       <span class="calendar-mini-count ${items.length?'has-events':''}">${items.length?items.length+' geplant':'frei'}</span>
       <div class="calendar-mini-titles">${items.slice(0,3).map(item=>item.kind==='personal'
-        ? `<div class="calendar-mini-entry is-personal"><span>🔒 ${esc(item.title)}</span><button type="button" aria-label="Termin bearbeiten" onclick="event.stopPropagation();editPersonalCalendarReminder('${item.id}')">✎</button></div>`
+        ? `<div class="calendar-mini-entry is-personal"><span class="calendar-personal-event" role="button" tabindex="0" aria-label="Termin ${esc(item.title)} bearbeiten" onclick="event.stopPropagation();editPersonalCalendarReminder('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();editPersonalCalendarReminder('${item.id}')}">🔒 ${esc(item.title)}</span></div>`
         : `<span>• ${esc(item.title)}</span>`).join('')}${items.length>3?`<small>+${items.length-3} weitere</small>`:''}</div>
     </article>`;
   }).join('');
