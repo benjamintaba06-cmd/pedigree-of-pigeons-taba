@@ -1442,7 +1442,7 @@ hr{border-color:var(--taba-line)!important}
 .dashboard-shortcuts{display:flex;flex-direction:column}.dashboard-shortcut{display:flex;align-items:center;gap:12px;width:100%;padding:13px 0;border:0;border-bottom:1px solid var(--taba-line,#e7e8df);background:transparent;text-align:left}
 .dashboard-shortcut:last-child{border-bottom:0}.dashboard-shortcut>span:first-child{width:39px;height:39px;display:grid;place-items:center;background:var(--taba-mint,#eaf1eb);border-radius:12px;font-size:17px}
 .dashboard-shortcut>span:nth-child(2){display:grid;gap:4px;flex:1}.dashboard-shortcut strong{font-size:12px;color:var(--taba-forest,#173f34)}.dashboard-shortcut small{font-size:10px;color:var(--taba-muted,#78857d)}.dashboard-shortcut b{color:#a18a5b}
-.dashboard-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.dashboard-bottom-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
 .dashboard-feature{display:flex;gap:17px;padding:22px;border:1px solid var(--taba-line,#e7e8df);border-radius:17px;background:linear-gradient(120deg,#edf3ed,#fffefa)}
 .dashboard-feature-gold{background:linear-gradient(120deg,#f3eee1,#fffefa)}.dashboard-feature-icon{flex:0 0 43px;height:43px;display:grid;place-items:center;border-radius:13px;background:#dce9dd;font-size:20px}
 .dashboard-feature-gold .dashboard-feature-icon{background:#eee4cc}.dashboard-feature h3{font:600 23px/1.05 'Cormorant Garamond',Georgia,serif;color:var(--taba-forest,#173f34);margin:7px 0}
@@ -1720,7 +1720,13 @@ footer a[href*="contact"],
   <div class="dashboard-bottom-grid">
     <article class="dashboard-feature"><div class="dashboard-feature-icon">🌿</div><div><span class="dashboard-kicker">ZUCHT & PLANUNG</span><h3>Deine nächste Zuchtsaison beginnt mit Überblick.</h3><p>Verwalte Zuchtpaare, dokumentiere Jungtiere und behalte wichtige Ereignisse im Blick.</p><button class="dashboard-text-link" type="button" onclick="showById('breeding')">Zum Zuchtzentrum ↗</button></div></article>
     <article class="dashboard-feature dashboard-feature-gold"><div class="dashboard-feature-icon">🏡</div><div><span class="dashboard-kicker">GEMEINSCHAFT</span><h3>Wissen und Leidenschaft verbinden.</h3><p>Entdecke andere Züchter, teile Erfahrungen und finde besondere Tauben.</p><button class="dashboard-text-link" type="button" onclick="showById('breeders')">Zum Züchterkreis ↗</button></div></article>
+    <article class="dashboard-feature"><div class="dashboard-feature-icon">📅</div><div><span class="dashboard-kicker">TERMINE & EVENTS</span><h3>Was bei TABA ansteht.</h3><p>Behalte kommende Treffen, Veranstaltungen und wichtige Termine der Community im Blick.</p><button class="dashboard-text-link" type="button" onclick="showById('eventsCalendar')">Zum Kalender ↗</button></div></article>
   </div>
+</section>
+
+<section id="eventsCalendar" class="hidden">
+  <h2>TABA-Kalender</h2><p class="sub">Bevorstehende Veranstaltungen und Termine für die TABA-Community.</p>
+  <div class="card"><div id="publicEventsList" class="taba-muted">Kalender wird geladen …</div></div>
 </section>
 
 <section id="pigeons">
@@ -2461,6 +2467,23 @@ async function closeContactRequest(id) {
  let activeConversationId = null;
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
   
+async function loadTabaPublicEvents() {
+  const target = document.getElementById('publicEventsList');
+  if (!target || !supabaseClient) return;
+  target.textContent = 'Kalender wird geladen …';
+  const { data, error } = await supabaseClient.from('taba_public_events')
+    .select('id,title,description,event_date,start_time,end_time,location')
+    .gte('event_date', new Date().toISOString().slice(0,10))
+    .order('event_date', { ascending: true }).limit(100);
+  if (error) { target.textContent = 'Die Termine konnten nicht geladen werden.'; console.error(error); return; }
+  if (!data?.length) { target.textContent = 'Aktuell sind keine bevorstehenden Events eingetragen.'; return; }
+  target.innerHTML = data.map(event => {
+    const dateLabel = new Date(event.event_date + 'T12:00:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+    const timeLabel = event.start_time ? event.start_time.slice(0,5) + (event.end_time ? '–' + event.end_time.slice(0,5) : ' Uhr') : '';
+    return `<article class="taba-list-item"><strong>📅 ${esc(dateLabel)}${timeLabel ? ' · ' + esc(timeLabel) : ''}</strong><h3>${esc(event.title)}</h3>${event.location ? `<div class="taba-muted">📍 ${esc(event.location)}</div>` : ''}${event.description ? `<p>${esc(event.description)}</p>` : ''}</article>`;
+  }).join('');
+}
+
 function show(id, btn) {
   const section = document.getElementById(id);
   if (!section) return;
@@ -2473,6 +2496,9 @@ function show(id, btn) {
 
   if (id === 'pigeons' || id === 'sellPigeon') {
     loadPigeons();
+  }
+  if (id === 'eventsCalendar') {
+    loadTabaPublicEvents();
   }
 
   if (id === 'inbox') {
