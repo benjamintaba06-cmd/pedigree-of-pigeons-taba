@@ -1239,6 +1239,28 @@ footer nav[aria-label="Rechtliche Informationen"] a:focus-visible {
   text-decoration-line: none !important;
 }
 
+
+.calendar-five-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.calendar-five-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.calendar-day-card{min-width:0;padding:13px;border:1px solid var(--taba-line,#e5e7df);border-radius:13px;background:#fff}
+.calendar-day-heading{display:grid;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--taba-line,#e5e7df)}
+.calendar-day-heading>strong{color:var(--taba-forest,#173f34);font-size:13px}
+.calendar-day-status{display:inline-flex;width:max-content;max-width:100%;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.calendar-day-status.is-planned{background:#e6f2e9;color:#245b3e}
+.calendar-day-status.is-free{background:#f1f2ef;color:#69766e}
+.calendar-day-event{margin-top:10px;padding:9px;border-radius:9px;background:#f5f7f4;overflow-wrap:anywhere}
+.calendar-day-event.is-personal{background:#f6f0df;border-left:3px solid var(--taba-gold,#c6a45b)}
+.calendar-day-event strong,.calendar-day-event small{display:block;font-size:11px;line-height:1.45}
+.calendar-day-event p{font-size:11px;margin:5px 0 0}
+.calendar-empty{font-size:11px;color:var(--taba-muted,#718078);margin:12px 0 2px}
+.calendar-reminder-card{margin-top:16px}
+.calendar-reminder-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--taba-line,#e5e7df)}
+.calendar-reminder-row>div{min-width:0;display:grid;gap:4px}
+.calendar-reminder-row small{font-size:11px}
+.calendar-delete-button{background:#fff4f2!important;color:#9f2525!important;border:1px solid #e7b5ae!important;min-height:34px!important;padding:6px 10px!important}
+@media(max-width:900px){.calendar-five-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.calendar-five-grid{grid-template-columns:1fr}.calendar-five-head{align-items:flex-start}.calendar-day-card{padding:12px}}
+
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -1807,8 +1829,31 @@ footer a[href*="contact"],
 </section>
 
 <section id="eventsCalendar" class="hidden">
-  <h2>TABA-Kalender</h2><p class="sub">Bevorstehende Veranstaltungen und Termine für die TABA-Community.</p>
-  <div class="card"><div id="publicEventsList" class="taba-muted">Kalender wird geladen …</div></div>
+  <h2>TABA-Kalender</h2>
+  <p class="sub">Sieh auf einen Blick, was in den kommenden fünf Tagen ansteht. Deine persönlichen Erinnerungen sieht nur dein eigenes Konto.</p>
+  <div class="card">
+    <div class="calendar-five-head"><strong>Die nächsten 5 Tage</strong><button type="button" class="action" onclick="loadTabaPublicEvents()">↻ Aktualisieren</button></div>
+    <div id="publicEventsList" class="calendar-five-grid"><p class="taba-muted">Kalender wird geladen …</p></div>
+  </div>
+  <div class="card calendar-reminder-card">
+    <h3>🔔 Meine persönliche Erinnerung</h3>
+    <p class="sub">Lege private Termine oder Erinnerungen an. Sie werden nur in deinem Konto gespeichert.</p>
+    <label for="personalReminderTitle">Woran möchtest du erinnert werden?</label>
+    <input id="personalReminderTitle" maxlength="120" placeholder="z. B. Impfkontrolle, Jungtiere beringen …">
+    <div class="taba-form-row">
+      <div><label for="personalReminderDate">Datum</label><input id="personalReminderDate" type="date"></div>
+      <div><label for="personalReminderTime">Uhrzeit des Termins</label><input id="personalReminderTime" type="time" value="09:00"></div>
+    </div>
+    <label for="personalReminderAt">Erinnerung anzeigen am (optional)</label>
+    <input id="personalReminderAt" type="datetime-local">
+    <p class="taba-muted">Hinweis: Eine Browser-Benachrichtigung kann erscheinen, solange die Website geöffnet ist und du Benachrichtigungen erlaubt hast. Für Erinnerungen bei geschlossener Website wäre später ein Push-Dienst nötig.</p>
+    <button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button>
+    <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
+  </div>
+  <div class="card">
+    <h3>Meine gespeicherten Erinnerungen</h3>
+    <div id="myCalendarReminders" class="taba-muted">Erinnerungen werden geladen …</div>
+  </div>
 </section>
 
 <section id="pigeons">
@@ -2550,25 +2595,154 @@ async function closeContactRequest(id) {
  let activeConversationId = null;
 try{pigeons=JSON.parse(localStorage.getItem('taba_pigeons')||'[]')}catch(e){pigeons=[]}
   
+const TABA_CALENDAR_TIME_ZONE = 'Europe/Berlin';
+let tabaReminderCheckStarted = false;
+
+function tabaLocalDateKey(date) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone:TABA_CALENDAR_TIME_ZONE, year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
+  const v = Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  return `${v.year}-${v.month}-${v.day}`;
+}
+function tabaDateKeyOffset(offset) {
+  const now = new Date();
+  const local = new Date(now.toLocaleString('en-US',{timeZone:TABA_CALENDAR_TIME_ZONE}));
+  local.setHours(12,0,0,0);
+  local.setDate(local.getDate()+offset);
+  return tabaLocalDateKey(local);
+}
+function tabaCalendarFormatDate(value) {
+  return new Date(value+'T12:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'});
+}
+function tabaCalendarFormatTime(value) {
+  return value ? new Date(value).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:TABA_CALENDAR_TIME_ZONE}) : '';
+}
+
 async function loadTabaPublicEvents() {
   const target = document.getElementById('publicEventsList');
   if (!target || !supabaseClient) return;
-  target.textContent = 'Kalender wird geladen …';
-  const today = new Date().toLocaleDateString('en-CA', { timeZone:'Europe/Berlin' });
-  const { data, error } = await supabaseClient.from('taba_public_events')
+  target.innerHTML = '<p class="taba-muted">Kalender wird geladen …</p>';
+  const dates = Array.from({length:5},(_,i)=>tabaDateKeyOffset(i));
+  const firstDate=dates[0], lastDate=dates[4];
+  const dayItems = Object.fromEntries(dates.map(d=>[d,[]]));
+
+  const {data: publicData,error:publicError}=await supabaseClient.from('taba_public_events')
     .select('id,title,description,event_date,start_date,end_date,start_time,end_time,location')
-    .gte('end_date', today)
-    .order('start_date', { ascending: true }).limit(100);
-  if (error) { target.textContent = 'Die Termine konnten nicht geladen werden.'; console.error(error); return; }
-  if (!data?.length) { target.textContent = 'Aktuell sind keine bevorstehenden Events eingetragen.'; return; }
-  target.innerHTML = data.map(event => {
-    const startDate = event.start_date || event.event_date;
-    const endDate = event.end_date || startDate;
-    const fmt = value => new Date(value + 'T12:00:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
-    const dateLabel = startDate === endDate ? fmt(startDate) : `${fmt(startDate)} – ${fmt(endDate)}`;
-    const timeLabel = event.start_time ? event.start_time.slice(0,5) + (event.end_time ? '–' + event.end_time.slice(0,5) : ' Uhr') : '';
-    return `<article class="taba-list-item"><strong>📅 ${esc(dateLabel)}${timeLabel ? ' · ' + esc(timeLabel) : ''}</strong><h3>${esc(event.title)}</h3>${event.location ? `<div class="taba-muted">📍 ${esc(event.location)}</div>` : ''}${event.description ? `<p>${esc(event.description)}</p>` : ''}</article>`;
+    .lte('start_date',lastDate).gte('end_date',firstDate)
+    .order('start_date',{ascending:true}).limit(100);
+  if(publicError) console.error('Öffentliche Termine konnten nicht geladen werden:',publicError);
+  (publicData||[]).forEach(event=>{
+    const start=event.start_date||event.event_date, end=event.end_date||start;
+    dates.forEach(day=>{
+      if(day>=start&&day<=end) dayItems[day].push({kind:'public',title:event.title,description:event.description,location:event.location,time:event.start_time});
+    });
+  });
+
+  const {data:authData}=await supabaseClient.auth.getUser();
+  const user=authData?.user;
+  let personal=[];
+  if(user){
+    const from=new Date(firstDate+'T00:00:00+01:00').toISOString();
+    const until=new Date(new Date(lastDate+'T00:00:00+01:00').getTime()+86400000).toISOString();
+    const {data,error}=await supabaseClient.from('taba_calendar_events')
+      .select('id,title,event_type,starts_at,ends_at,reminder_at,notes')
+      .gte('starts_at',from).lt('starts_at',until).order('starts_at',{ascending:true}).limit(200);
+    if(error) console.error('Eigene Kalendereinträge konnten nicht geladen werden:',error);
+    personal=data||[];
+    personal.forEach(event=>{
+      const day=tabaLocalDateKey(new Date(event.starts_at));
+      if(dayItems[day]) dayItems[day].push({kind:'personal',id:event.id,title:event.title,notes:event.notes,time:event.starts_at,reminder_at:event.reminder_at});
+    });
+  }
+
+  target.innerHTML=dates.map(day=>{
+    const items=dayItems[day];
+    return `<article class="calendar-day-card">
+      <div class="calendar-day-heading"><strong>${esc(tabaCalendarFormatDate(day))}</strong><span class="calendar-day-status ${items.length?'is-planned':'is-free'}">${items.length?'Geplant':'Noch nichts geplant'}</span></div>
+      ${items.length?items.map(item=>`<div class="calendar-day-event ${item.kind==='personal'?'is-personal':''}">
+        <strong>${item.kind==='personal'?'🔒':'📅'} ${esc(item.title)}</strong>
+        ${item.time?`<small>${esc(item.kind==='public'?(item.time||'').slice(0,5):tabaCalendarFormatTime(item.time))} Uhr</small>`:''}
+        ${item.location?`<small>📍 ${esc(item.location)}</small>`:''}
+        ${item.description?`<p>${esc(item.description)}</p>`:''}
+        ${item.notes?`<p>${esc(item.notes)}</p>`:''}
+      </div>`).join(''):'<p class="calendar-empty">Für diesen Tag ist aktuell nichts eingetragen.</p>'}
+    </article>`;
   }).join('');
+
+  const list=document.getElementById('myCalendarReminders');
+  if(list){
+    if(!user) list.textContent='Bitte melde dich an, um persönliche Erinnerungen zu verwenden.';
+    else {
+      const {data,error}=await supabaseClient.from('taba_calendar_events')
+        .select('id,title,starts_at,reminder_at,notes')
+        .order('starts_at',{ascending:true}).limit(200);
+      if(error) list.textContent='Deine Erinnerungen konnten nicht geladen werden.';
+      else {
+        const future=(data||[]).filter(x=>new Date(x.starts_at)>=new Date());
+        list.innerHTML=future.length?future.map(x=>`<div class="calendar-reminder-row"><div><strong>${esc(x.title)}</strong><small>${esc(new Date(x.starts_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}))}${x.reminder_at?' · Erinnerung: '+esc(new Date(x.reminder_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):''}</small></div><button type="button" class="calendar-delete-button" onclick="deletePersonalCalendarReminder('${x.id}')">Löschen</button></div>`).join(''):'Du hast noch keine zukünftigen persönlichen Erinnerungen gespeichert.';
+      }
+    }
+  }
+  startTabaReminderChecks();
+}
+
+async function savePersonalCalendarReminder(){
+  const status=document.getElementById('personalReminderStatus');
+  const title=document.getElementById('personalReminderTitle')?.value.trim();
+  const date=document.getElementById('personalReminderDate')?.value;
+  const time=document.getElementById('personalReminderTime')?.value||'09:00';
+  const reminderValue=document.getElementById('personalReminderAt')?.value;
+  if(!title||!date){if(status)status.textContent='Bitte Titel und Datum eintragen.';return;}
+  const {data:authData,error:authError}=await supabaseClient.auth.getUser();
+  const user=authData?.user;
+  if(authError||!user){if(status)status.textContent='Bitte melde dich erneut an.';return;}
+  const startsAt=new Date(date+'T'+time+':00');
+  if(Number.isNaN(startsAt.getTime())||startsAt<=new Date()){if(status)status.textContent='Bitte einen Termin in der Zukunft auswählen.';return;}
+  let reminderAt=null;
+  if(reminderValue){
+    reminderAt=new Date(reminderValue);
+    if(Number.isNaN(reminderAt.getTime())){if(status)status.textContent='Bitte einen gültigen Erinnerungszeitpunkt auswählen.';return;}
+    if(reminderAt>=startsAt){if(status)status.textContent='Die Erinnerung muss vor dem Termin liegen.';return;}
+  }
+  const {error}=await supabaseClient.from('taba_calendar_events').insert({
+    owner_id:user.id,title,event_type:'custom',starts_at:startsAt.toISOString(),
+    reminder_at:reminderAt?reminderAt.toISOString():null,notes:'Persönliche Erinnerung'
+  });
+  if(error){if(status)status.textContent='Speichern fehlgeschlagen: '+error.message;return;}
+  document.getElementById('personalReminderTitle').value='';
+  document.getElementById('personalReminderAt').value='';
+  if(status)status.textContent='Deine persönliche Erinnerung wurde gespeichert.';
+  await loadTabaPublicEvents();
+}
+
+async function deletePersonalCalendarReminder(id){
+  if(!confirm('Möchtest du diese persönliche Erinnerung löschen?'))return;
+  const {data:authData}=await supabaseClient.auth.getUser();
+  if(!authData?.user)return;
+  const {error}=await supabaseClient.from('taba_calendar_events').delete().eq('id',id).eq('owner_id',authData.user.id);
+  if(error){alert('Die Erinnerung konnte nicht gelöscht werden.');return;}
+  await loadTabaPublicEvents();
+}
+
+function startTabaReminderChecks(){
+  if(tabaReminderCheckStarted)return;
+  tabaReminderCheckStarted=true;
+  const check=async()=>{
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    const {data:authData}=await supabaseClient.auth.getUser();
+    if(!authData?.user)return;
+    const now=new Date(), soon=new Date(now.getTime()-60000);
+    const {data}=await supabaseClient.from('taba_calendar_events')
+      .select('id,title,reminder_at').not('reminder_at','is',null)
+      .gte('reminder_at',soon.toISOString()).lte('reminder_at',now.toISOString()).limit(20);
+    (data||[]).forEach(item=>{
+      const key='taba_reminder_notified_'+item.id;
+      if(sessionStorage.getItem(key))return;
+      new Notification('TABA-Erinnerung',{body:item.title});
+      sessionStorage.setItem(key,'1');
+    });
+  };
+  check();
+  window.setInterval(check,60000);
 }
 
 function show(id, btn) {
