@@ -4776,8 +4776,8 @@ registrationForm.addEventListener('submit', async function(event) {
       throw new Error(result.error || 'Registrierung fehlgeschlagen.');
     }
 
-    message.textContent =
-      'Erfolgreich beantragt! Dein TABA-Zugang wartet auf Freigabe.';
+    message.textContent = result.message ||
+      'Registrierung erfolgreich. Bitte prüfe dein E-Mail-Postfach und bestätige deine Adresse.';
 
     registrationForm.reset();
 
