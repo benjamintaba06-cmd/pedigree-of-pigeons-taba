@@ -1731,7 +1731,8 @@ const SUPABASE_KEY = 'sb_publishable_ZN7AZVgXHek1T7dGUFMU_Q_7UUKXo12';
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_KEY
+  SUPABASE_KEY,
+  { auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } }
 );
 
 let activePigeonQrId = null;
@@ -4333,83 +4334,115 @@ registrationForm.addEventListener('submit', async function(event) {
 async function forgotPassword() {
   const email = document.getElementById('loginEmail').value.trim();
   const message = document.getElementById('loginMessage');
-
-  if (!email) {
-    message.textContent = 'Bitte gib zuerst deine E-Mail-Adresse ein.';
-    message.style.color = '#b33b32';
-    document.getElementById('loginEmail').focus();
-    return;
-  }
-
+  if (!email) { message.textContent = 'Bitte gib zuerst deine E-Mail-Adresse ein.'; message.style.color = '#b33b32'; document.getElementById('loginEmail').focus(); return; }
   message.textContent = 'Wiederherstellungs-E-Mail wird angefordert ...';
-
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(
-    email,
-    {
-      redirectTo: window.location.origin + '/'
-    }
-  );
-
-  if (error) {
-    message.textContent = 'Fehler: ' + error.message;
-    message.style.color = '#b33b32';
-    return;
-  }
-
-  message.textContent =
-    'Wenn ein Konto mit dieser E-Mail-Adresse existiert, erhältst du eine E-Mail mit einem Link zum Zurücksetzen deines Passworts.';
-
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  if (error) { message.textContent = 'Fehler: ' + error.message; message.style.color = '#b33b32'; return; }
+  message.textContent = 'Wenn ein Konto mit dieser E-Mail-Adresse existiert, erhältst du eine E-Mail mit einem Link zum Zurücksetzen deines Passworts.';
   message.style.color = '#203d34';
 }
-  const passwordResetForm =
-  document.getElementById('passwordResetForm');
 
+let tabaRecoveryInProgress = false;
+let tabaRecoveryReady = false;
+
+function showTabaPasswordRecovery(text) {
+  tabaRecoveryInProgress = true;
+  document.getElementById('loginOverlay')?.classList.add('hidden');
+  document.getElementById('passwordResetBox')?.classList.remove('hidden');
+  const msg = document.getElementById('passwordResetMessage');
+  if (msg && text) { msg.textContent = text; msg.style.color = '#245442'; }
+}
+
+async function establishTabaRecoverySession() {
+  const params = new URLSearchParams(location.search);
+  const hash = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  const authError = params.get('error_description') || hash.get('error_description');
+  if (authError) {
+    showTabaPasswordRecovery('Der Passwort-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.');
+    document.getElementById('passwordResetMessage').style.color = '#b83232';
+    return false;
+  }
+
+  const code = params.get('code');
+  if (code) {
+    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
+    if (error || !data?.session) {
+      showTabaPasswordRecovery('Der Passwort-Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Link an.');
+      document.getElementById('passwordResetMessage').style.color = '#b83232';
+      return false;
+    }
+    history.replaceState({}, document.title, location.pathname);
+    tabaRecoveryReady = true;
+    showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
+    return true;
+  }
+
+  const tokenHash = params.get('token_hash') || hash.get('token_hash');
+  const type = params.get('type') || hash.get('type');
+  if (tokenHash && type === 'recovery') {
+    const { data, error } = await supabaseClient.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+    if (error || !data?.session) {
+      showTabaPasswordRecovery('Der Passwort-Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Link an.');
+      document.getElementById('passwordResetMessage').style.color = '#b83232';
+      return false;
+    }
+    history.replaceState({}, document.title, location.pathname);
+    tabaRecoveryReady = true;
+    showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
+    return true;
+  }
+
+  if (type === 'recovery' || hash.has('access_token')) {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (!error && data?.session) {
+      tabaRecoveryReady = true;
+      showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
+      return true;
+    }
+  }
+  showTabaPasswordRecovery('Der Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Passwort-Link an.');
+  document.getElementById('passwordResetMessage').style.color = '#b83232';
+  return false;
+}
+
+const passwordResetForm = document.getElementById('passwordResetForm');
 passwordResetForm.addEventListener('submit', async function(event) {
   event.preventDefault();
-
   const password = document.getElementById('newPassword').value;
   const confirmation = document.getElementById('confirmNewPassword').value;
   const message = document.getElementById('passwordResetMessage');
   const button = passwordResetForm.querySelector('button');
-
-  if (password.length < 10) {
-    message.textContent = 'Das Passwort muss mindestens 10 Zeichen haben.';
-    message.style.color = '#b83232';
-    return;
-  }
-  if (password !== confirmation) {
-    message.textContent = 'Die beiden Passwörter stimmen nicht überein.';
-    message.style.color = '#b83232';
-    document.getElementById('confirmNewPassword').focus();
-    return;
-  }
+  if (password.length < 10) { message.textContent = 'Das Passwort muss mindestens 10 Zeichen haben.'; message.style.color = '#b83232'; return; }
+  if (password !== confirmation) { message.textContent = 'Die beiden Passwörter stimmen nicht überein.'; message.style.color = '#b83232'; document.getElementById('confirmNewPassword').focus(); return; }
 
   button.disabled = true;
-  message.textContent = 'Passwort wird sicher gespeichert ...';
-  message.style.color = '#245442';
-
+  message.textContent = 'Wiederherstellungs-Sitzung wird geprüft ...';
+  const { data, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError || !data?.session || !tabaRecoveryReady) {
+    message.textContent = 'Die Wiederherstellungs-Sitzung fehlt oder ist abgelaufen. Bitte fordere einen neuen Passwort-Link an und öffne ihn im selben Browser.';
+    message.style.color = '#b83232';
+    button.disabled = false;
+    return;
+  }
   const { error } = await supabaseClient.auth.updateUser({ password });
-
   if (error) {
     message.textContent = 'Das Passwort konnte nicht gespeichert werden: ' + error.message;
     message.style.color = '#b83232';
     button.disabled = false;
     return;
   }
-
   message.textContent = 'Dein neues Passwort wurde erfolgreich gespeichert. Du kannst dich jetzt mit deinem neuen Passwort anmelden.';
   message.style.color = '#245442';
   passwordResetForm.reset();
-  button.disabled = false;
+  tabaRecoveryReady = false;
   await supabaseClient.auth.signOut();
   setTimeout(() => {
     document.getElementById('passwordResetBox')?.classList.add('hidden');
     document.getElementById('loginOverlay')?.classList.remove('hidden');
     const loginMessage = document.getElementById('loginMessage');
-    if (loginMessage) {
-      loginMessage.textContent = 'Passwort erfolgreich geändert. Bitte melde dich neu an.';
-      loginMessage.style.color = '#245442';
-    }
+    if (loginMessage) { loginMessage.textContent = 'Passwort erfolgreich geändert. Bitte melde dich neu an.'; loginMessage.style.color = '#245442'; }
   }, 1800);
 });
 
@@ -4810,6 +4843,7 @@ function startIdleLogout() {
   checkElapsedInactivity();
 }
 async function checkLogin() {
+  if (tabaRecoveryInProgress) return;
   const { data } = await supabaseClient.auth.getSession();
 
   if (data.session) {
@@ -4831,72 +4865,27 @@ async function checkLogin() {
    }
   }
 }
-const passwordRecovery =
-  window.location.hash.includes('type=recovery');
+// Recovery-Session zuerst bestätigen und währenddessen nicht durch die normale
+// Inaktivitätsprüfung abmelden.
+(async function initTabaPasswordRecovery() {
+  const params = new URLSearchParams(location.search);
+  const hash = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  const recoveryUrl = params.has('code') || params.get('type') === 'recovery' ||
+    hash.get('type') === 'recovery' || hash.has('access_token') ||
+    params.has('token_hash') || hash.has('token_hash') ||
+    params.has('error_description') || hash.has('error_description');
+  if (!recoveryUrl) return;
+  showTabaPasswordRecovery('Wiederherstellungslink wird geprüft ...');
+  await establishTabaRecoverySession();
+})();
 
-if (passwordRecovery) {
-  document.getElementById('loginOverlay')
-    .classList.add('hidden');
-
-  document.getElementById('passwordResetBox')
-    .classList.remove('hidden');
-}
-
-// Passwort-Wiederherstellung: Supabase verarbeitet den E-Mail-Link (PKCE oder Token-Hash)
-// und meldet PASSWORD_RECOVERY. Dann wird ausschließlich das Formular zum neuen Passwort gezeigt.
-function showTabaPasswordRecovery() {
-  document.getElementById('loginOverlay')?.classList.add('hidden');
-  document.getElementById('passwordResetBox')?.classList.remove('hidden');
-  const message = document.getElementById('passwordResetMessage');
-  if (message) {
-    message.textContent = 'Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.';
-    message.style.color = '#245442';
-  }
-}
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY' && session) {
-    showTabaPasswordRecovery();
+    tabaRecoveryInProgress = true;
+    tabaRecoveryReady = true;
+    showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
   }
 });
-
-(async function detectRecoveryLink() {
-  const params = new URLSearchParams(window.location.search);
-  const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
-  const authError = hashParams.get('error_description') || params.get('error_description');
-  const hasRecoveryMarker = params.has('code') ||
-    params.get('type') === 'recovery' ||
-    hashParams.get('type') === 'recovery' ||
-    hashParams.has('access_token');
-
-  if (authError) {
-    document.getElementById('loginOverlay')?.classList.add('hidden');
-    document.getElementById('passwordResetBox')?.classList.remove('hidden');
-    const message = document.getElementById('passwordResetMessage');
-    if (message) {
-      message.textContent = 'Der Passwort-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.';
-      message.style.color = '#b83232';
-    }
-    return;
-  }
-  if (!hasRecoveryMarker) return;
-
-  // Supabase JS v2 verarbeitet den PKCE-Code bzw. den Token-Hash automatisch
-  // beim Initialisieren des Clients (detectSessionInUrl ist standardmäßig aktiv).
-  // Danach prüfen wir die Session, bevor das Formular freigegeben wird.
-  await new Promise(resolve => setTimeout(resolve, 350));
-  const { data, error } = await supabaseClient.auth.getSession();
-  if (!error && data?.session) {
-    showTabaPasswordRecovery();
-  } else {
-    document.getElementById('loginOverlay')?.classList.add('hidden');
-    document.getElementById('passwordResetBox')?.classList.remove('hidden');
-    const message = document.getElementById('passwordResetMessage');
-    if (message) {
-      message.textContent = 'Der Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Passwort-Link an.';
-      message.style.color = '#b83232';
-    }
-  }
-})();
 
 checkLogin();
 
