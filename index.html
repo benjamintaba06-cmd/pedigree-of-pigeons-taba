@@ -3323,7 +3323,17 @@ function generateInviteCode() {
 async function createInvitation() {
   const message = document.getElementById('inviteMessage');
   const maxUses = Number(document.getElementById('inviteMaxUses').value);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const expiryInput = document.getElementById('inviteExpiry').value;
+  let expiresAt = null;
+
+  if (expiryInput) {
+    const localEndOfDay = new Date(`${expiryInput}T23:59:59.999`);
+    if (Number.isNaN(localEndOfDay.getTime()) || localEndOfDay.getTime() <= Date.now()) {
+      message.textContent = 'Bitte ein gültiges Ablaufdatum in der Zukunft wählen.';
+      return;
+    }
+    expiresAt = localEndOfDay.toISOString();
+  }
 
   if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 20) {
     message.textContent = 'Bitte eine Nutzungszahl zwischen 1 und 20 eingeben.';
@@ -3375,6 +3385,7 @@ async function createInvitation() {
   const code = invitation.code;
 
   document.getElementById('inviteMaxUses').value = '1';
+  document.getElementById('inviteExpiry').value = '';
 
   const link = `${location.origin}${location.pathname}?invite=${code}`;
 
