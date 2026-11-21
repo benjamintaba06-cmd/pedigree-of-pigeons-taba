@@ -1261,6 +1261,10 @@ footer nav[aria-label="Rechtliche Informationen"] a:focus-visible {
 @media(max-width:900px){.calendar-five-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.calendar-five-grid{grid-template-columns:1fr}.calendar-five-head{align-items:flex-start}.calendar-day-card{padding:12px}}
 
+
+.calendar-reminder-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}
+.calendar-notification-button{background:#f1f4f0!important;color:var(--taba-forest,#173f34)!important;border:1px solid var(--taba-line,#e5e7df)!important}
+
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -1847,7 +1851,7 @@ footer a[href*="contact"],
     <label for="personalReminderAt">Erinnerung anzeigen am (optional)</label>
     <input id="personalReminderAt" type="datetime-local">
     <p class="taba-muted">Hinweis: Eine Browser-Benachrichtigung kann erscheinen, solange die Website geöffnet ist und du Benachrichtigungen erlaubt hast. Für Erinnerungen bei geschlossener Website wäre später ein Push-Dienst nötig.</p>
-    <button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button>
+    <div class="calendar-reminder-actions"><button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button><button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Browser-Benachrichtigungen aktivieren</button></div>
     <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
   </div>
   <div class="card">
@@ -2683,6 +2687,14 @@ async function loadTabaPublicEvents() {
     }
   }
   startTabaReminderChecks();
+}
+
+async function enableTabaReminderNotifications(){
+  const status=document.getElementById('personalReminderStatus');
+  if(!('Notification' in window)){if(status)status.textContent='Dieser Browser unterstützt keine Benachrichtigungen.';return;}
+  const permission=await Notification.requestPermission();
+  if(status)status.textContent=permission==='granted'?'Browser-Benachrichtigungen sind aktiviert. Erinnerungen werden angezeigt, solange die Website geöffnet ist.': 'Benachrichtigungen wurden nicht freigegeben.';
+  if(permission==='granted')startTabaReminderChecks();
 }
 
 async function savePersonalCalendarReminder(){
