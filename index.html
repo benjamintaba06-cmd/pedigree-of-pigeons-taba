@@ -1208,6 +1208,25 @@ nav button,
   line-height: 1 !important;
 }
 
+
+/* Ganze Übersichtskarten sind die Navigation – keine separaten CTA-Buttons */
+.dashboard-feature[role="button"] {
+  cursor: pointer;
+  position: relative;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.dashboard-feature[role="button"]:hover {
+  transform: translateY(-3px);
+  border-color: var(--taba-gold, #c6a45b);
+  box-shadow: 0 12px 28px rgba(23,63,52,.12);
+}
+.dashboard-feature[role="button"]:focus-visible {
+  outline: 3px solid var(--taba-gold, #c6a45b);
+  outline-offset: 4px;
+}
+.dashboard-feature[role="button"] h3 { margin-bottom: 10px; }
+.dashboard-feature[role="button"] p { margin-bottom: 0; }
+
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -1769,9 +1788,9 @@ footer a[href*="contact"],
     </div>
   </div>
   <div class="dashboard-bottom-grid">
-    <article class="dashboard-feature"><div class="dashboard-feature-icon">🌿</div><div><span class="dashboard-kicker">ZUCHT & PLANUNG</span><h3>Deine nächste Zuchtsaison beginnt mit Überblick.</h3><p>Verwalte Zuchtpaare, dokumentiere Jungtiere und behalte wichtige Ereignisse im Blick.</p><button class="dashboard-text-link" type="button" onclick="showById('breeding')">Zum Zuchtzentrum ↗</button></div></article>
-    <article class="dashboard-feature dashboard-feature-gold"><div class="dashboard-feature-icon">🏡</div><div><span class="dashboard-kicker">GEMEINSCHAFT</span><h3>Wissen und Leidenschaft verbinden.</h3><p>Entdecke andere Züchter, teile Erfahrungen und finde besondere Tauben.</p><button class="dashboard-text-link" type="button" onclick="showById('breeders')">Zum Züchterkreis ↗</button></div></article>
-    <article class="dashboard-feature"><div class="dashboard-feature-icon">📅</div><div><span class="dashboard-kicker">TERMINE & EVENTS</span><h3>Was bei TABA ansteht.</h3><p>Behalte kommende Treffen, Veranstaltungen und wichtige Termine der Community im Blick.</p><button class="dashboard-text-link" type="button" onclick="showById('eventsCalendar')">Zum Kalender ↗</button></div></article>
+    <article class="dashboard-feature" role="button" tabindex="0" aria-label="Zuchtzentrum öffnen" onclick="showById('breeding')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showById('breeding')}"><div class="dashboard-feature-icon">🌿</div><div><span class="dashboard-kicker">ZUCHT & PLANUNG</span><h3>Deine nächste Zuchtsaison beginnt mit Überblick.</h3><p>Verwalte Zuchtpaare, dokumentiere Jungtiere und behalte wichtige Ereignisse im Blick.</p></div></article>
+    <article class="dashboard-feature dashboard-feature-gold" role="button" tabindex="0" aria-label="Züchterkreis öffnen" onclick="showById('breeders')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showById('breeders')}"><div class="dashboard-feature-icon">🏡</div><div><span class="dashboard-kicker">GEMEINSCHAFT</span><h3>Wissen und Leidenschaft verbinden.</h3><p>Entdecke andere Züchter, teile Erfahrungen und finde besondere Tauben.</p></div></article>
+    <article class="dashboard-feature" role="button" tabindex="0" aria-label="TABA-Kalender öffnen" onclick="showById('eventsCalendar')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showById('eventsCalendar')}"><div class="dashboard-feature-icon">📅</div><div><span class="dashboard-kicker">TERMINE & EVENTS</span><h3>Was bei TABA ansteht.</h3><p>Behalte kommende Treffen, Veranstaltungen und wichtige Termine der Community im Blick.</p></div></article>
   </div>
 </section>
 
