@@ -1449,6 +1449,48 @@ hr{border-color:var(--taba-line)!important}
 .dashboard-feature p{font-size:11px;line-height:1.6;color:var(--taba-muted,#78857d);margin:0 0 8px}
 @media(max-width:1050px){.dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-main-grid{grid-template-columns:1fr}}
 @media(max-width:620px){.dashboard-hero{grid-template-columns:1fr;min-height:0;padding:26px 22px}.dashboard-hero-art{min-height:120px;opacity:.9}.dashboard-dove{font-size:84px}.dashboard-orbit{width:145px;height:145px}.orbit-two{width:185px;height:185px}.dashboard-art-caption{bottom:-2px}.dashboard-heading-row{align-items:start;flex-direction:column}.dashboard-stats{gap:9px}.dashboard-stat{padding:13px;grid-template-columns:34px 1fr;column-gap:8px}.stat-icon{width:33px;height:33px;font-size:15px}.dashboard-stat strong{font-size:24px}.dashboard-bird-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-bird:nth-child(3){display:none}.dashboard-bird-photo{height:105px}.dashboard-bottom-grid{grid-template-columns:1fr}.dashboard-feature{padding:17px}}
+
+/* TABA – aufgeräumte, kontrastreiche Übersicht */
+main.dashboard-active{max-width:1280px;padding:clamp(18px,3vw,38px) clamp(14px,3vw,34px) 48px}
+#dashboard{width:100%}
+.dashboard-hero{min-height:300px;align-items:center}
+.dashboard-hero .dashboard-hero-copy h2{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important;text-shadow:0 2px 14px rgba(0,0,0,.25);font-weight:700}
+.dashboard-hero p{color:#f1f5f0}
+.dashboard-heading-row{margin:34px 0 16px}
+.dashboard-stats{gap:15px}
+.dashboard-stat{min-height:94px;padding:18px 19px}
+.dashboard-main-grid{gap:20px;margin-top:20px}
+.dashboard-panel{padding:24px}
+.dashboard-panel-head{margin-bottom:19px}
+.dashboard-bird-grid{gap:13px}
+.dashboard-bird{box-shadow:0 5px 16px rgba(24,55,43,.055)}
+.dashboard-bird-photo{height:132px}
+.dashboard-shortcuts{display:flex;flex-direction:column;gap:12px}
+.dashboard-shortcut{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;min-height:76px;padding:14px 15px;border:1px solid rgba(226,233,225,.9);border-radius:15px;background:#173f34;text-align:left;transition:background .18s ease,transform .18s ease}
+.dashboard-shortcut:hover{background:#205342;transform:translateY(-1px)}
+.dashboard-shortcut>span:first-child{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;background:#edf4ed;border-radius:13px;font-size:19px}
+.dashboard-shortcut>span:nth-child(2){display:grid;gap:5px;flex:1;min-width:0}
+.dashboard-shortcut strong{font-size:13px;line-height:1.35;color:#fff}
+.dashboard-shortcut small{font-size:11px;line-height:1.4;color:#e0ebe3}
+.dashboard-shortcut b{color:#d6bd82;font-size:18px}
+.dashboard-bottom-grid{gap:20px;margin-top:20px}
+.dashboard-feature{min-height:150px;align-items:flex-start;padding:25px}
+.dashboard-feature h3{font-size:25px;line-height:1.12}
+.dashboard-feature p{font-size:12px;color:#68776e}
+.dashboard-text-link{color:#765f31;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:620px){
+ main.dashboard-active{padding:14px 12px 30px}
+ .dashboard-hero{min-height:0;padding:25px 20px;border-radius:19px}
+ .dashboard-hero .dashboard-hero-copy h2{font-size:clamp(34px,9vw,46px);line-height:1.02}
+ .dashboard-main-grid{gap:14px}
+ .dashboard-panel{padding:17px}
+ .dashboard-shortcuts{gap:10px}
+ .dashboard-shortcut{min-height:70px;padding:12px}
+ .dashboard-shortcut strong{font-size:12px}
+ .dashboard-shortcut small{font-size:10px}
+ .dashboard-bottom-grid{gap:13px;margin-top:14px}
+}
+
 </style>
 </head>
 <body>
@@ -1590,17 +1632,13 @@ hr{border-color:var(--taba-line)!important}
   <div class="nav-group">
     <div class="nav-group-title">Mein Bereich</div>
     <div class="nav-group-links">
-      <button onclick="show('dashboard',this)">⌂ Übersicht</button>
-      <button class="active" onclick="show('pigeons',this)">🕊️ Tauben</button>
-      <button onclick="show('pedigree',this)">🌳 Stammbaum</button>
-      <button onclick="show('breeding',this);loadBreedingHub()">🧬 Zucht & Gesundheit</button>
+      <button class="active" onclick="show('dashboard',this)">⌂ Übersicht</button>
     </div>
   </div>
   <div class="nav-group">
     <div class="nav-group-title">Züchterkreis</div>
     <div class="nav-group-links">
       <button onclick="show('inbox',this)">💬 DM’s <span id="unreadCount" class="unread-dot hidden"></span></button>
-      <button onclick="show('breeders',this)">Züchter</button>
     </div>
   </div>
 </nav>
@@ -1630,10 +1668,10 @@ hr{border-color:var(--taba-line)!important}
   <div class="dashboard-main-grid">
     <div class="dashboard-panel dashboard-collection"><div class="dashboard-panel-head"><div><span class="dashboard-kicker">DEINE KOLLEKTION</span><h3>Zuletzt hinzugefügt</h3></div><button class="dashboard-text-link" onclick="showById('pigeons')" type="button">Alle Tauben ansehen ↗</button></div><div class="dashboard-bird-grid" id="dashboardBirds"><div class="dashboard-empty">Deine Tauben erscheinen hier, sobald dein Bestand geladen ist.</div></div></div>
     <div class="dashboard-panel dashboard-shortcuts"><div class="dashboard-panel-head"><div><span class="dashboard-kicker">SCHNELLZUGRIFF</span><h3>Was möchtest du tun?</h3></div></div>
-      <button class="dashboard-shortcut" type="button" onclick="showById('pedigree')"><span>🌳</span><span><strong>Stammbaum ansehen</strong><small>Abstammung entdecken und teilen</small></span><b>↗</b></button>
+      <button class="dashboard-shortcut" type="button" onclick="showById('pigeons')"><span>🕊️</span><span><strong>Meine Tauben</strong><small>Bestand ansehen und Tauben verwalten</small></span><b>↗</b></button>
+      <button class="dashboard-shortcut" type="button" onclick="showById('pedigree')"><span>🌳</span><span><strong>Stammbaum</strong><small>Abstammung entdecken und teilen</small></span><b>↗</b></button>
       <button class="dashboard-shortcut" type="button" onclick="showById('breeding')"><span>🧬</span><span><strong>Zucht & Gesundheit</strong><small>Paare, Jungtiere und Akten verwalten</small></span><b>↗</b></button>
-      <button class="dashboard-shortcut" type="button" onclick="showById('breeders')"><span>🤝</span><span><strong>Züchterkreis entdecken</strong><small>Beiträge, Anzeigen und Mitglieder</small></span><b>↗</b></button>
-      <button class="dashboard-shortcut" type="button" onclick="showById('inbox')"><span>✉️</span><span><strong>Nachrichten öffnen</strong><small>Mit anderen Züchtern austauschen</small></span><b>↗</b></button>
+      <button class="dashboard-shortcut" type="button" onclick="showById('breeders')"><span>🤝</span><span><strong>Züchterkreis</strong><small>Beiträge, Anzeigen und Mitglieder entdecken</small></span><b>↗</b></button>
     </div>
   </div>
   <div class="dashboard-bottom-grid">
@@ -2386,6 +2424,7 @@ function show(id, btn) {
 
   document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
   section.classList.remove('hidden');
+  document.querySelector('main')?.classList.toggle('dashboard-active', id === 'dashboard');
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
@@ -2413,7 +2452,8 @@ function show(id, btn) {
 
 function showById(id){
  const button = document.querySelector(`nav button[onclick="show('${id}',this)"]`);
- if (button) show(id, button);
+ show(id, button || null);
+ if (id === 'breeding') loadBreedingHub();
 }
 
 function showInboxPanel(name, button){
