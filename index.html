@@ -1289,6 +1289,27 @@ footer nav[aria-label="Rechtliche Informationen"] a:focus-visible {
 @media(max-width:760px){.calendar-five-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.calendar-mini-day{padding:8px 5px}.calendar-mini-day>strong{font-size:10px}.calendar-all-event{grid-template-columns:1fr auto;gap:5px}.calendar-all-event-date{grid-column:1/-1}}
 @media(max-width:420px){.calendar-mini-day>strong{font-size:9px}.calendar-mini-count,.calendar-mini-titles span,.calendar-mini-titles small{font-size:9px}}
 
+
+/* Bearbeitbare Tageskarten und kompaktes Terminformular */
+.calendar-mini-day{background:#fff;border:1px solid var(--taba-line,#e5e7df);border-radius:11px;padding:9px;gap:6px}
+.calendar-mini-day:not(:last-child){border-right:1px solid var(--taba-line,#e5e7df)}
+.calendar-mini-entry{display:flex;align-items:center;gap:3px;min-width:0}
+.calendar-mini-entry span{min-width:0;overflow-wrap:anywhere}
+.calendar-mini-entry button,.calendar-reminder-row-actions button{border:0;border-radius:6px;background:#edf3ee;color:#245b3e;padding:4px 7px;font-size:11px;flex:0 0 auto}
+.calendar-day-add{margin-top:auto;border:1px dashed #b9c9bd;border-radius:7px;background:#f7faf7;color:#245b3e;padding:6px 4px;font-size:10px;font-weight:700}
+.calendar-reminder-card summary{cursor:pointer;font-weight:700;color:var(--taba-forest,#173f34);list-style:none}
+.calendar-reminder-card summary::-webkit-details-marker{display:none}
+.calendar-quick-form{display:grid;gap:7px;margin-top:12px}
+.calendar-quick-form input{margin:0;padding:10px 11px;font-size:14px}
+.calendar-quick-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.calendar-reminder-advanced summary{font-size:12px;color:var(--taba-muted,#718078);cursor:pointer}
+.calendar-reminder-advanced input{margin-top:7px}
+.calendar-reminder-actions{margin-top:2px}
+.calendar-cancel-edit{border:1px solid var(--taba-line,#e5e7df);border-radius:8px;background:#fff;color:#52645a;padding:9px 12px}
+.calendar-reminder-row-actions{display:flex;gap:6px;flex:0 0 auto}
+@media(max-width:760px){.calendar-five-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.calendar-mini-day{padding:7px 4px}.calendar-mini-day>strong{font-size:10px}}
+@media(max-width:520px){.calendar-five-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.calendar-mini-day{padding:6px 3px}.calendar-mini-day>strong{font-size:9px}.calendar-day-add{font-size:9px;padding:5px 1px}.calendar-mini-entry button{padding:3px 4px}}
+
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -1867,21 +1888,23 @@ footer a[href*="contact"],
     <div class="calendar-five-head"><div><h3>Alle Community-Events</h3><p class="sub">Alle vom Admin eingetragenen Veranstaltungen – auch spätere Termine.</p></div><button type="button" class="action" onclick="loadTabaPublicEvents()">↻</button></div>
     <div id="allAdminEventsList" class="calendar-all-events-list"><p class="taba-muted">Veranstaltungen werden geladen …</p></div>
   </div>
-  <div class="card calendar-reminder-card">
-    <h3>🔔 Meine persönliche Erinnerung</h3>
-    <p class="sub">Lege private Termine oder Erinnerungen an. Sie werden nur in deinem Konto gespeichert.</p>
-    <label for="personalReminderTitle">Woran möchtest du erinnert werden?</label>
-    <input id="personalReminderTitle" maxlength="120" placeholder="z. B. Impfkontrolle, Jungtiere beringen …">
-    <div class="taba-form-row">
-      <div><label for="personalReminderDate">Datum</label><input id="personalReminderDate" type="date"></div>
-      <div><label for="personalReminderTime">Uhrzeit des Termins</label><input id="personalReminderTime" type="time" value="09:00"></div>
+  <details class="card calendar-reminder-card" id="personalReminderEditor">
+    <summary id="personalReminderEditorTitle">＋ Persönlichen Termin hinzufügen</summary>
+    <div class="calendar-quick-form">
+      <input id="personalReminderTitle" maxlength="120" placeholder="Termin, z. B. Impfkontrolle" aria-label="Terminname">
+      <div class="calendar-quick-fields">
+        <input id="personalReminderDate" type="date" aria-label="Datum">
+        <input id="personalReminderTime" type="time" value="09:00" aria-label="Uhrzeit">
+      </div>
+      <details class="calendar-reminder-advanced"><summary>Erinnerungszeitpunkt festlegen</summary><input id="personalReminderAt" type="datetime-local" aria-label="Erinnerungszeitpunkt"></details>
+      <div class="calendar-reminder-actions">
+        <button class="action" type="button" onclick="savePersonalCalendarReminder()">Speichern</button>
+        <button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Push aktivieren</button>
+        <button class="calendar-cancel-edit hidden" id="cancelPersonalReminderEdit" type="button" onclick="resetPersonalCalendarReminderForm()">Abbrechen</button>
+      </div>
+      <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
     </div>
-    <label for="personalReminderAt">Erinnerung anzeigen am (optional)</label>
-    <input id="personalReminderAt" type="datetime-local">
-    <p class="taba-muted">Aktiviere Push auf jedem Gerät, auf dem du Erinnerungen erhalten möchtest.</p>
-    <div class="calendar-reminder-actions"><button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button><button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Push auf diesem Gerät aktivieren</button></div>
-    <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
-  </div>
+  </details>
   <div class="card">
     <h3>Meine gespeicherten Erinnerungen</h3>
     <div id="myCalendarReminders" class="taba-muted">Erinnerungen werden geladen …</div>
@@ -2705,17 +2728,21 @@ async function loadTabaPublicEvents() {
     if(error)console.error('Eigene Kalendereinträge konnten nicht geladen werden:',error);
     (data||[]).forEach(event=>{
       const day=tabaLocalDateKey(new Date(event.starts_at));
-      if(dayItems[day])dayItems[day].push({kind:'personal',title:event.title,notes:event.notes,time:event.starts_at});
+      if(dayItems[day])dayItems[day].push({kind:'personal',id:event.id,title:event.title,notes:event.notes,time:event.starts_at});
     });
   }
 
   target.innerHTML=dates.map(day=>{
     const items=dayItems[day];
-    return `<div class="calendar-mini-day">
+    const personal=items.filter(item=>item.kind==='personal');
+    return `<article class="calendar-mini-day">
       <strong>${esc(tabaCalendarFormatDate(day))}</strong>
       <span class="calendar-mini-count ${items.length?'has-events':''}">${items.length?items.length+' geplant':'frei'}</span>
-      ${items.length?`<div class="calendar-mini-titles">${items.slice(0,2).map(item=>`<span>${item.kind==='personal'?'🔒':'•'} ${esc(item.title)}</span>`).join('')}${items.length>2?`<small>+${items.length-2} weitere</small>`:''}</div>`:''}
-    </div>`;
+      <div class="calendar-mini-titles">${items.slice(0,3).map(item=>item.kind==='personal'
+        ? `<div class="calendar-mini-entry is-personal"><span>🔒 ${esc(item.title)}</span><button type="button" aria-label="Termin bearbeiten" onclick="editPersonalCalendarReminder('${item.id}')">✎</button></div>`
+        : `<span>• ${esc(item.title)}</span>`).join('')}${items.length>3?`<small>+${items.length-3} weitere</small>`:''}</div>
+      <button type="button" class="calendar-day-add" onclick="openPersonalCalendarReminderForDay('${day}')">＋ Termin</button>
+    </article>`;
   }).join('');
 
   const list=document.getElementById('myCalendarReminders');
@@ -2727,7 +2754,7 @@ async function loadTabaPublicEvents() {
       if(error)list.textContent='Deine Erinnerungen konnten nicht geladen werden.';
       else{
         const future=(data||[]).filter(x=>new Date(x.starts_at)>=new Date());
-        list.innerHTML=future.length?future.map(x=>`<div class="calendar-reminder-row"><div><strong>${esc(x.title)}</strong><small>${esc(new Date(x.starts_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}))}${x.reminder_at?' · Erinnerung: '+esc(new Date(x.reminder_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):''}</small></div><button type="button" class="calendar-delete-button" onclick="deletePersonalCalendarReminder('${x.id}')">Löschen</button></div>`).join(''):'Du hast noch keine zukünftigen persönlichen Erinnerungen gespeichert.';
+        list.innerHTML=future.length?future.map(x=>`<div class="calendar-reminder-row"><div><strong>${esc(x.title)}</strong><small>${esc(new Date(x.starts_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}))}${x.reminder_at?' · Erinnerung: '+esc(new Date(x.reminder_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):''}</small></div><div class="calendar-reminder-row-actions"><button type="button" onclick="editPersonalCalendarReminder('${x.id}')">Bearbeiten</button><button type="button" class="calendar-delete-button" onclick="deletePersonalCalendarReminder('${x.id}')">Löschen</button></div></div>`).join(''):'Du hast noch keine zukünftigen persönlichen Erinnerungen gespeichert.';
       }
     }
   }
@@ -2781,13 +2808,52 @@ async function enableTabaReminderNotifications(){
 }
 
 
+let editingPersonalCalendarReminderId=null;
+
+function openPersonalCalendarReminderForDay(day){
+  resetPersonalCalendarReminderForm();
+  document.getElementById('personalReminderDate').value=day;
+  const editor=document.getElementById('personalReminderEditor');
+  editor.open=true;
+  document.getElementById('personalReminderTitle').focus();
+  editor.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function resetPersonalCalendarReminderForm(){
+  editingPersonalCalendarReminderId=null;
+  document.getElementById('personalReminderTitle').value='';
+  document.getElementById('personalReminderAt').value='';
+  document.getElementById('personalReminderTime').value='09:00';
+  document.getElementById('personalReminderEditorTitle').textContent='＋ Persönlichen Termin hinzufügen';
+  document.getElementById('cancelPersonalReminderEdit').classList.add('hidden');
+}
+async function editPersonalCalendarReminder(id){
+  const {data:authData}=await supabaseClient.auth.getUser();
+  if(!authData?.user)return;
+  const {data,error}=await supabaseClient.from('taba_calendar_events')
+    .select('id,title,starts_at,reminder_at').eq('id',id).eq('owner_id',authData.user.id).single();
+  if(error||!data){alert('Der Termin konnte nicht geladen werden.');return;}
+  editingPersonalCalendarReminderId=id;
+  const starts=new Date(data.starts_at);
+  const localDate=new Date(starts.getTime()-starts.getTimezoneOffset()*60000);
+  document.getElementById('personalReminderTitle').value=data.title||'';
+  document.getElementById('personalReminderDate').value=localDate.toISOString().slice(0,10);
+  document.getElementById('personalReminderTime').value=localDate.toISOString().slice(11,16);
+  if(data.reminder_at){
+    const reminder=new Date(data.reminder_at);
+    document.getElementById('personalReminderAt').value=new Date(reminder.getTime()-reminder.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  }else document.getElementById('personalReminderAt').value='';
+  document.getElementById('personalReminderEditorTitle').textContent='✎ Persönlichen Termin bearbeiten';
+  document.getElementById('cancelPersonalReminderEdit').classList.remove('hidden');
+  const editor=document.getElementById('personalReminderEditor');editor.open=true;
+  editor.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 async function savePersonalCalendarReminder(){
   const status=document.getElementById('personalReminderStatus');
   const title=document.getElementById('personalReminderTitle')?.value.trim();
   const date=document.getElementById('personalReminderDate')?.value;
   const time=document.getElementById('personalReminderTime')?.value||'09:00';
   const reminderValue=document.getElementById('personalReminderAt')?.value;
-  if(!title||!date){if(status)status.textContent='Bitte Titel und Datum eintragen.';return;}
+  if(!title||!date){if(status)status.textContent='Bitte Termin und Datum eintragen.';return;}
   const {data:authData,error:authError}=await supabaseClient.auth.getUser();
   const user=authData?.user;
   if(authError||!user){if(status)status.textContent='Bitte melde dich erneut an.';return;}
@@ -2799,14 +2865,14 @@ async function savePersonalCalendarReminder(){
     if(Number.isNaN(reminderAt.getTime())){if(status)status.textContent='Bitte einen gültigen Erinnerungszeitpunkt auswählen.';return;}
     if(reminderAt>=startsAt){if(status)status.textContent='Die Erinnerung muss vor dem Termin liegen.';return;}
   }
-  const {error}=await supabaseClient.from('taba_calendar_events').insert({
-    owner_id:user.id,title,event_type:'custom',starts_at:startsAt.toISOString(),
-    reminder_at:reminderAt?reminderAt.toISOString():null,notes:'Persönliche Erinnerung'
-  });
+  const payload={title,event_type:'custom',starts_at:startsAt.toISOString(),reminder_at:reminderAt?reminderAt.toISOString():null,notes:'Persönliche Erinnerung'};
+  const query=editingPersonalCalendarReminderId
+    ?supabaseClient.from('taba_calendar_events').update(payload).eq('id',editingPersonalCalendarReminderId).eq('owner_id',user.id)
+    :supabaseClient.from('taba_calendar_events').insert({...payload,owner_id:user.id});
+  const {error}=await query;
   if(error){if(status)status.textContent='Speichern fehlgeschlagen: '+error.message;return;}
-  document.getElementById('personalReminderTitle').value='';
-  document.getElementById('personalReminderAt').value='';
-  if(status)status.textContent='Deine persönliche Erinnerung wurde gespeichert.';
+  resetPersonalCalendarReminderForm();
+  if(status)status.textContent='Termin gespeichert.';
   await loadTabaPublicEvents();
 }
 
