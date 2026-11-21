@@ -4,6 +4,8 @@ const files = [
   'index.html',
   'admin.html',
   'reset-password.html',
+  'privacy.html',
+  'account-deletion.html',
   'manifest.webmanifest',
   'sw.js'
 ];
