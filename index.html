@@ -3256,15 +3256,15 @@ function downloadPedigreePDF(){
    <\/script>
  
 
-<script>
-if ("serviceWorker" in navigator && location.protocol === "https:") {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
-}
-</script>
 </body>
  </html>`);
  win.document.close();
 }
+
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+}
+
 async function createTreeRoot(){
  const ring=prompt('Ringnummer der ersten Taube:');
  if(ring===null) return;
