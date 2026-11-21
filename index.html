@@ -1265,6 +1265,30 @@ footer nav[aria-label="Rechtliche Informationen"] a:focus-visible {
 .calendar-reminder-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}
 .calendar-notification-button{background:#f1f4f0!important;color:var(--taba-forest,#173f34)!important;border:1px solid var(--taba-line,#e5e7df)!important}
 
+
+/* Kompakte Fünf-Tage-Übersicht */
+.calendar-five-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-top:1px solid var(--taba-line,#e5e7df);border-bottom:1px solid var(--taba-line,#e5e7df)}
+.calendar-mini-day{min-width:0;padding:9px 10px;border-right:1px solid var(--taba-line,#e5e7df);display:flex;flex-direction:column;gap:5px}
+.calendar-mini-day:last-child{border-right:0}
+.calendar-mini-day>strong{font-size:11px;line-height:1.3;color:var(--taba-forest,#173f34)}
+.calendar-mini-count{font-size:10px;color:#7b847e}
+.calendar-mini-count.has-events{font-weight:700;color:#245b3e}
+.calendar-mini-titles{display:grid;gap:3px;margin-top:2px}
+.calendar-mini-titles span,.calendar-mini-titles small{font-size:10px;line-height:1.3;overflow-wrap:anywhere}
+.calendar-all-events-card{margin-top:14px}
+.calendar-all-events-card h3{margin:0}
+.calendar-all-events-list{display:grid;gap:0}
+.calendar-all-event{display:grid;grid-template-columns:minmax(120px,180px) minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 0;border-top:1px solid var(--taba-line,#e5e7df)}
+.calendar-all-event-date{font-size:12px;font-weight:700;color:var(--taba-forest,#173f34)}
+.calendar-all-event-main{display:grid;gap:4px;min-width:0}
+.calendar-all-event-main strong{font-size:13px}
+.calendar-all-event-main small,.calendar-all-event-main p{font-size:12px;margin:0;overflow-wrap:anywhere}
+.calendar-all-event.is-past{opacity:.65}
+.calendar-event-state{font-size:10px;color:#7b847e;white-space:nowrap}
+.calendar-event-state.upcoming{color:#245b3e;font-weight:700}
+@media(max-width:760px){.calendar-five-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.calendar-mini-day{padding:8px 5px}.calendar-mini-day>strong{font-size:10px}.calendar-all-event{grid-template-columns:1fr auto;gap:5px}.calendar-all-event-date{grid-column:1/-1}}
+@media(max-width:420px){.calendar-mini-day>strong{font-size:9px}.calendar-mini-count,.calendar-mini-titles span,.calendar-mini-titles small{font-size:9px}}
+
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -1839,6 +1863,10 @@ footer a[href*="contact"],
     <div class="calendar-five-head"><strong>Die nächsten 5 Tage</strong><button type="button" class="action" onclick="loadTabaPublicEvents()">↻ Aktualisieren</button></div>
     <div id="publicEventsList" class="calendar-five-grid"><p class="taba-muted">Kalender wird geladen …</p></div>
   </div>
+  <div class="card calendar-all-events-card">
+    <div class="calendar-five-head"><div><h3>Alle Community-Events</h3><p class="sub">Alle vom Admin eingetragenen Veranstaltungen – auch spätere Termine.</p></div><button type="button" class="action" onclick="loadTabaPublicEvents()">↻</button></div>
+    <div id="allAdminEventsList" class="calendar-all-events-list"><p class="taba-muted">Veranstaltungen werden geladen …</p></div>
+  </div>
   <div class="card calendar-reminder-card">
     <h3>🔔 Meine persönliche Erinnerung</h3>
     <p class="sub">Lege private Termine oder Erinnerungen an. Sie werden nur in deinem Konto gespeichert.</p>
@@ -1850,7 +1878,7 @@ footer a[href*="contact"],
     </div>
     <label for="personalReminderAt">Erinnerung anzeigen am (optional)</label>
     <input id="personalReminderAt" type="datetime-local">
-    <p class="taba-muted">Hinweis: Eine Browser-Benachrichtigung kann erscheinen, solange die Website geöffnet ist und du Benachrichtigungen erlaubt hast. Für Erinnerungen bei geschlossener Website wäre später ein Push-Dienst nötig.</p>
+    <p class="taba-muted">Aktiviere Push auf jedem Gerät, auf dem du Erinnerungen erhalten möchtest.</p>
     <div class="calendar-reminder-actions"><button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button><button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Push auf diesem Gerät aktivieren</button></div>
     <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
   </div>
@@ -2622,65 +2650,82 @@ function tabaCalendarFormatTime(value) {
 }
 
 async function loadTabaPublicEvents() {
-  const target = document.getElementById('publicEventsList');
-  if (!target || !supabaseClient) return;
-  target.innerHTML = '<p class="taba-muted">Kalender wird geladen …</p>';
-  const dates = Array.from({length:5},(_,i)=>tabaDateKeyOffset(i));
-  const firstDate=dates[0], lastDate=dates[4];
-  const dayItems = Object.fromEntries(dates.map(d=>[d,[]]));
+  const target=document.getElementById('publicEventsList');
+  const allTarget=document.getElementById('allAdminEventsList');
+  if(!target||!supabaseClient)return;
+  target.innerHTML='<p class="taba-muted">Lädt …</p>';
+  if(allTarget)allTarget.innerHTML='<p class="taba-muted">Lädt …</p>';
 
-  const {data: publicData,error:publicError}=await supabaseClient.from('taba_public_events')
+  const dates=Array.from({length:5},(_,i)=>tabaDateKeyOffset(i));
+  const firstDate=dates[0],lastDate=dates[4];
+  const dayItems=Object.fromEntries(dates.map(d=>[d,[]]));
+
+  // Alle vom Admin eingetragenen Community-Events laden – nicht auf fünf Tage begrenzen.
+  const {data:allEvents,error:allError}=await supabaseClient.from('taba_public_events')
     .select('id,title,description,event_date,start_date,end_date,start_time,end_time,location')
-    .lte('start_date',lastDate).gte('end_date',firstDate)
-    .order('start_date',{ascending:true}).limit(100);
-  if(publicError) console.error('Öffentliche Termine konnten nicht geladen werden:',publicError);
-  (publicData||[]).forEach(event=>{
-    const start=event.start_date||event.event_date, end=event.end_date||start;
-    dates.forEach(day=>{
-      if(day>=start&&day<=end) dayItems[day].push({kind:'public',title:event.title,description:event.description,location:event.location,time:event.start_time});
+    .order('start_date',{ascending:true}).limit(500);
+  if(allError){
+    console.error('Admin-Events konnten nicht geladen werden:',allError);
+    if(allTarget)allTarget.innerHTML='<p class="taba-muted">Die Community-Events konnten nicht geladen werden.</p>';
+  } else {
+    const sorted=(allEvents||[]).sort((x,y)=>(x.start_date||x.event_date||'').localeCompare(y.start_date||y.event_date||''));
+    if(allTarget)allTarget.innerHTML=sorted.length?sorted.map(event=>{
+      const start=event.start_date||event.event_date;
+      const end=event.end_date||start;
+      const dateText=start===end?tabaCalendarFormatDate(start):tabaCalendarFormatDate(start)+' – '+tabaCalendarFormatDate(end);
+      const time=event.start_time?(event.start_time||'').slice(0,5)+(event.end_time?'–'+event.end_time.slice(0,5)+' Uhr':' Uhr'):'';
+      const isPast=end<firstDate;
+      return `<article class="calendar-all-event ${isPast?'is-past':''}">
+        <div class="calendar-all-event-date">${esc(dateText)}</div>
+        <div class="calendar-all-event-main"><strong>${esc(event.title)}</strong>
+          ${time?`<small>${esc(time)}</small>`:''}
+          ${event.location?`<small>📍 ${esc(event.location)}</small>`:''}
+          ${event.description?`<p>${esc(event.description)}</p>`:''}
+        </div>
+        ${isPast?'<span class="calendar-event-state">Vergangen</span>':'<span class="calendar-event-state upcoming">Anstehend</span>'}
+      </article>`;
+    }).join(''):'<p class="taba-muted">Es sind noch keine Community-Events eingetragen.</p>';
+
+    (allEvents||[]).forEach(event=>{
+      const start=event.start_date||event.event_date,end=event.end_date||start;
+      dates.forEach(day=>{
+        if(day>=start&&day<=end)dayItems[day].push({kind:'public',title:event.title,time:event.start_time});
+      });
     });
-  });
+  }
 
   const {data:authData}=await supabaseClient.auth.getUser();
   const user=authData?.user;
-  let personal=[];
   if(user){
     const from=new Date(firstDate+'T00:00:00+01:00').toISOString();
     const until=new Date(new Date(lastDate+'T00:00:00+01:00').getTime()+86400000).toISOString();
     const {data,error}=await supabaseClient.from('taba_calendar_events')
-      .select('id,title,event_type,starts_at,ends_at,reminder_at,notes')
+      .select('id,title,starts_at,notes')
       .gte('starts_at',from).lt('starts_at',until).order('starts_at',{ascending:true}).limit(200);
-    if(error) console.error('Eigene Kalendereinträge konnten nicht geladen werden:',error);
-    personal=data||[];
-    personal.forEach(event=>{
+    if(error)console.error('Eigene Kalendereinträge konnten nicht geladen werden:',error);
+    (data||[]).forEach(event=>{
       const day=tabaLocalDateKey(new Date(event.starts_at));
-      if(dayItems[day]) dayItems[day].push({kind:'personal',id:event.id,title:event.title,notes:event.notes,time:event.starts_at,reminder_at:event.reminder_at});
+      if(dayItems[day])dayItems[day].push({kind:'personal',title:event.title,notes:event.notes,time:event.starts_at});
     });
   }
 
   target.innerHTML=dates.map(day=>{
     const items=dayItems[day];
-    return `<article class="calendar-day-card">
-      <div class="calendar-day-heading"><strong>${esc(tabaCalendarFormatDate(day))}</strong><span class="calendar-day-status ${items.length?'is-planned':'is-free'}">${items.length?'Geplant':'Noch nichts geplant'}</span></div>
-      ${items.length?items.map(item=>`<div class="calendar-day-event ${item.kind==='personal'?'is-personal':''}">
-        <strong>${item.kind==='personal'?'🔒':'📅'} ${esc(item.title)}</strong>
-        ${item.time?`<small>${esc(item.kind==='public'?(item.time||'').slice(0,5):tabaCalendarFormatTime(item.time))} Uhr</small>`:''}
-        ${item.location?`<small>📍 ${esc(item.location)}</small>`:''}
-        ${item.description?`<p>${esc(item.description)}</p>`:''}
-        ${item.notes?`<p>${esc(item.notes)}</p>`:''}
-      </div>`).join(''):'<p class="calendar-empty">Für diesen Tag ist aktuell nichts eingetragen.</p>'}
-    </article>`;
+    return `<div class="calendar-mini-day">
+      <strong>${esc(tabaCalendarFormatDate(day))}</strong>
+      <span class="calendar-mini-count ${items.length?'has-events':''}">${items.length?items.length+' geplant':'frei'}</span>
+      ${items.length?`<div class="calendar-mini-titles">${items.slice(0,2).map(item=>`<span>${item.kind==='personal'?'🔒':'•'} ${esc(item.title)}</span>`).join('')}${items.length>2?`<small>+${items.length-2} weitere</small>`:''}</div>`:''}
+    </div>`;
   }).join('');
 
   const list=document.getElementById('myCalendarReminders');
   if(list){
-    if(!user) list.textContent='Bitte melde dich an, um persönliche Erinnerungen zu verwenden.';
-    else {
+    if(!user)list.textContent='Bitte melde dich an, um persönliche Erinnerungen zu verwenden.';
+    else{
       const {data,error}=await supabaseClient.from('taba_calendar_events')
-        .select('id,title,starts_at,reminder_at,notes')
-        .order('starts_at',{ascending:true}).limit(200);
-      if(error) list.textContent='Deine Erinnerungen konnten nicht geladen werden.';
-      else {
+        .select('id,title,starts_at,reminder_at,notes').order('starts_at',{ascending:true}).limit(200);
+      if(error)list.textContent='Deine Erinnerungen konnten nicht geladen werden.';
+      else{
         const future=(data||[]).filter(x=>new Date(x.starts_at)>=new Date());
         list.innerHTML=future.length?future.map(x=>`<div class="calendar-reminder-row"><div><strong>${esc(x.title)}</strong><small>${esc(new Date(x.starts_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}))}${x.reminder_at?' · Erinnerung: '+esc(new Date(x.reminder_at).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'})):''}</small></div><button type="button" class="calendar-delete-button" onclick="deletePersonalCalendarReminder('${x.id}')">Löschen</button></div>`).join(''):'Du hast noch keine zukünftigen persönlichen Erinnerungen gespeichert.';
       }
