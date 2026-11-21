@@ -1986,6 +1986,7 @@ footer a[href*="contact"],
       <div class="calendar-reminder-actions">
         <button class="action" type="button" onclick="savePersonalCalendarReminder()">Speichern</button>
         <button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Push aktivieren</button>
+        <button class="calendar-delete-button hidden" id="deletePersonalReminderEdit" type="button" onclick="deletePersonalCalendarReminder(editingPersonalCalendarReminderId)">Löschen</button>
         <button class="calendar-cancel-edit hidden" id="cancelPersonalReminderEdit" type="button" onclick="resetPersonalCalendarReminderForm()">Abbrechen</button>
       </div>
       <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
@@ -2915,6 +2916,7 @@ function resetPersonalCalendarReminderForm(){
   document.getElementById('personalReminderTime').value='09:00';
   document.getElementById('personalReminderEditorTitle').textContent='＋ Persönlichen Termin hinzufügen';
   document.getElementById('cancelPersonalReminderEdit').classList.add('hidden');
+  document.getElementById('deletePersonalReminderEdit').classList.add('hidden');
 }
 async function editPersonalCalendarReminder(id){
   const {data:authData}=await supabaseClient.auth.getUser();
@@ -2934,6 +2936,7 @@ async function editPersonalCalendarReminder(id){
   }else document.getElementById('personalReminderAt').value='';
   document.getElementById('personalReminderEditorTitle').textContent='✎ Persönlichen Termin bearbeiten';
   document.getElementById('cancelPersonalReminderEdit').classList.remove('hidden');
+  document.getElementById('deletePersonalReminderEdit').classList.remove('hidden');
   const editor=document.getElementById('personalReminderEditor');editor.open=true;
   editor.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
