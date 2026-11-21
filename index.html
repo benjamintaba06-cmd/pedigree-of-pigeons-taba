@@ -1160,75 +1160,88 @@ footer .login-link {
 </style>
 
 <style id="taba-mobile-layout-fixes">
-/* Stammbaum: Generationsüberschriften innerhalb der jeweiligen Farbfläche */
+/* Generationslabel: senkrecht links innerhalb der farbigen Generationsfläche */
 .pedigree-level{
-  padding:0 12px 10px !important;
+  position:relative !important;
+  isolation:isolate;
+  padding:0 12px 10px 92px !important;
   min-height:126px;
   box-sizing:border-box;
 }
+.pedigree-level::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+}
+.pedigree-generation-1::before,
+.pedigree-generation-3::before{background:#fff !important}
+.pedigree-generation-2::before,
+.pedigree-generation-4::before{background:#f1f3f1 !important}
 .pedigree-level>.tree-generation-label{
-  position:relative !important;
-  inset:auto !important;
-  display:block;
-  width:auto !important;
-  height:auto !important;
-  margin:0 0 10px !important;
-  padding:10px 12px !important;
-  transform:none !important;
-  writing-mode:horizontal-tb !important;
+  position:absolute !important;
+  left:8px !important;
+  top:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:translateY(-50%) rotate(180deg) !important;
+  writing-mode:vertical-rl !important;
   text-orientation:mixed !important;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  width:48px !important;
+  height:108px !important;
+  margin:0 !important;
+  padding:7px 5px !important;
   background:transparent !important;
-  border-radius:8px;
-  text-align:left !important;
-  line-height:1.3;
-  font-size:14px !important;
+  border-radius:6px;
+  text-align:center !important;
+  line-height:1.25 !important;
+  font-size:12px !important;
   box-sizing:border-box;
   z-index:3;
 }
 .pedigree-grid{min-height:108px}
 
-/* Datei auswählen: hellgrün und mit gleicher Button-Höhe wie Beitrag veröffentlichen */
+/* Datei-Upload: native Schaltfläche auf normale Button-Größe begrenzen */
 #communityPostImage{
-  display:block;
-  width:100%;
-  min-height:50px;
-  height:50px;
-  box-sizing:border-box;
-  padding:0;
-  border:1px solid #dce3dc;
-  border-radius:9px;
-  background:#fff;
-  color:#46554d;
-  font-size:15px;
-  line-height:50px;
+  display:block !important;
+  width:100% !important;
+  max-width:100%;
+  min-height:50px !important;
+  height:50px !important;
+  box-sizing:border-box !important;
+  padding:0 !important;
+  border:1px solid #dce3dc !important;
+  border-radius:9px !important;
+  background:#fff !important;
+  color:#46554d !important;
+  font-size:15px !important;
+  line-height:normal !important;
+  font-family:Arial,sans-serif !important;
 }
-#communityPostImage::file-selector-button{
-  height:50px;
-  margin:0 12px 0 0;
-  padding:0 16px;
-  border:0;
-  border-radius:8px 0 0 8px;
-  background:#d9eee1;
-  color:#203d34;
-  font:700 15px Arial,sans-serif;
-  cursor:pointer;
-}
+#communityPostImage::file-selector-button,
 #communityPostImage::-webkit-file-upload-button{
-  height:50px;
-  margin:0 12px 0 0;
-  padding:0 16px;
-  border:0;
-  border-radius:8px 0 0 8px;
-  background:#d9eee1;
-  color:#203d34;
-  font:700 15px Arial,sans-serif;
-  cursor:pointer;
+  box-sizing:border-box !important;
+  height:48px !important;
+  max-height:48px !important;
+  margin:0 10px 0 0 !important;
+  padding:0 14px !important;
+  border:0 !important;
+  border-radius:8px 0 0 8px !important;
+  background:#d9eee1 !important;
+  color:#203d34 !important;
+  font:600 15px/1 Arial,sans-serif !important;
+  vertical-align:middle !important;
 }
 #communityPostImage:focus-visible{outline:2px solid #75b995;outline-offset:2px}
 .community-composer>button.action{
-  min-height:50px;
-  padding:13px 16px;
-  font-size:15px;
+  min-height:50px !important;
+  height:50px;
+  padding:0 16px !important;
+  font-size:15px !important;
+  line-height:1.2 !important;
 }
 </style>
 
@@ -1806,7 +1819,7 @@ const SUPABASE_KEY = 'sb_publishable_ZN7AZVgXHek1T7dGUFMU_Q_7UUKXo12';
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY,
-  { auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } }
+  { auth: { flowType: 'implicit', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } }
 );
 
 let activePigeonQrId = null;
@@ -4430,55 +4443,73 @@ function showTabaPasswordRecovery(text) {
 }
 
 async function establishTabaRecoverySession() {
-  const params = new URLSearchParams(location.search);
-  const hash = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  const params = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
   const authError = params.get('error_description') || hash.get('error_description');
+
   if (authError) {
     showTabaPasswordRecovery('Der Passwort-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.');
     document.getElementById('passwordResetMessage').style.color = '#b83232';
     return false;
   }
 
-  const code = params.get('code');
-  if (code) {
-    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
-    if (error || !data?.session) {
-      showTabaPasswordRecovery('Der Passwort-Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Link an.');
-      document.getElementById('passwordResetMessage').style.color = '#b83232';
-      return false;
-    }
-    history.replaceState({}, document.title, location.pathname);
-    tabaRecoveryReady = true;
-    showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
-    return true;
+  const recoveryType = params.get('type') || hash.get('type');
+  const isRecoveryLink = recoveryType === 'recovery' ||
+    hash.has('access_token') || params.has('token_hash') || hash.has('token_hash') ||
+    params.has('code');
+
+  if (!isRecoveryLink) return false;
+
+  // Bei dem von TABA tatsächlich versendeten Supabase-Link liegen access_token
+  // und refresh_token im URL-Fragment (Implicit Flow), nicht als PKCE-code.
+  // getSession() wartet zunächst darauf, dass supabase-js den URL-Callback verarbeitet.
+  let { data, error } = await supabaseClient.auth.getSession();
+
+  // Fallback: Falls die automatische URL-Erkennung die Hash-Tokens nicht
+  // übernommen hat, explizit die im Recovery-Link gelieferten Tokens setzen.
+  if ((!data?.session || error) && hash.get('access_token') && hash.get('refresh_token')) {
+    const restored = await supabaseClient.auth.setSession({
+      access_token: hash.get('access_token'),
+      refresh_token: hash.get('refresh_token')
+    });
+    data = restored.data;
+    error = restored.error;
   }
 
-  const tokenHash = params.get('token_hash') || hash.get('token_hash');
-  const type = params.get('type') || hash.get('type');
-  if (tokenHash && type === 'recovery') {
-    const { data, error } = await supabaseClient.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
-    if (error || !data?.session) {
-      showTabaPasswordRecovery('Der Passwort-Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Link an.');
-      document.getElementById('passwordResetMessage').style.color = '#b83232';
-      return false;
-    }
-    history.replaceState({}, document.title, location.pathname);
-    tabaRecoveryReady = true;
-    showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
-    return true;
+  // Unterstützt zusätzlich PKCE-Links, falls die Supabase-Mailvorlage später
+  // auf ?code=... umgestellt wird.
+  if ((!data?.session || error) && params.get('code')) {
+    const exchanged = await supabaseClient.auth.exchangeCodeForSession(params.get('code'));
+    data = exchanged.data;
+    error = exchanged.error;
   }
 
-  if (type === 'recovery' || hash.has('access_token')) {
-    const { data, error } = await supabaseClient.auth.getSession();
-    if (!error && data?.session) {
-      tabaRecoveryReady = true;
-      showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
-      return true;
-    }
+  // Und token_hash-Links aus Supabase-E-Mailvorlagen.
+  if ((!data?.session || error) && (params.get('token_hash') || hash.get('token_hash')) &&
+      recoveryType === 'recovery') {
+    const verified = await supabaseClient.auth.verifyOtp({
+      token_hash: params.get('token_hash') || hash.get('token_hash'),
+      type: 'recovery'
+    });
+    data = verified.data;
+    error = verified.error;
   }
-  showTabaPasswordRecovery('Der Link konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Passwort-Link an.');
-  document.getElementById('passwordResetMessage').style.color = '#b83232';
-  return false;
+
+  if (error || !data?.session) {
+    showTabaPasswordRecovery('Der Wiederherstellungslink konnte nicht bestätigt werden oder ist abgelaufen. Bitte fordere einen neuen Link an und öffne ihn vollständig im selben Browser.');
+    document.getElementById('passwordResetMessage').style.color = '#b83232';
+    return false;
+  }
+
+  tabaRecoveryReady = true;
+  tabaRecoveryInProgress = true;
+
+  // Token aus der sichtbaren Browseradresse entfernen, sobald die Session sicher
+  // gespeichert wurde. Das verhindert, dass die Zugangsdaten weiter angezeigt werden.
+  history.replaceState({}, document.title, window.location.pathname);
+
+  showTabaPasswordRecovery('Der Wiederherstellungslink wurde bestätigt. Lege jetzt dein neues Passwort fest.');
+  return true;
 }
 
 const passwordResetForm = document.getElementById('passwordResetForm');
@@ -4968,15 +4999,20 @@ async function checkLogin() {
   }
 }
 // Recovery-Session zuerst bestätigen und währenddessen nicht durch die normale
-// Inaktivitätsprüfung abmelden.
+// Inaktivitätsprüfung abmelden. Der Link TABA/Supabase verwendet aktuell den Implicit Flow.
 (async function initTabaPasswordRecovery() {
-  const params = new URLSearchParams(location.search);
-  const hash = new URLSearchParams((location.hash || '').replace(/^#/, ''));
-  const recoveryUrl = params.has('code') || params.get('type') === 'recovery' ||
-    hash.get('type') === 'recovery' || hash.has('access_token') ||
+  const params = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+  const recoveryUrl =
+    params.get('type') === 'recovery' ||
+    hash.get('type') === 'recovery' ||
+    (hash.has('access_token') && hash.get('type') === 'recovery') ||
     params.has('token_hash') || hash.has('token_hash') ||
+    params.has('code') ||
     params.has('error_description') || hash.has('error_description');
+
   if (!recoveryUrl) return;
+
   showTabaPasswordRecovery('Wiederherstellungslink wird geprüft ...');
   await establishTabaRecoverySession();
 })();
