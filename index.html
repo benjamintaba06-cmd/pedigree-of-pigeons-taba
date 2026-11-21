@@ -1851,7 +1851,7 @@ footer a[href*="contact"],
     <label for="personalReminderAt">Erinnerung anzeigen am (optional)</label>
     <input id="personalReminderAt" type="datetime-local">
     <p class="taba-muted">Hinweis: Eine Browser-Benachrichtigung kann erscheinen, solange die Website geöffnet ist und du Benachrichtigungen erlaubt hast. Für Erinnerungen bei geschlossener Website wäre später ein Push-Dienst nötig.</p>
-    <div class="calendar-reminder-actions"><button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button><button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Browser-Benachrichtigungen aktivieren</button></div>
+    <div class="calendar-reminder-actions"><button class="action" type="button" onclick="savePersonalCalendarReminder()">Erinnerung speichern</button><button class="calendar-notification-button" type="button" onclick="enableTabaReminderNotifications()">🔔 Push auf diesem Gerät aktivieren</button></div>
     <p id="personalReminderStatus" class="sub" aria-live="polite"></p>
   </div>
   <div class="card">
@@ -2689,13 +2689,52 @@ async function loadTabaPublicEvents() {
   startTabaReminderChecks();
 }
 
+const TABA_VAPID_PUBLIC_KEY = "BFocgOH4N0ddwASx6oxuCGiHREtjiilJpXEu-QhCg_btWJeHFvPSkN_b52HM_QIs4rU3S8qJroC0fG8tonZl1K0";
+
+function tabaUrlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
+}
+
 async function enableTabaReminderNotifications(){
   const status=document.getElementById('personalReminderStatus');
-  if(!('Notification' in window)){if(status)status.textContent='Dieser Browser unterstützt keine Benachrichtigungen.';return;}
-  const permission=await Notification.requestPermission();
-  if(status)status.textContent=permission==='granted'?'Browser-Benachrichtigungen sind aktiviert. Erinnerungen werden angezeigt, solange die Website geöffnet ist.': 'Benachrichtigungen wurden nicht freigegeben.';
-  if(permission==='granted')startTabaReminderChecks();
+  try {
+    if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)){
+      if(status)status.textContent='Dieser Browser unterstützt keine Web-Push-Erinnerungen.';
+      return;
+    }
+    const {data:authData,error:authError}=await supabaseClient.auth.getUser();
+    if(authError||!authData?.user){if(status)status.textContent='Bitte melde dich zuerst an.';return;}
+    const permission=await Notification.requestPermission();
+    if(permission!=='granted'){if(status)status.textContent='Bitte erlaube Benachrichtigungen in deinen Browser-Einstellungen.';return;}
+    const registration=await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    let subscription=await registration.pushManager.getSubscription();
+    if(!subscription){
+      subscription=await registration.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:tabaUrlBase64ToUint8Array(TABA_VAPID_PUBLIC_KEY)
+      });
+    }
+    const json=subscription.toJSON();
+    const {error}=await supabaseClient.from('taba_push_subscriptions').upsert({
+      user_id:authData.user.id,
+      endpoint:json.endpoint,
+      p256dh:json.keys?.p256dh,
+      auth:json.keys?.auth,
+      user_agent:navigator.userAgent,
+      updated_at:new Date().toISOString()
+    },{onConflict:'endpoint'});
+    if(error)throw error;
+    if(status)status.textContent='Push ist auf diesem Gerät aktiviert. Erinnerungen können auch bei geschlossener Website ankommen.';
+  } catch(error) {
+    console.error('Push-Registrierung fehlgeschlagen:',error);
+    if(status)status.textContent='Push konnte nicht aktiviert werden: '+(error?.message||'Bitte später erneut versuchen.');
+  }
 }
+
 
 async function savePersonalCalendarReminder(){
   const status=document.getElementById('personalReminderStatus');
