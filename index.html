@@ -1759,6 +1759,23 @@ footer a[href*="contact"],
 }
 #publicEventsList .calendar-mini-entry button{display:none!important}
 </style>
+
+<style id="taba-calendar-compact-readable-events">
+/* Termine als gut lesbare, flache chronologische Zeilen */
+#publicEventsList.calendar-five-grid{align-items:start!important;gap:10px!important}
+#publicEventsList .calendar-mini-day{height:auto!important;min-height:0!important;align-self:start!important;gap:7px!important;padding:11px 9px!important;background:#fff!important;color:#173f34!important}
+#publicEventsList .calendar-mini-titles{display:flex!important;flex-direction:column!important;gap:4px!important;width:100%!important;margin-top:2px!important}
+#publicEventsList .calendar-mini-entry{display:block!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important;background:transparent!important}
+#publicEventsList .calendar-mini-entry .calendar-personal-event{display:block!important;width:100%!important;padding:4px 5px!important;border-radius:6px!important;background:#f3f6f2!important;color:#203d32!important;font-size:11px!important;line-height:1.35!important;overflow-wrap:anywhere!important;cursor:pointer!important}
+#publicEventsList .calendar-mini-entry .calendar-personal-event:hover,#publicEventsList .calendar-mini-entry .calendar-personal-event:focus-visible{background:#f3e6c5!important;color:#173f34!important}
+#publicEventsList .calendar-mini-entry.is-community{display:flex!important;align-items:flex-start!important;gap:4px!important;padding:4px 5px!important;border-radius:6px!important;background:#f6f7f4!important;color:#263e33!important;font-size:11px!important;line-height:1.35!important;overflow-wrap:anywhere!important}
+#publicEventsList .calendar-mini-entry time{display:inline-block!important;flex:0 0 auto!important;min-width:35px!important;color:#627268!important;font-size:10px!important;font-weight:700!important;font-variant-numeric:tabular-nums!important}
+#publicEventsList .calendar-mini-entry .calendar-event-title{color:#203d32!important;font-size:11px!important;font-weight:600!important;overflow-wrap:anywhere!important}
+#publicEventsList .calendar-mini-day:hover,#publicEventsList .calendar-mini-day:focus-visible{background:#fffdf7!important}
+#publicEventsList .calendar-mini-day:active{background:#fff!important}
+@media(max-width:760px){#publicEventsList .calendar-mini-day{padding:9px 6px!important}#publicEventsList .calendar-mini-entry .calendar-personal-event,#publicEventsList .calendar-mini-entry.is-community{font-size:10px!important}}
+@media(max-width:420px){#publicEventsList.calendar-five-grid{gap:6px!important}#publicEventsList .calendar-mini-day{padding:8px 5px!important}#publicEventsList .calendar-mini-entry time{min-width:30px!important;font-size:9px!important}#publicEventsList .calendar-mini-entry .calendar-personal-event,#publicEventsList .calendar-mini-entry.is-community{font-size:9px!important}}
+</style>
 </head>
 <body>
 
@@ -2802,14 +2819,19 @@ async function loadTabaPublicEvents() {
   }
 
   target.innerHTML=dates.map(day=>{
-    const items=dayItems[day];
-    const personal=items.filter(item=>item.kind==='personal');
+    const items=dayItems[day].slice().sort((a,b)=>{
+      const key=item=>item.kind==='personal'?new Date(item.time).getTime():new Date(day+'T'+(item.time||'00:00')+':00').getTime();
+      return key(a)-key(b);
+    });
     return `<article class="calendar-mini-day" role="button" tabindex="0" aria-label="Termin für ${esc(tabaCalendarFormatDate(day))} hinzufügen oder ansehen" onclick="openPersonalCalendarReminderForDay('${day}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPersonalCalendarReminderForDay('${day}')}">
       <strong>${esc(tabaCalendarFormatDate(day))}</strong>
       <span class="calendar-mini-count ${items.length?'has-events':''}">${items.length?items.length+' geplant':'frei'}</span>
-      <div class="calendar-mini-titles">${items.slice(0,3).map(item=>item.kind==='personal'
-        ? `<div class="calendar-mini-entry is-personal"><span class="calendar-personal-event" role="button" tabindex="0" aria-label="Termin ${esc(item.title)} bearbeiten" onclick="event.stopPropagation();editPersonalCalendarReminder('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();editPersonalCalendarReminder('${item.id}')}">🔒 ${esc(item.title)}</span></div>`
-        : `<span>• ${esc(item.title)}</span>`).join('')}${items.length>3?`<small>+${items.length-3} weitere</small>`:''}</div>
+      <div class="calendar-mini-titles">${items.map(item=>{
+        const clock=item.kind==='personal'?tabaCalendarFormatTime(item.time):(item.time||'').slice(0,5);
+        return item.kind==='personal'
+          ? `<div class="calendar-mini-entry is-personal"><span class="calendar-personal-event" role="button" tabindex="0" aria-label="Termin ${esc(item.title)} bearbeiten" onclick="event.stopPropagation();editPersonalCalendarReminder('${item.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();editPersonalCalendarReminder('${item.id}')}">${clock?'<time>'+esc(clock)+'</time> ':''}<span class="calendar-event-title">🔒 ${esc(item.title)}</span></span></div>`
+          : `<div class="calendar-mini-entry is-community">${clock?'<time>'+esc(clock)+'</time> ':''}<span class="calendar-event-title">• ${esc(item.title)}</span></div>`;
+      }).join('')}</div>
     </article>`;
   }).join('');
 
