@@ -1245,6 +1245,211 @@ footer .login-link {
 }
 </style>
 
+
+<!-- TABA VISUAL REFRESH PREVIEW: presentation-only layer; existing JS and Supabase flows remain untouched. -->
+<style id="taba-visual-refresh">
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap');
+:root{
+  --taba-forest:#173f34;--taba-forest-2:#214f40;--taba-deep:#102e27;
+  --taba-gold:#b89a5b;--taba-gold-soft:#e9dfc7;--taba-mint:#eaf1eb;
+  --taba-ivory:#f5f3ec;--taba-paper:#fffefa;--taba-ink:#23362f;
+  --taba-muted:#78857d;--taba-line:#e7e8df;
+  --taba-shadow:0 16px 42px rgba(24,55,43,.075);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--taba-ivory)!important;color:var(--taba-ink)!important;
+  font-family:'DM Sans',system-ui,sans-serif!important;letter-spacing:.005em
+}
+header.main-header{
+  min-height:0!important;align-items:center!important;gap:28px!important;
+  padding:34px clamp(20px,5vw,76px)!important;
+  background:
+    radial-gradient(ellipse at 82% 8%,rgba(190,164,103,.22),transparent 34%),
+    linear-gradient(122deg,#102d27 0%,#173f34 58%,#285744 100%)!important;
+  border-bottom:3px solid var(--taba-gold);box-shadow:0 12px 34px rgba(16,46,39,.16)
+}
+header.main-header:after{content:'TABA';position:absolute;right:7%;bottom:-54px;z-index:-1;pointer-events:none;
+  color:rgba(255,255,255,.035);font:700 clamp(100px,18vw,220px)/1 'Cormorant Garamond',serif;letter-spacing:.08em}
+.header-brand{min-height:0!important;gap:8px}
+.title-line{margin-top:0!important;align-items:baseline;gap:10px}
+.title-line h1{font:600 clamp(30px,3.8vw,48px)/1.05 'Cormorant Garamond',Georgia,serif!important;
+  letter-spacing:.01em!important;color:#fff}
+.title-line p{color:#e0e7df!important;font-size:14px!important}
+.brand,.developer-credit{color:#d9c18c!important;letter-spacing:.19em!important;font-size:10px!important}
+.company-logo{width:116px!important;height:116px!important;flex:0 0 116px;border-radius:22px!important;
+  background:#fff!important;border:1px solid rgba(217,193,140,.65);padding:9px!important;
+  box-shadow:0 14px 32px rgba(0,0,0,.2)!important}
+.account-actions{margin:18px 0 0!important;padding:0!important;width:auto!important;align-self:auto!important}
+.account-user-separator{color:rgba(255,255,255,.35)}
+.logged-in-user{color:#f0dfb5!important}
+.account-role{background:rgba(255,255,255,.07);border-color:#a88e58!important}
+.logout-button{border-radius:999px!important}
+nav{
+  position:sticky!important;top:0!important;z-index:50!important;display:flex!important;
+  justify-content:center;gap:12px!important;padding:12px clamp(10px,3vw,40px)!important;
+  background:rgba(255,254,250,.94)!important;backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--taba-line)!important;box-shadow:0 7px 22px rgba(30,55,43,.055)
+}
+.nav-group{border:0!important;padding:2px 12px!important;gap:5px!important}
+.nav-group-title{font-size:9px!important;letter-spacing:.17em!important;color:#a18a5b!important}
+.nav-group-links{gap:6px!important}
+.nav-group-links button{
+  border:1px solid transparent!important;border-radius:999px!important;padding:10px 16px!important;
+  background:transparent!important;color:#52665b!important;font-size:13px!important;font-weight:650!important;
+  transition:background .18s ease,color .18s ease,transform .18s ease
+}
+.nav-group-links button:hover{background:var(--taba-mint)!important;color:var(--taba-forest)!important}
+.nav-group-links button.active{background:var(--taba-forest)!important;color:white!important;
+  box-shadow:0 5px 14px rgba(23,63,52,.18)}
+main{max-width:1500px!important;padding:clamp(20px,3.5vw,52px)!important}
+main section{animation:tabaFadeIn .28s ease both}
+@keyframes tabaFadeIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+section>h2{font:600 clamp(29px,3vw,39px)/1.08 'Cormorant Garamond',Georgia,serif!important;
+  color:var(--taba-forest)!important;letter-spacing:.005em!important;margin:4px 0 8px!important}
+.sub{color:var(--taba-muted)!important;font-size:13px!important;line-height:1.7!important}
+section>.sub{max-width:760px;margin:0 0 26px!important}
+.card,.taba-module-card{
+  background:var(--taba-paper)!important;border:1px solid var(--taba-line)!important;
+  border-radius:19px!important;box-shadow:var(--taba-shadow)!important;
+  padding:clamp(17px,2vw,25px)!important
+}
+.card h3,.taba-module-card h3{color:var(--taba-forest)!important;font-size:16px!important;font-weight:700}
+button,.action,input,select,textarea{font:inherit}
+button,.action{transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+button:hover,.action:hover{transform:translateY(-1px)}
+.action,button.action{
+  border:0!important;border-radius:11px!important;padding:11px 16px!important;
+  background:var(--taba-forest)!important;color:#fff!important;font-weight:650!important;
+  box-shadow:0 5px 13px rgba(23,63,52,.14)
+}
+.action:hover,button.action:hover{background:var(--taba-forest-2)!important;box-shadow:0 8px 18px rgba(23,63,52,.18)}
+input,select,textarea{
+  min-height:44px;border:1px solid #dfe5dc!important;border-radius:11px!important;
+  background:#fff!important;color:var(--taba-ink)!important;padding:11px 13px!important;
+  box-shadow:inset 0 1px 2px rgba(20,50,38,.025)
+}
+input:focus,select:focus,textarea:focus{outline:3px solid rgba(40,112,79,.13)!important;border-color:#5b9275!important}
+label{color:#52675d!important;font-size:11px!important;font-weight:700!important;letter-spacing:.045em!important;text-transform:uppercase}
+.qr-input-row{gap:9px;align-items:center}
+.qr-scan-button{border:1px solid #dce5dc!important;border-radius:11px!important;background:var(--taba-mint)!important;color:var(--taba-forest)!important;padding:11px 14px!important;font-weight:650}
+#pigeons{
+  display:grid;grid-template-columns:minmax(280px,.78fr) minmax(0,1.55fr);
+  column-gap:24px;align-items:start
+}
+#pigeons>h2,#pigeons>p.sub{grid-column:1/-1}
+#pigeons>.card{grid-column:1;grid-row:3/span 4;position:sticky;top:104px}
+#pigeons>h3{grid-column:2;margin:4px 0 0;color:var(--taba-forest);font-size:18px}
+#pigeons>p.sub:not(:first-of-type){grid-column:2;margin:0 0 8px!important}
+#pigeons>.qr-input-row{grid-column:2}
+#list{grid-column:2;display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:13px;align-items:start}
+#list>.pigeon{display:grid;grid-template-columns:92px minmax(0,1fr);gap:13px;align-items:center;
+  margin:0!important;padding:14px!important;border-radius:17px!important;min-width:0}
+#list .bird{width:92px!important;height:104px!important;overflow:hidden;border-radius:13px!important;
+  background:linear-gradient(145deg,#e7eee7,#f7f5ed)!important;color:var(--taba-forest)!important;font-size:34px}
+#list .bird img{width:100%;height:100%;object-fit:cover;border-radius:13px}
+#list .pigeon-info{min-width:0}
+#list .pigeon-ring{font-size:15px;color:var(--taba-forest);letter-spacing:.015em}
+#list .pigeon-details{display:block;color:var(--taba-muted);font-size:11px;line-height:1.55;margin-top:5px}
+#list .pigeon-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:10px;border-top:1px solid var(--taba-line)}
+#list .pigeon-actions button{flex:1 1 auto;min-height:34px;padding:7px 9px!important;border-radius:9px!important;
+  background:#f0f4ef!important;color:#3d5a4c!important;border:1px solid #e2e9e1!important;font-size:11px!important}
+#list .pigeon-actions .action{background:var(--taba-forest)!important;color:#fff!important}
+#list .pigeon-actions .danger-action{background:#fbefec!important;color:#a54b40!important;border-color:#f1ddd8!important}
+#pedigree>.card{padding:clamp(16px,2.5vw,30px)!important}
+#pedigree #treeview{margin-top:18px}
+.pedigree-scroll{border:1px solid var(--taba-line);border-radius:16px;background:#fbfcf8;padding:12px!important}
+.pedigree-level{border-radius:12px;overflow:hidden}
+.pedigree-level:nth-child(odd)::before{background:#fff!important}
+.pedigree-level:nth-child(even)::before{background:#f1f5ef!important}
+.pedigree-card{border:1px solid #dce6dc!important;border-radius:12px!important;background:#fff!important;
+  box-shadow:0 5px 15px rgba(25,60,43,.055);padding:11px 7px!important}
+.pedigree-card:hover{border-color:var(--taba-gold)!important;box-shadow:0 8px 18px rgba(25,60,43,.1)!important}
+.pedigree-root{border:2px solid var(--taba-gold)!important;background:#fffdf6!important}
+.pedigree-photo{width:58px!important;height:58px!important;border-radius:12px!important}
+.tree-generation-label{color:#8b7951!important;font-size:10px!important;letter-spacing:.08em;text-transform:uppercase}
+#breeding .taba-module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px!important}
+#breeding .taba-module-card{position:relative;overflow:hidden;padding:23px!important}
+#breeding .taba-module-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--taba-gold)}
+#breeding .taba-module-card:nth-child(even):before{background:#6f9a7c}
+#breeding .taba-module-card h3{font-size:17px!important;margin:0 0 16px}
+.taba-form-row{gap:12px!important}
+.taba-list-item{border-bottom-color:var(--taba-line)!important}
+.breeder-subnav{background:#edf2ec!important;border:1px solid #e2e9df;border-radius:15px!important;padding:9px!important;gap:7px!important}
+.breeder-subnav button{border-radius:10px!important;min-height:42px!important}
+.breeder-card,.community-post,.community-composer{border-radius:18px!important}
+.breeder-card{border-left:3px solid var(--taba-gold)!important}
+.community-post{background:var(--taba-paper)!important;border:1px solid var(--taba-line)!important;box-shadow:var(--taba-shadow)}
+.community-post img{width:100%;max-height:460px;object-fit:cover}
+#inbox .card{border-radius:17px!important}
+.login-overlay{align-items:center!important;background:rgba(10,30,24,.62)!important}
+.login-box{max-width:420px!important;border:1px solid #e8e3d4;border-radius:22px!important;padding:34px 30px!important;box-shadow:0 25px 70px rgba(0,0,0,.25)!important}
+.login-logo{color:var(--taba-gold)!important;letter-spacing:.22em!important}
+.login-box h2{font:600 30px 'Cormorant Garamond',Georgia,serif!important}
+footer{color:#849087!important}
+hr{border-color:var(--taba-line)!important}
+@media(max-width:900px){
+  #pigeons{grid-template-columns:1fr}
+  #pigeons>.card{grid-column:1;grid-row:auto;position:static}
+  #pigeons>h3,#pigeons>p.sub:not(:first-of-type),#pigeons>.qr-input-row,#list{grid-column:1}
+  #breeding .taba-module-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  header.main-header{padding:24px 18px!important;gap:16px!important}
+  .company-logo{width:78px!important;height:78px!important;flex-basis:78px}
+  .title-line{display:block}
+  .title-line h1{font-size:31px!important}
+  .title-line p{margin-top:5px!important}
+  nav{justify-content:flex-start!important;overflow-x:auto!important}
+  .nav-group{padding:2px 5px!important}
+  .nav-group-title{display:none!important}
+  .nav-group-links button{font-size:11px!important;padding:9px 12px!important}
+  main{padding:22px 13px 34px!important}
+  #list{grid-template-columns:1fr}
+  #list>.pigeon{grid-template-columns:76px minmax(0,1fr)}
+  #list .bird{width:76px!important;height:86px!important}
+  .breeder-subnav button{flex:1 1 135px!important}
+  .login-box{padding:28px 20px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+
+
+<style id="taba-dashboard-refresh">
+.dashboard-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:1.3fr .7fr;min-height:280px;padding:clamp(26px,4vw,48px);border-radius:24px;background:radial-gradient(circle at 84% 44%,rgba(190,164,103,.22),transparent 28%),linear-gradient(120deg,#102e27,#1b4a3b 68%,#285744);color:#fff;box-shadow:0 18px 45px rgba(18,53,41,.17)}
+.dashboard-hero-copy{position:relative;z-index:2;align-self:center;max-width:650px}.dashboard-eyebrow,.dashboard-kicker{font-size:9px;font-weight:700;letter-spacing:.19em;color:#bca36c}
+.dashboard-hero h2{margin:13px 0 10px;color:#fff;font:600 clamp(34px,4.4vw,56px)/.98 'Cormorant Garamond',Georgia,serif;max-width:570px}
+.dashboard-hero p{max-width:540px;color:#e2e9e1;font-size:14px;line-height:1.7}.dashboard-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.dashboard-hero .action{background:#c5aa70!important;color:#142f27!important}.dashboard-ghost{border:1px solid rgba(255,255,255,.36);border-radius:11px;padding:10px 15px;background:rgba(255,255,255,.07);color:#fff;font-weight:600}
+.dashboard-hero-art{position:relative;min-height:180px;display:grid;place-items:center}.dashboard-dove{font-size:clamp(86px,11vw,140px);filter:drop-shadow(0 18px 18px rgba(0,0,0,.25));transform:rotate(-12deg);z-index:2}
+.dashboard-orbit{position:absolute;border:1px solid rgba(213,190,139,.42);border-radius:50%;width:220px;height:220px}.orbit-two{width:280px;height:280px;border-style:dashed;opacity:.45}.dashboard-art-caption{position:absolute;bottom:4px;font-size:8px;letter-spacing:.24em;color:#d6c59e}
+.dashboard-heading-row{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:30px 0 13px}.dashboard-heading-row h3,.dashboard-panel h3{margin:4px 0 0;color:var(--taba-forest,#173f34);font:600 26px 'Cormorant Garamond',Georgia,serif}
+.dashboard-date{font-size:11px;color:var(--taba-muted,#78857d)}.dashboard-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.dashboard-stat{position:relative;display:grid;grid-template-columns:42px 1fr;align-items:center;column-gap:11px;padding:18px;background:var(--taba-paper,#fffefa);border:1px solid var(--taba-line,#e7e8df);border-radius:16px;box-shadow:0 8px 24px rgba(24,55,43,.045)}
+.stat-icon{grid-row:span 2;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--taba-mint,#eaf1eb);color:var(--taba-forest,#173f34);font-size:18px}
+.stat-label{font-size:11px;color:var(--taba-muted,#78857d);font-weight:600}.dashboard-stat strong{font:600 28px 'Cormorant Garamond',Georgia,serif;color:var(--taba-forest,#173f34);line-height:1.15}.dashboard-stat small{grid-column:2;color:#9aa49c;font-size:9px;margin-top:3px}
+.dashboard-main-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(290px,.8fr);gap:16px;margin-top:17px}
+.dashboard-panel{min-width:0;padding:22px;background:var(--taba-paper,#fffefa);border:1px solid var(--taba-line,#e7e8df);border-radius:18px;box-shadow:var(--taba-shadow,0 16px 42px rgba(24,55,43,.075))}
+.dashboard-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.dashboard-panel h3{font-size:24px}
+.dashboard-text-link{border:0;background:transparent;color:#8b7445;font-size:11px;font-weight:700;padding:7px 0}.dashboard-bird-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.dashboard-bird{min-width:0;border:1px solid var(--taba-line,#e7e8df);border-radius:13px;overflow:hidden;background:#fff}
+.dashboard-bird-photo{height:120px;display:grid;place-items:center;background:linear-gradient(145deg,#e8eee7,#f7f4ec);font-size:34px;color:var(--taba-forest,#173f34)}
+.dashboard-bird-photo img{width:100%;height:100%;object-fit:cover}.dashboard-bird-copy{padding:11px}.dashboard-bird-copy strong{display:block;color:var(--taba-forest,#173f34);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-bird-copy small{display:block;color:var(--taba-muted,#78857d);font-size:10px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-empty{grid-column:1/-1;padding:25px;border:1px dashed #dce4d9;border-radius:12px;color:var(--taba-muted,#78857d);font-size:12px;text-align:center}
+.dashboard-shortcuts{display:flex;flex-direction:column}.dashboard-shortcut{display:flex;align-items:center;gap:12px;width:100%;padding:13px 0;border:0;border-bottom:1px solid var(--taba-line,#e7e8df);background:transparent;text-align:left}
+.dashboard-shortcut:last-child{border-bottom:0}.dashboard-shortcut>span:first-child{width:39px;height:39px;display:grid;place-items:center;background:var(--taba-mint,#eaf1eb);border-radius:12px;font-size:17px}
+.dashboard-shortcut>span:nth-child(2){display:grid;gap:4px;flex:1}.dashboard-shortcut strong{font-size:12px;color:var(--taba-forest,#173f34)}.dashboard-shortcut small{font-size:10px;color:var(--taba-muted,#78857d)}.dashboard-shortcut b{color:#a18a5b}
+.dashboard-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.dashboard-feature{display:flex;gap:17px;padding:22px;border:1px solid var(--taba-line,#e7e8df);border-radius:17px;background:linear-gradient(120deg,#edf3ed,#fffefa)}
+.dashboard-feature-gold{background:linear-gradient(120deg,#f3eee1,#fffefa)}.dashboard-feature-icon{flex:0 0 43px;height:43px;display:grid;place-items:center;border-radius:13px;background:#dce9dd;font-size:20px}
+.dashboard-feature-gold .dashboard-feature-icon{background:#eee4cc}.dashboard-feature h3{font:600 23px/1.05 'Cormorant Garamond',Georgia,serif;color:var(--taba-forest,#173f34);margin:7px 0}
+.dashboard-feature p{font-size:11px;line-height:1.6;color:var(--taba-muted,#78857d);margin:0 0 8px}
+@media(max-width:1050px){.dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-main-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.dashboard-hero{grid-template-columns:1fr;min-height:0;padding:26px 22px}.dashboard-hero-art{min-height:120px;opacity:.9}.dashboard-dove{font-size:84px}.dashboard-orbit{width:145px;height:145px}.orbit-two{width:185px;height:185px}.dashboard-art-caption{bottom:-2px}.dashboard-heading-row{align-items:start;flex-direction:column}.dashboard-stats{gap:9px}.dashboard-stat{padding:13px;grid-template-columns:34px 1fr;column-gap:8px}.stat-icon{width:33px;height:33px;font-size:15px}.dashboard-stat strong{font-size:24px}.dashboard-bird-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-bird:nth-child(3){display:none}.dashboard-bird-photo{height:105px}.dashboard-bottom-grid{grid-template-columns:1fr}.dashboard-feature{padding:17px}}
+</style>
 </head>
 <body>
 
@@ -1385,6 +1590,7 @@ footer .login-link {
   <div class="nav-group">
     <div class="nav-group-title">Mein Bereich</div>
     <div class="nav-group-links">
+      <button onclick="show('dashboard',this)">⌂ Übersicht</button>
       <button class="active" onclick="show('pigeons',this)">🕊️ Tauben</button>
       <button onclick="show('pedigree',this)">🌳 Stammbaum</button>
       <button onclick="show('breeding',this);loadBreedingHub()">🧬 Zucht & Gesundheit</button>
@@ -1400,6 +1606,42 @@ footer .login-link {
 </nav>
 
 <main>
+
+<section class="hidden" id="dashboard">
+  <div class="dashboard-hero">
+    <div class="dashboard-hero-copy">
+      <span class="dashboard-eyebrow">TABA · DEIN ZÜCHTERBEREICH</span>
+      <h2>Dein Bestand. Deine Leidenschaft.</h2>
+      <p>Alle wichtigen Einblicke in deine Tauben, deine Zucht und deinen Züchterkreis – an einem Ort.</p>
+      <div class="dashboard-hero-actions">
+        <button class="action" type="button" onclick="showById('pigeons')">＋ Taube eintragen</button>
+        <button class="dashboard-ghost" type="button" onclick="showById('pedigree')">Stammbaum öffnen ↗</button>
+      </div>
+    </div>
+    <div class="dashboard-hero-art" aria-hidden="true"><div class="dashboard-orbit orbit-one"></div><div class="dashboard-orbit orbit-two"></div><div class="dashboard-dove">🕊</div><span class="dashboard-art-caption">EVERY PIGEON HAS A STORY</span></div>
+  </div>
+  <div class="dashboard-heading-row"><div><span class="dashboard-kicker">DEIN ÜBERBLICK</span><h3>Auf einen Blick</h3></div><span class="dashboard-date" id="dashboardDate"></span></div>
+  <div class="dashboard-stats" id="dashboardStats">
+    <article class="dashboard-stat"><span class="stat-icon">🕊</span><span class="stat-label">Tauben im Bestand</span><strong>–</strong><small>Deine persönliche Kollektion</small></article>
+    <article class="dashboard-stat"><span class="stat-icon">♂</span><span class="stat-label">Täuber</span><strong>–</strong><small>Männliche Tiere</small></article>
+    <article class="dashboard-stat"><span class="stat-icon">♀</span><span class="stat-label">Täubinnen</span><strong>–</strong><small>Weibliche Tiere</small></article>
+    <article class="dashboard-stat"><span class="stat-icon">🌱</span><span class="stat-label">Jungtiere · aktuelles Jahr</span><strong>–</strong><small>Nach Geburtsdatum erfasst</small></article>
+  </div>
+  <div class="dashboard-main-grid">
+    <div class="dashboard-panel dashboard-collection"><div class="dashboard-panel-head"><div><span class="dashboard-kicker">DEINE KOLLEKTION</span><h3>Zuletzt hinzugefügt</h3></div><button class="dashboard-text-link" onclick="showById('pigeons')" type="button">Alle Tauben ansehen ↗</button></div><div class="dashboard-bird-grid" id="dashboardBirds"><div class="dashboard-empty">Deine Tauben erscheinen hier, sobald dein Bestand geladen ist.</div></div></div>
+    <div class="dashboard-panel dashboard-shortcuts"><div class="dashboard-panel-head"><div><span class="dashboard-kicker">SCHNELLZUGRIFF</span><h3>Was möchtest du tun?</h3></div></div>
+      <button class="dashboard-shortcut" type="button" onclick="showById('pedigree')"><span>🌳</span><span><strong>Stammbaum ansehen</strong><small>Abstammung entdecken und teilen</small></span><b>↗</b></button>
+      <button class="dashboard-shortcut" type="button" onclick="showById('breeding')"><span>🧬</span><span><strong>Zucht & Gesundheit</strong><small>Paare, Jungtiere und Akten verwalten</small></span><b>↗</b></button>
+      <button class="dashboard-shortcut" type="button" onclick="showById('breeders')"><span>🤝</span><span><strong>Züchterkreis entdecken</strong><small>Beiträge, Anzeigen und Mitglieder</small></span><b>↗</b></button>
+      <button class="dashboard-shortcut" type="button" onclick="showById('inbox')"><span>✉️</span><span><strong>Nachrichten öffnen</strong><small>Mit anderen Züchtern austauschen</small></span><b>↗</b></button>
+    </div>
+  </div>
+  <div class="dashboard-bottom-grid">
+    <article class="dashboard-feature"><div class="dashboard-feature-icon">🌿</div><div><span class="dashboard-kicker">ZUCHT & PLANUNG</span><h3>Deine nächste Zuchtsaison beginnt mit Überblick.</h3><p>Verwalte Zuchtpaare, dokumentiere Jungtiere und behalte wichtige Ereignisse im Blick.</p><button class="dashboard-text-link" type="button" onclick="showById('breeding')">Zum Zuchtzentrum ↗</button></div></article>
+    <article class="dashboard-feature dashboard-feature-gold"><div class="dashboard-feature-icon">🏡</div><div><span class="dashboard-kicker">GEMEINSCHAFT</span><h3>Wissen und Leidenschaft verbinden.</h3><p>Entdecke andere Züchter, teile Erfahrungen und finde besondere Tauben.</p><button class="dashboard-text-link" type="button" onclick="showById('breeders')">Zum Züchterkreis ↗</button></div></article>
+  </div>
+</section>
+
 <section id="pigeons">
 <h2>Meine Tauben</h2>
 <p class="sub">Deine persönliche Taubendatenbank.</p>
@@ -2526,6 +2768,7 @@ function render(){
     else if (pigeons.length) selected.value = String(pigeons[0].id);
   }
   if (typeof tree === 'function') tree();
+  if (typeof updateTabaDashboard === 'function') updateTabaDashboard();
 }
 
 async function removePigeon(id) {
@@ -2891,7 +3134,9 @@ function downloadPedigreePDF(){
          .then(() => setTimeout(() => window.print(), 350));
      });
    <\/script>
- </body>
+ 
+
+</body>
  </html>`);
  win.document.close();
 }
@@ -4811,6 +5056,7 @@ loginForm.addEventListener('submit', async function(event) {
     document.getElementById('loginOverlay').classList.add('hidden');
     startIdleLogout();
     await loadPigeons();
+    if (!window.location.hash.includes('pigeon=')) showById('dashboard');
     await updateUnreadCount();
     message.textContent = '';
   }
@@ -4994,6 +5240,7 @@ async function checkLogin() {
   document.getElementById('loginOverlay').classList.add('hidden');
   startIdleLogout();
   await loadPigeons();
+     if (!window.location.hash.includes('pigeon=')) showById('dashboard');
      await updateUnreadCount();
    }
   }
@@ -5036,6 +5283,28 @@ checkLogin();
 
 
 render();
+
+function updateTabaDashboard(){
+  const stats=document.getElementById('dashboardStats'), birds=document.getElementById('dashboardBirds');
+  if(!stats||!birds)return;
+  const all=Array.isArray(pigeons)?pigeons:[];
+  const males=all.filter(p=>p.sex==='male').length, females=all.filter(p=>p.sex==='female').length;
+  const year=new Date().getFullYear(), young=all.filter(p=>p.birth&&String(p.birth).slice(0,4)===String(year)).length;
+  stats.innerHTML=`
+    <article class="dashboard-stat"><span class="stat-icon">🕊</span><span class="stat-label">Tauben im Bestand</span><strong>${all.length}</strong><small>Deine persönliche Kollektion</small></article>
+    <article class="dashboard-stat"><span class="stat-icon">♂</span><span class="stat-label">Täuber</span><strong>${males}</strong><small>Männliche Tiere</small></article>
+    <article class="dashboard-stat"><span class="stat-icon">♀</span><span class="stat-label">Täubinnen</span><strong>${females}</strong><small>Weibliche Tiere</small></article>
+    <article class="dashboard-stat"><span class="stat-icon">🌱</span><span class="stat-label">Jungtiere · ${year}</span><strong>${young}</strong><small>Nach Geburtsdatum erfasst</small></article>`;
+  const recent=all.slice(0,3);
+  birds.innerHTML=recent.length?recent.map(p=>`
+    <article class="dashboard-bird"><div class="dashboard-bird-photo">${p.photo_url?`<img src="${p.photo_url}" alt="Taube ${esc(p.ring)}">`:'🕊️'}</div>
+    <div class="dashboard-bird-copy"><strong>${esc(p.name||p.ring||'Taube')}</strong><small>${esc(p.ring||'Ohne Ringnummer')} · ${esc(p.breed||'Rasse offen')}</small></div></article>`).join(''):
+    '<div class="dashboard-empty">Noch keine Tauben eingetragen. Lege deine erste Taube an und baue deine digitale Zuchtkartei auf.</div>';
+  const date=document.getElementById('dashboardDate');
+  if(date)date.textContent=new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(new Date());
+}
+
 </script>
+
 </body>
 </html>
