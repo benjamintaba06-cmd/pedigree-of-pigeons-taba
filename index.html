@@ -1711,6 +1711,39 @@ footer a[href*="contact"],
 }
 .contact-modal-shell > .login-box { padding-top: 58px !important; }
 </style>
+
+<style id="taba-calendar-contrast-spacing">
+/* Fünf-Tage-Kacheln: klarer Kontrast, mehr Luft und ruhige Gold-Hervorhebung */
+#publicEventsList.calendar-five-grid{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:10px!important;border:0!important;padding:4px 2px!important;
+}
+#publicEventsList .calendar-mini-day{
+  box-sizing:border-box!important;min-width:0!important;min-height:126px!important;
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  gap:10px!important;padding:14px 11px!important;margin:0!important;
+  border:1px solid #dfe5dc!important;border-radius:14px!important;
+  background:#fff!important;color:#173f34!important;
+  box-shadow:0 3px 10px rgba(23,63,52,.045)!important;
+  cursor:pointer!important;transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease!important;
+}
+#publicEventsList .calendar-mini-day>strong{display:block!important;color:#173f34!important;font-size:12px!important;font-weight:700!important;line-height:1.4!important;overflow-wrap:anywhere}
+#publicEventsList .calendar-mini-day .calendar-mini-count{display:block!important;color:#64736a!important;font-size:12px!important;font-weight:500!important}
+#publicEventsList .calendar-mini-day .calendar-mini-count.has-events{color:#245b3e!important;font-weight:700!important}
+#publicEventsList .calendar-mini-day .calendar-mini-titles,
+#publicEventsList .calendar-mini-day .calendar-mini-titles span,
+#publicEventsList .calendar-mini-day .calendar-mini-titles small{color:#354d41!important;font-size:11px!important;line-height:1.45!important}
+#publicEventsList .calendar-mini-day .calendar-mini-entry button{color:#173f34!important;background:#edf3ee!important}
+#publicEventsList .calendar-mini-day:hover,
+#publicEventsList .calendar-mini-day:focus-visible,
+#publicEventsList .calendar-mini-day:active{
+  background:#f8f0dc!important;border-color:#c9ad70!important;
+  box-shadow:0 4px 14px rgba(184,154,91,.16)!important;
+}
+#publicEventsList .calendar-mini-day:focus-visible{outline:2px solid #b89a5b!important;outline-offset:2px!important}
+@media(max-width:760px){#publicEventsList.calendar-five-grid{gap:7px!important;padding:3px 0!important}#publicEventsList .calendar-mini-day{padding:11px 7px!important;min-height:116px!important;gap:8px!important}#publicEventsList .calendar-mini-day>strong{font-size:10px!important}}
+@media(max-width:420px){#publicEventsList.calendar-five-grid{gap:5px!important}#publicEventsList .calendar-mini-day{padding:9px 5px!important;min-height:108px!important;border-radius:11px!important}#publicEventsList .calendar-mini-day>strong{font-size:9px!important}#publicEventsList .calendar-mini-day .calendar-mini-count{font-size:10px!important}}
+</style>
 </head>
 <body>
 
