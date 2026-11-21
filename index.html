@@ -1491,6 +1491,26 @@ main.dashboard-active{max-width:1280px;padding:clamp(18px,3vw,38px) clamp(14px,3
  .dashboard-bottom-grid{gap:13px;margin-top:14px}
 }
 
+/* TABA Feinschliff: Buttons ohne Unterstreichung, Hero-Titel bewusst sanfter */
+button,
+button *,
+.action,
+a.action,
+.dashboard-ghost,
+.dashboard-text-link,
+footer .login-link,
+footer button,
+footer a[href*="contact"],
+#contactLink {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+}
+.dashboard-hero .dashboard-hero-copy h2 {
+  color: rgba(235, 242, 235, .66) !important;
+  -webkit-text-fill-color: rgba(235, 242, 235, .66) !important;
+  opacity: .88 !important;
+  text-shadow: none !important;
+}
 </style>
 </head>
 <body>
