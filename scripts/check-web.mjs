@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-const pages = ['index.html', 'admin.html', 'reset-password.html'];
+const pages = ['index.html', 'admin.html', 'reset-password.html', 'privacy.html', 'account-deletion.html'];
 let checkedScripts = 0;
 
 for (const page of pages) {
