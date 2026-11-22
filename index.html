@@ -1776,6 +1776,19 @@ footer a[href*="contact"],
 @media(max-width:760px){#publicEventsList .calendar-mini-day{padding:9px 6px!important}#publicEventsList .calendar-mini-entry .calendar-personal-event,#publicEventsList .calendar-mini-entry.is-community{font-size:10px!important}}
 @media(max-width:420px){#publicEventsList.calendar-five-grid{gap:6px!important}#publicEventsList .calendar-mini-day{padding:8px 5px!important}#publicEventsList .calendar-mini-entry time{min-width:30px!important;font-size:9px!important}#publicEventsList .calendar-mini-entry .calendar-personal-event,#publicEventsList .calendar-mini-entry.is-community{font-size:9px!important}}
 </style>
+
+<style id="taba-calendar-today-highlight">
+/* Heutiger Tag: dezenter goldener Rahmen */
+#publicEventsList .calendar-mini-day.is-today{
+ border:1.5px solid #c9ad70!important;
+ box-shadow:inset 0 0 0 1px rgba(201,173,112,.16),0 2px 8px rgba(184,154,91,.08)!important;
+}
+#publicEventsList .calendar-mini-day.is-today>strong{color:#8a6c32!important}
+#publicEventsList .calendar-mini-day.is-today:hover,
+#publicEventsList .calendar-mini-day.is-today:focus-visible{
+ border-color:#b89a5b!important;background:#fbf7ed!important;
+}
+</style>
 </head>
 <body>
 
@@ -2824,7 +2837,7 @@ async function loadTabaPublicEvents() {
       const key=item=>item.kind==='personal'?new Date(item.time).getTime():new Date(day+'T'+(item.time||'00:00')+':00').getTime();
       return key(a)-key(b);
     });
-    return `<article class="calendar-mini-day" role="button" tabindex="0" aria-label="Termin für ${esc(tabaCalendarFormatDate(day))} hinzufügen oder ansehen" onclick="openPersonalCalendarReminderForDay('${day}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPersonalCalendarReminderForDay('${day}')}">
+    return `<article class="calendar-mini-day ${day===firstDate?'is-today':''}" role="button" tabindex="0" aria-label="Termin für ${esc(tabaCalendarFormatDate(day))} hinzufügen oder ansehen" onclick="openPersonalCalendarReminderForDay('${day}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPersonalCalendarReminderForDay('${day}')}">
       <strong>${esc(tabaCalendarFormatDate(day))}</strong>
       <span class="calendar-mini-count ${items.length?'has-events':''}">${items.length?items.length+' geplant':'frei'}</span>
       <div class="calendar-mini-titles">${items.map(item=>{
