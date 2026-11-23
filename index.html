@@ -1353,6 +1353,16 @@ footer nav.footer-legal-nav span{color:#b89a5b;font-size:20px;line-height:1}
   color: var(--taba-muted, #718078);
   font-size: 11px;
 }
+
+/* Kompakter DM-Schreibbereich mit optionaler Stammbaum-Aktion */
+.dm-composer{display:flex;align-items:center;gap:8px;margin:8px 0 12px}
+.dm-composer textarea{flex:1;min-width:0;min-height:44px!important;height:44px;max-height:120px;resize:vertical;margin:0;padding:11px 14px!important;border-radius:999px!important}
+.dm-composer .dm-tree-button,.dm-composer .dm-send-button{width:42px;min-width:42px;height:42px;min-height:42px;padding:0!important;border-radius:50%!important;display:grid;place-items:center;flex:0 0 42px}
+.dm-composer .dm-tree-button{background:#f0f3ef!important;color:#285342!important;border:1px solid #dfe6df!important;font-size:18px}
+.dm-composer .dm-send-button{background:#173f34!important;color:#fff!important;border:1px solid #173f34!important;font-size:19px}
+.dm-pedigree-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 12px;padding:12px;border:1px solid #e1e7df;border-radius:12px;background:#f8faf7}
+.dm-pedigree-picker select{flex:1;min-width:180px}
+@media(max-width:420px){.dm-composer{gap:6px}.dm-composer .dm-tree-button,.dm-composer .dm-send-button{width:38px;min-width:38px;height:38px;min-height:38px;flex-basis:38px}}
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -2160,15 +2170,6 @@ footer a[href*="contact"],
    <button class="action" onclick="saveBreedingEvent()">Kalendereintrag speichern</button>
    <div id="calendarList" class="taba-muted"></div>
   </div>
-  <div class="taba-module-card">
-   <h3>5. Stammbaum-Austausch</h3>
-   <p class="taba-muted">Freigabe an einen bestätigten Züchter. Die Freigabe wird widerrufbar gespeichert; sie ersetzt keine öffentliche QR-Profilseite.</p>
-   <label>Taube / Stammbaum</label><select id="sharePigeon"></select>
-   <label>Empfänger (Züchter-ID)</label><input id="shareBreederId" placeholder="ID des freigeschalteten Züchters">
-   <label>Freigabeumfang</label><select id="shareScope"><option value="pedigree">Stammbaum</option><option value="pedigree_health">Stammbaum + Gesundheitsdaten</option></select>
-   <button class="action" onclick="createPedigreeShare()">Freigabe erteilen</button>
-   <div id="shareList" class="taba-muted"></div>
-  </div>
  </div>
  <p id="breedingStatus" class="sub"></p>
 </section>
@@ -2333,13 +2334,16 @@ Einladung erstellen
   </div>
 
   <label for="messageInput">Deine Nachricht</label>
-  <textarea id="messageInput"
-    maxlength="5000"
-    placeholder="Schreibe deine Nachricht ..."></textarea>
-
-  <button class="action" onclick="sendMessage()">
-    Nachricht senden
-  </button>
+  <div class="dm-composer">
+    <textarea id="messageInput" maxlength="5000" placeholder="Nachricht schreiben …"></textarea>
+    <button type="button" class="dm-tree-button" onclick="toggleDmPedigreePicker()" aria-label="Stammbaum zur Nachricht hinzufügen" title="Stammbaum hinzufügen">🌳</button>
+    <button type="button" class="dm-send-button" onclick="sendMessage()" aria-label="Nachricht senden" title="Senden">➤</button>
+  </div>
+  <div id="dmPedigreePicker" class="dm-pedigree-picker hidden">
+    <label for="dmPedigreeSelect">Stammbaum auswählen</label>
+    <select id="dmPedigreeSelect"><option value="">Taube auswählen …</option></select>
+    <button type="button" class="action" onclick="addDmPedigreeToMessage()">Stammbaum übernehmen</button>
+  </div>
 
   <button class="action" onclick="closeConversation()">
     Zurück zur Unterhaltungsliste
@@ -3652,8 +3656,8 @@ function filterPedigreeBreeders(){
   `${b.display_name||''} ${b.location_label||''}`.toLowerCase().includes(q)
  ));
 }
-function pedigreeTextReport(){
- const id=document.getElementById('selected')?.value;
+function pedigreeTextReport(selectedId){
+ const id=selectedId || document.getElementById('selected')?.value;
  const root=pigeons.find(x=>String(x.id)===String(id));
  if(!root){alert('Bitte zuerst eine Taube als Ausgangspunkt auswählen.');return null;}
  const lines=[`STAMMBAUM – ${root.ring_number||root.ring||''}`,`Name: ${root.name||'—'}`,''];
@@ -4735,15 +4739,22 @@ function filterNewConversationBreeders() {
 }
   async function sendMessage() {
   const input = document.getElementById('messageInput');
-  const body = input.value.trim();
+  let body = input.value.trim();
 
   if (!activeConversationId) {
     alert('Bitte zuerst eine Unterhaltung öffnen.');
     return;
   }
 
+  const pedigreeSelect = document.getElementById('dmPedigreeSelect');
+  if (pedigreeSelect?.value) {
+    const pedigree = pedigreeTextReport(pedigreeSelect.value);
+    if (!pedigree) return;
+    body = (body ? body + '\\n\\n' : '') + 'Ich teile meinen Stammbaum mit dir:\\n\\n' + pedigree;
+  }
+
   if (!body) {
-    alert('Bitte schreibe zuerst eine Nachricht.');
+    alert('Bitte schreibe zuerst eine Nachricht oder füge einen Stammbaum hinzu.');
     return;
   }
 
@@ -4771,6 +4782,8 @@ function filterNewConversationBreeders() {
   }
 
   input.value = '';
+  if (pedigreeSelect) pedigreeSelect.value = '';
+  document.getElementById('dmPedigreePicker')?.classList.add('hidden');
 
   await loadMessages();
   await loadConversations();
@@ -4983,6 +4996,32 @@ function setupConversationCardInteractions(list) {
       }
     });
   });
+}
+
+function toggleDmPedigreePicker() {
+  const picker = document.getElementById('dmPedigreePicker');
+  const select = document.getElementById('dmPedigreeSelect');
+  if (!picker || !select) return;
+  const birds = Array.isArray(pigeons) ? pigeons : [];
+  select.innerHTML = '<option value="">Taube auswählen …</option>' + birds.map(bird => {
+    const id = bird.id;
+    const ring = bird.ring_number || bird.ring || 'Ohne Ringnummer';
+    const name = bird.name ? ' – ' + bird.name : '';
+    return '<option value="' + esc(id) + '">' + esc(ring + name) + '</option>';
+  }).join('');
+  picker.classList.toggle('hidden');
+}
+function addDmPedigreeToMessage() {
+  const select = document.getElementById('dmPedigreeSelect');
+  if (!select?.value) { alert('Bitte zuerst eine Taube auswählen.'); return; }
+  const report = pedigreeTextReport(select.value);
+  if (!report) return;
+  const input = document.getElementById('messageInput');
+  const attachment = 'Ich teile meinen Stammbaum mit dir:\\n\\n' + report;
+  input.value = input.value.trim() ? input.value.trim() + '\\n\\n' + attachment : attachment;
+  select.value = '';
+  document.getElementById('dmPedigreePicker')?.classList.add('hidden');
+  input.focus();
 }
 
 async function updateMessageUnreadBadge(user, unreadMessages) {
