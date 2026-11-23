@@ -5845,18 +5845,17 @@ async function loadBreedingHub() {
  const birds=pigeons||[];
  tabaOptions('pairMale',birds.filter(p=>p.sex==='male'),'Täuber auswählen');
  tabaOptions('pairFemale',birds.filter(p=>p.sex==='female'),'Täubin auswählen');
- ['youngFather','youngMother','healthPigeon','flightPigeon','sharePigeon'].forEach(id=>tabaOptions(id,birds));
+ ['youngFather','youngMother','healthPigeon','flightPigeon'].forEach(id=>tabaOptions(id,birds));
  const pairSel=document.getElementById('eventPair');
  if(pairSel) pairSel.innerHTML='<option value="">Ohne Paarbezug</option>';
  ['pairStart','healthDate','flightDate','eventDate'].forEach(id=>{if(!tabaVal(id))tabaSet(id,tabaToday());});
- const [pairs,health,flights,events,shares]=await Promise.all([
+ const [pairs,health,flights,events]=await Promise.all([
   supabaseClient.from('taba_breeding_pairs').select('id,male_id,female_id,pair_date,note,created_at').eq('owner_id',user.id).order('pair_date',{ascending:false}),
   supabaseClient.from('taba_pigeon_health').select('id,pigeon_id,record_date,weight_grams,record_type,notes').eq('owner_id',user.id).order('record_date',{ascending:false}).limit(30),
   supabaseClient.from('taba_flight_results').select('id,pigeon_id,flight_date,distance_km,duration_minutes,placement,notes').eq('owner_id',user.id).order('flight_date',{ascending:false}).limit(30),
-  supabaseClient.from('taba_breeding_events').select('id,title,event_date,pair_id').eq('owner_id',user.id).order('event_date',{ascending:true}),
-  supabaseClient.from('taba_pedigree_shares').select('id,pigeon_id,shared_with,scope,created_at').eq('owner_id',user.id).order('created_at',{ascending:false})
+  supabaseClient.from('taba_breeding_events').select('id,title,event_date,pair_id').eq('owner_id',user.id).order('event_date',{ascending:true})
  ]);
- const errs=[pairs,health,flights,events,shares].filter(x=>x.error);
+ const errs=[pairs,health,flights,events].filter(x=>x.error);
  if(errs.length){tabaStatus('Supabase-Erweiterungstabellen fehlen oder sind nicht freigegeben. Bitte die beigefügte SQL-Migration im Supabase SQL Editor ausführen. Details: '+errs[0].error.message,true);return;}
  const birdLabel=id=>{const p=birds.find(x=>String(x.id)===String(id));return p?`${p.ring}${p.name?' – '+p.name:''}`:'Taube nicht im Bestand';};
  const pairData=pairs.data||[];
@@ -5865,7 +5864,6 @@ async function loadBreedingHub() {
  document.getElementById('healthList').innerHTML=(health.data||[]).map(r=>`<div class="taba-list-item"><strong>${esc(birdLabel(r.pigeon_id))}</strong> · ${esc(r.record_date||'')}<div>${esc(r.record_type||'Eintrag')} ${r.weight_grams?`· ${r.weight_grams} g`:''}</div><div class="taba-muted">${esc(r.notes||'')}</div></div>`).join('')||'Noch keine Gesundheitsdaten.';
  document.getElementById('flightList').innerHTML=(flights.data||[]).map(r=>`<div class="taba-list-item"><strong>${esc(birdLabel(r.pigeon_id))}</strong> · ${esc(r.flight_date||'')}<div>${r.distance_km??'–'} km · ${r.duration_minutes??'–'} Min. · Platz ${esc(r.placement||'–')}</div><div class="taba-muted">${esc(r.notes||'')}</div></div>`).join('')||'Noch keine Flugleistungen.';
  document.getElementById('calendarList').innerHTML=(events.data||[]).map(e=>`<div class="taba-list-item"><strong>${esc(e.event_date)}</strong> · ${esc(e.title)}</div>`).join('')||'Noch keine Termine.';
- document.getElementById('shareList').innerHTML=(shares.data||[]).map(s=>`<div class="taba-list-item">Taube ${esc(birdLabel(s.pigeon_id))} · Empfänger ${esc(s.shared_with)} · ${esc(s.scope)} <button type="button" onclick="revokePedigreeShare('${s.id}')">Widerrufen</button></div>`).join('')||'Noch keine Freigaben.';
 }
 async function saveBreedingPair(){
  const user=await tabaUser();if(!user)return;
