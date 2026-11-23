@@ -1331,6 +1331,28 @@ footer nav.footer-legal-nav{
 footer nav.footer-legal-nav a{color:#285342!important;text-decoration:none!important;font-weight:500}
 footer nav.footer-legal-nav span{color:#b89a5b;font-size:20px;line-height:1}
 @media(max-width:520px){footer nav.footer-legal-nav{gap:12px;padding:16px 20px!important;border-radius:20px!important}}
+
+/* Private Unterhaltungen: ganze Zeile öffnen, langes Drücken zum Löschen */
+.conversation-card {
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(198,164,91,.18);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.conversation-card:hover,
+.conversation-card:focus-visible {
+  border-color: var(--taba-gold, #c6a45b) !important;
+  box-shadow: 0 7px 18px rgba(23,63,52,.09);
+  outline: none;
+}
+.conversation-card:active { background: #f7f8f4 !important; }
+.conversation-card .conversation-hint {
+  margin: 8px 0 0;
+  color: var(--taba-muted, #718078);
+  font-size: 11px;
+}
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -4908,16 +4930,59 @@ async function loadConversations() {
     const otherId = conversation.participant_one_id === user.id ? conversation.participant_two_id : conversation.participant_one_id;
     const hasUnread = (unreadByConversation[conversation.id] || 0) > 0;
     return `
-      <div class="card">
+      <div class="card conversation-card" data-conversation-id="${conversation.id}" role="button" tabindex="0" aria-label="Unterhaltung mit ${esc(names[otherId] || 'TABA-Mitglied')} öffnen. Zum Löschen länger drücken.">
         <h3>🕊️ ${esc(names[otherId] || 'TABA-Mitglied')}${hasUnread ? '<span class="conversation-unread" title="Ungelesene Nachrichten"></span>' : ''}</h3>
         <p class="sub">Letzte Aktivität: ${new Date(conversation.updated_at).toLocaleString('de-DE')}</p>
         ${hasUnread ? '<p class="sub"><strong>Neue Nachricht</strong></p>' : ''}
-        <div class="conversation-actions">
-          <button class="action" onclick="openConversation('${conversation.id}')">Unterhaltung öffnen</button>
-          <button class="action conversation-delete" onclick="deleteConversation('${conversation.id}')">Unterhaltung löschen</button>
-        </div>
+        <p class="conversation-hint">Antippen zum Öffnen · Gedrückt halten zum Löschen</p>
       </div>`;
   }).join('');
+  setupConversationCardInteractions(list);
+}
+
+function setupConversationCardInteractions(list) {
+  list.querySelectorAll('.conversation-card').forEach(card => {
+    const conversationId = card.dataset.conversationId;
+    let holdTimer = null;
+    let suppressClick = false;
+    const cancelHold = () => {
+      if (holdTimer) clearTimeout(holdTimer);
+      holdTimer = null;
+    };
+    const offerDelete = () => {
+      suppressClick = true;
+      cancelHold();
+      deleteConversation(conversationId);
+    };
+    card.addEventListener('pointerdown', event => {
+      if (event.button !== undefined && event.button !== 0) return;
+      suppressClick = false;
+      holdTimer = setTimeout(offerDelete, 650);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(name => {
+      card.addEventListener(name, cancelHold);
+    });
+    card.addEventListener('contextmenu', event => {
+      event.preventDefault();
+      offerDelete();
+    });
+    card.addEventListener('click', () => {
+      if (suppressClick) {
+        suppressClick = false;
+        return;
+      }
+      openConversation(conversationId);
+    });
+    card.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openConversation(conversationId);
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        deleteConversation(conversationId);
+      }
+    });
+  });
 }
 
 async function updateMessageUnreadBadge(user, unreadMessages) {
