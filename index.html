@@ -963,6 +963,9 @@ header.main-header p { color: #e1e9e3 !important; }
 .logged-in-user.xp-progress::before{content:"";position:absolute;inset:-3px;border-radius:999px;padding:2px;background:conic-gradient(from -90deg,#e1c47d 0 var(--xp-progress,0%),rgba(198,164,91,.2) var(--xp-progress,0%) 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
 .logged-in-user .xp-name{font-weight:700}
 .logged-in-user .xp-count{margin-left:7px;color:#e7d8b2;font-size:10px;white-space:nowrap}
+.logged-in-user .xp-ring-collection{display:inline-flex;align-items:center;gap:2px;margin-left:7px;color:#e1c47d;font-size:11px;letter-spacing:-2px;white-space:nowrap}
+.logged-in-user .xp-ring-collection .extra-rings{font-size:9px;letter-spacing:0;margin-left:4px;color:#f3e6c4}
+
 
 .account-user-separator { color: rgba(255,255,255,.35) !important; }
 .company-logo img {
@@ -3198,11 +3201,15 @@ async function refreshLoggedInXp(){
   const {data}=await supabaseClient.from('breeders').select('display_name,xp_total').eq('id',user.id).maybeSingle();
   if(!data) return;
   const xp=Math.max(0,Number(data.xp_total)||0), progress=xp%100, level=Math.floor(xp/100)+1;
+  const rings=level;
+  const visibleRings=Math.min(rings,5);
+  const ringMarks='◯'.repeat(visibleRings);
+  const extraRings=rings>5?'<span class="extra-rings">+'+(rings-5)+'</span>':'';
   const roleIcon=badge.dataset.role==='admin'?'👑':'🕊️';
-  badge.innerHTML=roleIcon+' <span class="xp-name">'+esc(data.display_name||'Mitglied')+'</span><span class="xp-count">'+xp.toLocaleString('de-DE')+' XP</span>';
+  badge.innerHTML=roleIcon+' <span class="xp-name">'+esc(data.display_name||'Mitglied')+'</span><span class="xp-ring-collection" aria-label="'+rings+' gesammelte Ringe">'+ringMarks+extraRings+'</span><span class="xp-count">'+xp.toLocaleString('de-DE')+' XP</span>';
   badge.classList.add('xp-progress');
   badge.style.setProperty('--xp-progress',progress+'%');
-  badge.title='Level '+level+' · '+progress+' / 100 XP bis zum nächsten Level';
+  badge.title=rings+' Ring'+(rings===1?'':'e')+' gesammelt · Level '+level+' · '+progress+' / 100 XP bis zum nächsten Ring';
   badge.setAttribute('aria-label',(badge.dataset.role==='admin'?'Administrator':'Mitglied')+': '+(data.display_name||'Mitglied')+', Level '+level+', '+xp+' Erfahrungspunkte');
 }
 
@@ -5645,10 +5652,14 @@ function updateAccountRole(user) {
       const xp = Math.max(0, Number(totalXp) || 0);
       const progress = xp % 100;
       const level = Math.floor(xp / 100) + 1;
-      loggedInUser.innerHTML = roleIcon + ' <span class="xp-name">' + esc(name) + '</span><span class="xp-count">' + xp.toLocaleString('de-DE') + ' XP</span>';
+      const rings = level;
+      const visibleRings = Math.min(rings, 5);
+      const ringMarks = '◯'.repeat(visibleRings);
+      const extraRings = rings > 5 ? '<span class="extra-rings">+' + (rings - 5) + '</span>' : '';
+      loggedInUser.innerHTML = roleIcon + ' <span class="xp-name">' + esc(name) + '</span><span class="xp-ring-collection" aria-label="' + rings + ' gesammelte Ringe">' + ringMarks + extraRings + '</span><span class="xp-count">' + xp.toLocaleString('de-DE') + ' XP</span>';
       loggedInUser.classList.add('xp-progress');
       loggedInUser.style.setProperty('--xp-progress', progress + '%');
-      loggedInUser.title = 'Level ' + level + ' · ' + progress + ' / 100 XP bis zum nächsten Level';
+      loggedInUser.title = rings + ' Ring' + (rings === 1 ? '' : 'e') + ' gesammelt · Level ' + level + ' · ' + progress + ' / 100 XP bis zum nächsten Ring';
       loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + name + ', Level ' + level + ', ' + xp + ' Erfahrungspunkte');
     };
     loggedInUser.textContent = roleIcon + ' ' + accountName;
