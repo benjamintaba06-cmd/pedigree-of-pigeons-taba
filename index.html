@@ -2287,32 +2287,6 @@ Einladung erstellen
   <button type="button" class="action active" data-inbox-panel="conversations" onclick="showInboxPanel('conversations',this)">
     💬 Private Unterhaltungen <span id="conversationTabDot" class="unread-dot hidden"></span>
   </button>
-  <button type="button" class="action" data-inbox-panel="notifications" onclick="showInboxPanel('notifications',this)">
-    🔔 Benachrichtigungen <span id="notificationTabDot" class="unread-dot hidden"></span>
-  </button>
-  <button type="button" id="adminBroadcastButton" class="action hidden" onclick="toggleAdminBroadcast()" style="display:none">
-    📢 Benachrichtigung erstellen
-  </button>
-  <button type="button" id="adminContactRequestsButton" class="action hidden" data-inbox-panel="contactRequests" onclick="showInboxPanel('contactRequests',this)" style="display:none">
-    📥 Kontaktanfragen <span id="contactRequestsTabCount"></span>
-  </button>
-</div>
-<div id="adminBroadcastPanel" class="card hidden" style="display:none">
-  <h3>📢 Gemeinschaft benachrichtigen</h3>
-  <p class="sub">Sende eine Nachricht an alle freigeschalteten Mitglieder oder wähle einzelne Züchter aus.</p>
-  <label for="broadcastTitle">Betreff</label>
-  <input id="broadcastTitle" maxlength="120" placeholder="z. B. Neuigkeiten aus der Gemeinschaft">
-  <label for="broadcastMessage">Nachricht</label>
-  <textarea id="broadcastMessage" maxlength="5000" placeholder="Deine Nachricht an die Gemeinschaft ..."></textarea>
-  <label for="broadcastAudience">Empfänger</label>
-  <select id="broadcastAudience" onchange="toggleBroadcastRecipients()">
-    <option value="all">Alle freigeschalteten Mitglieder</option>
-    <option value="selected">Ausgewählte Mitglieder</option>
-  </select>
-  <div id="broadcastRecipients" class="hidden" style="display:none;max-height:220px;overflow:auto;margin:10px 0"></div>
-  <button type="button" class="action" onclick="sendAdminBroadcast()">Benachrichtigung senden</button>
-  <button type="button" class="action" onclick="toggleAdminBroadcast(false)">Abbrechen</button>
-  <p id="broadcastStatus" class="sub" aria-live="polite"></p>
 </div>
 <div id="inboxPanel-conversations" class="inbox-panel">
   <h3>Private Unterhaltungen</h3>
@@ -2353,17 +2327,6 @@ Einladung erstellen
     Zurück zur Unterhaltungsliste
   </button>
   </div>
-</div>
-<div id="inboxPanel-notifications" class="inbox-panel hidden">
-  <h3>Benachrichtigungen</h3>
-  <div id="notificationList">
-    <p class="sub">Nachrichten werden geladen ...</p>
-  </div>
-</div>
-<div id="inboxPanel-contactRequests" class="inbox-panel hidden">
-  <h3>📥 Kontaktanfragen</h3>
-  <p class="sub">Eingehende Fragen und Vorschläge von Besuchern und Mitgliedern.</p>
-  <div id="adminContactRequestList"><p class="sub">Kontaktanfragen werden geladen ...</p></div>
 </div>
 </section>
 
