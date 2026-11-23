@@ -474,6 +474,10 @@ align-items: flex-start;
 }
 
 
+/* Goldene Kennzeichnung für Beiträge des verifizierten Admin-Kontos */
+.admin-post-banner{display:flex;align-items:center;gap:8px;margin:-2px -2px 12px;padding:10px 13px;border-radius:9px;background:linear-gradient(110deg,#f3e8c9,#e7d5a4);border:1px solid #d2b978;color:#654b19;font-size:12px;font-weight:800;letter-spacing:.35px}
+.admin-post-banner span{font-size:16px}
+
 /* Züchterkreis: kompaktere Karten und Community-Beiträge */
 .breeder-card{width:calc(100% - 32px);max-width:920px;box-sizing:border-box;margin:12px auto;padding:18px 22px}
 .community-composer{max-width:900px;margin:18px auto}
@@ -4162,7 +4166,7 @@ async function loadCommunityPosts() {
   if (!box) return;
   const { data: posts, error } = await supabaseClient
     .from('breeder_posts')
-    .select('id, author_id, body, image_path, created_at')
+    .select('id, author_id, body, image_path, created_at, is_admin_author')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -4191,6 +4195,7 @@ async function loadCommunityPosts() {
     }
     return `
       <article class="card community-post">
+        ${post.is_admin_author ? '<div class="admin-post-banner"><span aria-hidden="true">📢</span> ADMIN-BENACHRICHTIGUNG:</div>' : ''}
         <strong>${esc(authorMap[post.author_id] || 'TABA-Mitglied')}</strong>
         <small class="sub"> · ${post.created_at ? new Date(post.created_at).toLocaleString('de-DE') : ''}</small>
         ${post.body ? `<p>${esc(post.body).replace(/\n/g, '<br>')}</p>` : ''}
