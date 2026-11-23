@@ -959,6 +959,11 @@ header.main-header p { color: #e1e9e3 !important; }
   letter-spacing: .015em;
 }
 .logged-in-user::after { display: none !important; }
+.logged-in-user.xp-progress{position:relative;border-color:transparent!important;isolation:isolate}
+.logged-in-user.xp-progress::before{content:"";position:absolute;inset:-3px;border-radius:999px;padding:2px;background:conic-gradient(from -90deg,#e1c47d 0 var(--xp-progress,0%),rgba(198,164,91,.2) var(--xp-progress,0%) 100%);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.logged-in-user .xp-name{font-weight:700}
+.logged-in-user .xp-count{margin-left:7px;color:#e7d8b2;font-size:10px;white-space:nowrap}
+
 .account-user-separator { color: rgba(255,255,255,.35) !important; }
 .company-logo img {
   max-width: min(220px, 30vw);
@@ -5579,6 +5584,9 @@ function updateAccountRole(user) {
     if (broadcastPanel) { broadcastPanel.classList.add('hidden'); broadcastPanel.style.display = 'none'; }
     if (loggedInUser) {
       loggedInUser.textContent = '';
+      loggedInUser.classList.remove('xp-progress');
+      loggedInUser.style.removeProperty('--xp-progress');
+      loggedInUser.removeAttribute('title');
       loggedInUser.classList.add('hidden');
       loggedInUser.removeAttribute('data-role');
       loggedInUser.removeAttribute('aria-label');
@@ -5614,18 +5622,25 @@ function updateAccountRole(user) {
   const roleIcon = isAdmin ? '👑' : '🕊️';
   if (loggedInUser) {
     const accountName = user.email || 'Angemeldet';
+    const renderXpName = (name, totalXp) => {
+      const xp = Math.max(0, Number(totalXp) || 0);
+      const progress = xp % 100;
+      const level = Math.floor(xp / 100) + 1;
+      loggedInUser.innerHTML = roleIcon + ' <span class="xp-name">' + esc(name) + '</span><span class="xp-count">' + xp.toLocaleString('de-DE') + ' XP</span>';
+      loggedInUser.classList.add('xp-progress');
+      loggedInUser.style.setProperty('--xp-progress', progress + '%');
+      loggedInUser.title = 'Level ' + level + ' · ' + progress + ' / 100 XP bis zum nächsten Level';
+      loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + name + ', Level ' + level + ', ' + xp + ' Erfahrungspunkte');
+    };
     loggedInUser.textContent = roleIcon + ' ' + accountName;
     loggedInUser.dataset.role = isAdmin ? 'admin' : 'member';
     loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + accountName);
     loggedInUser.removeAttribute('title');
     loggedInUser.removeAttribute('data-tooltip');
     loggedInUser.classList.remove('hidden');
-    supabaseClient.from('breeders').select('display_name').eq('id', user.id).maybeSingle()
+    supabaseClient.from('breeders').select('display_name,xp_total').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
-        if (data && data.display_name) {
-          loggedInUser.textContent = roleIcon + ' ' + data.display_name;
-          loggedInUser.setAttribute('aria-label', (isAdmin ? 'Administrator' : 'Mitglied') + ': ' + data.display_name);
-        }
+        if (data) renderXpName(data.display_name || accountName, data.xp_total || 0);
       });
   }
   badge.textContent = isAdmin ? '🛡️ ADMIN' : '🐦 TABA MEMBER';
