@@ -2106,7 +2106,7 @@ footer a[href*="contact"],
 
 <section id="breeding" class="hidden">
  <h2>🧬 Zucht, Gesundheit & Leistung</h2>
- <p class="sub">Zuchtbuch, Jungtier-Zuordnung, Gesundheitsakte, Flugleistungen, Kalender und kontrollierter Stammbaum-Austausch.</p>
+ <p class="sub">Zuchtbuch, Jungtier-Zuordnung, Gesundheitsakte, Flugleistungen und Zuchtkalender.</p>
  <div class="taba-module-grid">
   <div class="taba-module-card">
    <h3>1. Zuchtbuch & Zuchtpaare</h3>
@@ -4750,7 +4750,7 @@ function filterNewConversationBreeders() {
   if (pedigreeSelect?.value) {
     const pedigree = pedigreeTextReport(pedigreeSelect.value);
     if (!pedigree) return;
-    body = (body ? body + '\\n\\n' : '') + 'Ich teile meinen Stammbaum mit dir:\\n\\n' + pedigree;
+    body = (body ? body + '\n\n' : '') + 'Ich teile meinen Stammbaum mit dir:\n\n' + pedigree;
   }
 
   if (!body) {
@@ -5017,8 +5017,8 @@ function addDmPedigreeToMessage() {
   const report = pedigreeTextReport(select.value);
   if (!report) return;
   const input = document.getElementById('messageInput');
-  const attachment = 'Ich teile meinen Stammbaum mit dir:\\n\\n' + report;
-  input.value = input.value.trim() ? input.value.trim() + '\\n\\n' + attachment : attachment;
+  const attachment = 'Ich teile meinen Stammbaum mit dir:\n\n' + report;
+  input.value = input.value.trim() ? input.value.trim() + '\n\n' + attachment : attachment;
   select.value = '';
   document.getElementById('dmPedigreePicker')?.classList.add('hidden');
   input.focus();
