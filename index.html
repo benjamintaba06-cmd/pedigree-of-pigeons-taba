@@ -2040,15 +2040,6 @@ footer a[href*="contact"],
     </div>
   </div>
 
-  <section class="taba-value-section" id="tabaMehrwert" aria-labelledby="tabaMehrwertTitle">
-    <div class="taba-value-head"><div><span class="dashboard-kicker">DEIN PERSÖNLICHER FORTSCHRITT</span><h3 id="tabaMehrwertTitle">Mein TABA-Mehrwert</h3><p>Deine Entwicklung und ein transparentes Vergleichsszenario im selben Zeitraum.</p></div><span class="dashboard-date" id="tabaValueRange">Letzte 6 Monate</span></div>
-    <div class="taba-value-grid">
-      <article class="taba-value-card"><h4>Mit TABA</h4><p>Deine dokumentierte Entwicklung anhand verfügbarer Kontodaten.</p><div id="tabaWithChart" class="taba-value-empty">Deine persönlichen Verlaufsdaten werden geladen …</div><div class="taba-value-legend"><span><i class="taba-value-dot" style="background:#c49b4d"></i>XP</span><span><i class="taba-value-dot" style="background:#2d8059"></i>Tauben</span><span><i class="taba-value-dot" style="background:#547da5"></i>Stammbäume</span></div></article>
-      <article class="taba-value-card"><h4>Ohne TABA</h4><p>Ein ausdrücklich hypothetisches Szenario für manuelle Dokumentation.</p><div id="tabaWithoutChart" class="taba-value-empty">Vergleich wird berechnet …</div><div class="taba-value-legend"><span><i class="taba-value-dot" style="background:#9aa59d"></i>Modellierter Fortschritt</span><span><i class="taba-value-dot" style="background:#b27d70"></i>Manueller Aufwand</span></div></article>
-    </div>
-    <p class="taba-value-note" id="tabaValueNote">„Ohne TABA“ ist eine Modellrechnung, keine gemessene alternative Realität. Zeitersparnis wird erst ausgewiesen, wenn dafür nachvollziehbare Annahmen hinterlegt sind.</p>
-  </section>
-
   <div class="dashboard-bottom-grid">
     <article class="dashboard-feature" role="button" tabindex="0" aria-label="Zuchtzentrum öffnen" onclick="showById('breeding')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showById('breeding')}"><div class="dashboard-feature-icon">🌿</div><div><span class="dashboard-kicker">ZUCHT & PLANUNG</span><h3>Deine nächste Zuchtsaison beginnt mit Überblick.</h3><p>Verwalte Zuchtpaare, dokumentiere Jungtiere und behalte wichtige Ereignisse im Blick.</p></div></article>
     <article class="dashboard-feature dashboard-feature-gold" role="button" tabindex="0" aria-label="Züchterkreis öffnen" onclick="showById('breeders')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showById('breeders')}"><div class="dashboard-feature-icon">🏡</div><div><span class="dashboard-kicker">GEMEINSCHAFT</span><h3>Wissen und Leidenschaft verbinden.</h3><p>Entdecke andere Züchter, teile Erfahrungen und finde besondere Tauben.</p></div></article>
@@ -3086,7 +3077,6 @@ function showById(id){
  const button = document.querySelector(`nav button[onclick="show('${id}',this)"]`);
  show(id, button || null);
  if (id === 'breeding') loadBreedingHub();
- if (id === 'dashboard' && typeof loadTabaMehrwert === 'function') loadTabaMehrwert();
 }
 
 function showInboxPanel(name, button){
@@ -3463,7 +3453,6 @@ function render(){
   }
   if (typeof tree === 'function') tree();
   if (typeof updateTabaDashboard === 'function') updateTabaDashboard();
-  if (typeof loadTabaMehrwert === 'function') loadTabaMehrwert();
 }
 
 async function removePigeon(id) {
@@ -6094,46 +6083,6 @@ render();
 
 
 /* Persönlicher TABA-Mehrwert: gespeicherte Ereignisse plus transparentes Vergleichsmodell. */
-let tabaValueLoadPromise=null;
-function tabaValueSvg(series,labels,ariaLabel){
- const W=560,H=190,L=34,R=12,T=12,B=30,plotW=W-L-R,plotH=H-T-B,colors=['#c49b4d','#2d8059','#547da5'];
- const y=v=>T+plotH-(Math.max(0,Math.min(100,v))/100)*plotH,x=i=>L+(labels.length<2?0:i*plotW/(labels.length-1));
- const grid=[0,25,50,75,100].map(v=>'<line x1="'+L+'" y1="'+y(v)+'" x2="'+(W-R)+'" y2="'+y(v)+'" stroke="#e8ede8"/><text x="'+(L-8)+'" y="'+(y(v)+3)+'" text-anchor="end" fill="#89968d" font-size="9">'+v+'</text>').join('');
- const paths=series.map((a,j)=>'<polyline fill="none" stroke="'+(colors[j]||'#9aa59d')+'" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" points="'+a.map((v,i)=>x(i)+','+y(v)).join(' ')+'"/>').join('');
- const dots=series.map((a,j)=>a.map((v,i)=>'<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3.2" fill="'+(colors[j]||'#9aa59d')+'" stroke="#fff" stroke-width="1.5"/>').join('')).join('');
- const ticks=labels.map((v,i)=>'<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle" fill="#78857d" font-size="9">'+v+'</text>').join('');
- return '<svg class="taba-value-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+ariaLabel+'">'+grid+paths+dots+ticks+'</svg>';
-}
-async function loadTabaMehrwert(){
- if(tabaValueLoadPromise)return tabaValueLoadPromise;
- tabaValueLoadPromise=(async()=>{
-  const withEl=document.getElementById('tabaWithChart'),withoutEl=document.getElementById('tabaWithoutChart');if(!withEl||!withoutEl)return;
-  const {data:auth}=await supabaseClient.auth.getUser();if(!auth?.user){withEl.textContent='Bitte melde dich an, um deinen persönlichen Verlauf zu sehen.';withoutEl.textContent='Der Vergleich erscheint nach der Anmeldung.';return;}
-  const uid=auth.user.id,now=new Date(),months=[];
-  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.toLocaleDateString('de-DE',{month:'short'})});}
-  const [xpRes,birdRes]=await Promise.all([
-   supabaseClient.from('xp_events').select('points,created_at,event_type').eq('user_id',uid).gte('created_at',new Date(now.getFullYear(),now.getMonth()-5,1).toISOString()).order('created_at',{ascending:true}),
-   supabaseClient.from('pigeons').select('id,created_at,father_id,mother_id').eq('owner_id',uid).order('created_at',{ascending:true})
-  ]);
-  const errs=[xpRes.error,birdRes.error].filter(Boolean);if(errs.length){withEl.textContent='Dein Verlauf ist momentan nicht vollständig verfügbar.';withoutEl.textContent='Der Vergleich benötigt zuerst die Verlaufsdaten.';console.warn('TABA-Mehrwert:',errs.map(e=>e.message));return;}
-  const xp=xpRes.data||[],birds=birdRes.data||[];
-  const mi=stamp=>{const d=new Date(stamp);return months.findIndex(m=>m.key===d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));};
-  const xpMonthly=months.map(()=>0),birdMonthly=months.map(()=>0);
-  xp.forEach(e=>{const i=mi(e.created_at);if(i>=0)xpMonthly[i]+=Number(e.points)||0;});
-  birds.forEach(b=>{const i=mi(b.created_at);if(i>=0)birdMonthly[i]++;});
-  const cumulative=a=>a.reduce((o,v,i)=>(o.push((o[i-1]||0)+v),o),[]);
-  const xpCum=cumulative(xpMonthly),birdCum=cumulative(birdMonthly);
-  const pedigreeMonthly=months.map((m,i)=>birds.filter(b=>mi(b.created_at)===i&&(b.father_id||b.mother_id)).length),pedigreeCum=cumulative(pedigreeMonthly);
-  const norm=a=>{const max=Math.max(1,...a);return a.map(v=>Math.round(v/max*100));};
-  withEl.innerHTML=tabaValueSvg([norm(xpCum),norm(birdCum),norm(pedigreeCum)],months.map(m=>m.label),'Indexierter Verlauf deiner XP, Tauben und dokumentierten Abstammungslinks')+'<p class="taba-muted">XP im Zeitraum: <strong>'+xp.reduce((n,e)=>n+(Number(e.points)||0),0).toLocaleString('de-DE')+'</strong> · Neue Tauben: <strong>'+birdMonthly.reduce((a,b)=>a+b,0).toLocaleString('de-DE')+'</strong> · Tauben mit Elternverknüpfung: <strong>'+birds.filter(b=>b.father_id||b.mother_id).length.toLocaleString('de-DE')+'</strong></p>';
-  const manualBirds=birdCum.map(v=>Math.round(v*.6)),manualPedigree=pedigreeCum.map(v=>Math.round(v*.5));
-  const manualIndex=norm(manualBirds.map((v,i)=>v+manualPedigree[i])),manualEffort=manualBirds.map((v,i)=>Math.min(100,Math.round((birdCum[i]+pedigreeCum[i])*.8)));
-  withoutEl.innerHTML=tabaValueSvg([manualIndex,manualEffort],months.map(m=>m.label),'Hypothetischer manueller Dokumentationsfortschritt und modellierter Aufwand')+'<p class="taba-muted">Modellannahme: manuell beispielhaft 60 % der Tauben- und 50 % der Abstammungsdokumentation. Keine gemessenen Ohne-TABA-Daten.</p>';
-  const note=document.getElementById('tabaValueNote');if(note)note.textContent='Transparenz: XP, Tauben und Elternverknüpfungen stammen aus gespeicherten TABA-Daten. Alle Reihen sind je Kennzahl auf 0–100 normiert. „Ohne TABA“ ist eine illustrative Modellannahme (60 % bzw. 50 %), kein gemessener Vergleich. Eine belastbare Zeitersparnis benötigt einen persönlichen manuellen Ausgangswert.';
-  const range=document.getElementById('tabaValueRange');if(range)range.textContent=months[0].label+' – '+months[5].label+' '+now.getFullYear();
- })().finally(()=>{tabaValueLoadPromise=null;});
- return tabaValueLoadPromise;
-}
 
 function updateTabaDashboard(){
   const stats=document.getElementById('dashboardStats'), birds=document.getElementById('dashboardBirds');
