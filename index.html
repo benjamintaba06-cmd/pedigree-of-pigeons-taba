@@ -3086,6 +3086,7 @@ function showById(id){
  const button = document.querySelector(`nav button[onclick="show('${id}',this)"]`);
  show(id, button || null);
  if (id === 'breeding') loadBreedingHub();
+ if (id === 'dashboard' && typeof loadTabaMehrwert === 'function') loadTabaMehrwert();
 }
 
 function showInboxPanel(name, button){
