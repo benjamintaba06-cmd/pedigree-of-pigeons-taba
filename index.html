@@ -1336,6 +1336,15 @@ footer nav.footer-legal-nav a{color:#285342!important;text-decoration:none!impor
 footer nav.footer-legal-nav span{color:#b89a5b;font-size:20px;line-height:1}
 @media(max-width:520px){footer nav.footer-legal-nav{gap:12px;padding:16px 20px!important;border-radius:20px!important}}
 
+/* Geöffneter DM-Chat: Liste ausblenden und kompakte Zurück-Navigation zeigen */
+#inboxPanel-conversations.conversation-chat-open #newConversationStartButton,
+#inboxPanel-conversations.conversation-chat-open #newConversationPanel,
+#inboxPanel-conversations.conversation-chat-open #conversationList { display:none !important; }
+.conversation-chat-header{display:flex;align-items:center;gap:12px;margin:0 0 14px;min-width:0}
+.conversation-chat-header h3{margin:0;min-width:0;overflow-wrap:anywhere;font-size:17px}
+.conversation-back-button{flex:0 0 38px;width:38px;height:38px;min-height:38px;padding:0;border:1px solid #dce5de;border-radius:50%;background:#f4f7f4;color:#214b3b;font-size:25px;line-height:1;display:grid;place-items:center}
+.conversation-back-button:hover,.conversation-back-button:focus-visible{background:#efe5c9;border-color:#c6a96b;outline:none}
+#conversationView{margin-top:12px}
 /* Private Unterhaltungen: ganze Zeile öffnen, langes Drücken zum Löschen */
 .conversation-card {
   cursor: pointer;
@@ -2289,7 +2298,7 @@ Einladung erstellen
 
 
 <div id="inboxPanel-conversations" class="inbox-panel">
-  <button type="button" class="action" onclick="toggleNewConversationPanel()">＋ Unterhaltung beginnen</button>
+  <button id="newConversationStartButton" type="button" class="action" onclick="toggleNewConversationPanel()">＋ Unterhaltung beginnen</button>
   <div id="newConversationPanel" class="card hidden" style="margin-top:12px">
     <p class="sub">Suche einen freigeschalteten Züchter und starte direkt eine private Nachricht.</p>
     <label for="newConversationSearch">Züchter suchen</label>
@@ -2300,7 +2309,10 @@ Einladung erstellen
     <p class="sub">Unterhaltungen werden geladen ...</p>
   </div>
   <div id="conversationView" class="card hidden">
-  <h3 id="conversationTitle">Private Unterhaltung</h3>
+  <div class="conversation-chat-header">
+    <button type="button" class="conversation-back-button" onclick="closeConversation()" aria-label="Zurück zu allen Unterhaltungen" title="Zurück zu allen Unterhaltungen">←</button>
+    <h3 id="conversationTitle">Private Unterhaltung</h3>
+  </div>
 
   <div id="messageList">
     <p class="sub">Nachrichten werden geladen ...</p>
@@ -2321,9 +2333,6 @@ Einladung erstellen
     <button type="button" class="action" onclick="addDmPedigreeToMessage()">Stammbaum übernehmen</button>
   </div>
 
-  <button class="action" onclick="closeConversation()">
-    Zurück zur Unterhaltungsliste
-  </button>
   </div>
 </div>
 </section>
@@ -4690,6 +4699,8 @@ function filterNewConversationBreeders() {
 
   document.getElementById('conversationView')
     .classList.remove('hidden');
+  document.getElementById('inboxPanel-conversations')
+    ?.classList.add('conversation-chat-open');
 
   await loadMessages();
 }
@@ -4698,6 +4709,8 @@ function filterNewConversationBreeders() {
 
   document.getElementById('conversationView')
     .classList.add('hidden');
+  document.getElementById('inboxPanel-conversations')
+    ?.classList.remove('conversation-chat-open');
 
   document.getElementById('messageInput').value = '';
 
