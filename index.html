@@ -2283,16 +2283,10 @@ Einladung erstellen
     Deine persönlichen Nachrichten aus der TABA-Züchtergemeinschaft.
   </p>
 
-<div class="breeder-subnav inbox-subnav">
-  <button type="button" class="action active" data-inbox-panel="conversations" onclick="showInboxPanel('conversations',this)">
-    💬 Private Unterhaltungen <span id="conversationTabDot" class="unread-dot hidden"></span>
-  </button>
-</div>
+
 <div id="inboxPanel-conversations" class="inbox-panel">
-  <h3>Private Unterhaltungen</h3>
   <button type="button" class="action" onclick="toggleNewConversationPanel()">＋ Unterhaltung beginnen</button>
   <div id="newConversationPanel" class="card hidden" style="margin-top:12px">
-    <h3>Neue private Unterhaltung</h3>
     <p class="sub">Suche einen freigeschalteten Züchter und starte direkt eine private Nachricht.</p>
     <label for="newConversationSearch">Züchter suchen</label>
     <input id="newConversationSearch" type="search" placeholder="Name oder Ort eingeben ..." oninput="filterNewConversationBreeders()">
