@@ -3182,11 +3182,28 @@ async function addPigeon(){
   });
   const photoInput=document.getElementById('pigeonPhoto'); if(photoInput) photoInput.value='';
   await loadPigeons();
+  if (!existing) await refreshLoggedInXp();
   alert(existing ? 'Taube wurde aktualisiert!' : 'Taube wurde gespeichert!');
 }
 
 function esc(s){
  return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function refreshLoggedInXp(){
+  const badge=document.getElementById('loggedInUser');
+  if(!badge || badge.classList.contains('hidden')) return;
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(!user) return;
+  const {data}=await supabaseClient.from('breeders').select('display_name,xp_total').eq('id',user.id).maybeSingle();
+  if(!data) return;
+  const xp=Math.max(0,Number(data.xp_total)||0), progress=xp%100, level=Math.floor(xp/100)+1;
+  const roleIcon=badge.dataset.role==='admin'?'👑':'🕊️';
+  badge.innerHTML=roleIcon+' <span class="xp-name">'+esc(data.display_name||'Mitglied')+'</span><span class="xp-count">'+xp.toLocaleString('de-DE')+' XP</span>';
+  badge.classList.add('xp-progress');
+  badge.style.setProperty('--xp-progress',progress+'%');
+  badge.title='Level '+level+' · '+progress+' / 100 XP bis zum nächsten Level';
+  badge.setAttribute('aria-label',(badge.dataset.role==='admin'?'Administrator':'Mitglied')+': '+(data.display_name||'Mitglied')+', Level '+level+', '+xp+' Erfahrungspunkte');
 }
 
 
@@ -4173,6 +4190,7 @@ async function publishCommunityPost() {
   message.textContent = 'Dein Beitrag wurde veröffentlicht.';
   await loadCommunityPosts();
   await loadMemberStats(user.id);
+  await refreshLoggedInXp();
 }
 
 async function loadCommunityPosts() {
@@ -4771,6 +4789,7 @@ function filterNewConversationBreeders() {
 
   await loadMessages();
   await loadConversations();
+  await refreshLoggedInXp();
 }
   async function loadMessages() {
   const list = document.getElementById('messageList');
