@@ -1426,6 +1426,21 @@ button.breeder-profile-back:focus-visible {
 .pedigree-card small{display:block;font-size:10px;line-height:1.3;margin-top:4px}
 @media(max-width:600px){.pedigree-toolbar{align-items:flex-start}.pedigree-toolbar .sub{flex-basis:100%}}
 
+/* Abstammungsanalyse und Paarungsvergleich */
+.pedigree-analysis-card{margin-top:18px!important;border-top:3px solid var(--taba-gold)!important}
+.pedigree-pair-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:10px 0}
+.pedigree-pair-grid select{width:100%}
+.pedigree-result{margin-top:16px}
+.pedigree-result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}
+.pedigree-result-stat{background:#f4f7f3;border:1px solid #e1e9e1;border-radius:12px;padding:13px}
+.pedigree-result-stat strong{display:block;color:var(--taba-forest);font-size:22px;margin-top:4px}
+.pedigree-ancestor-list{list-style:none;padding:0;margin:10px 0}
+.pedigree-ancestor-list li{padding:9px 11px;border-bottom:1px solid var(--taba-line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pedigree-warning{padding:11px 13px;border-left:3px solid var(--taba-gold);background:#fbf7ed;border-radius:8px;color:#68552b;font-size:12px;line-height:1.5}
+.pedigree-pdf-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px}
+.pedigree-pdf-brand img{width:54px;height:54px;object-fit:contain;border-radius:8px}
+@media(max-width:600px){.pedigree-pair-grid{grid-template-columns:1fr}}
+
 </style>
 
 <style id="taba-mobile-layout-fixes">
@@ -2174,6 +2189,16 @@ footer a[href*="contact"],
   <span class="sub">Wähle, wie weit die Abstammung zurückverfolgt werden soll.</span>
 </div>
 <div id="treeview"><p class="sub">Stammbaum wird geladen ...</p></div>
+<div class="card pedigree-analysis-card">
+  <h3>🧬 Verwandtschaft &amp; Paarungsvergleich</h3>
+  <p class="sub">Vergleiche zwei Tauben anhand der gespeicherten Abstammung. Gemeinsame Vorfahren und eine geschätzte Inzuchtquote der Nachkommen werden angezeigt.</p>
+  <div class="pedigree-pair-grid">
+    <div><label for="pedigreeSire">Täuber</label><select id="pedigreeSire"></select></div>
+    <div><label for="pedigreeDam">Täubin</label><select id="pedigreeDam"></select></div>
+  </div>
+  <button type="button" class="action" onclick="comparePedigreePair()">Paarung vergleichen</button>
+  <div id="pedigreePairResult" class="pedigree-result" aria-live="polite"><span class="sub">Wähle einen Täuber und eine Täubin aus.</span></div>
+</div>
 <div class="card" style="margin-top:16px">
   <h3>Stammbaum teilen oder herunterladen</h3>
   <p class="sub">Teile den Stammbaum mit einem freigegebenen Züchter oder erstelle eine druckbare PDF-Datei.</p>
@@ -3501,6 +3526,7 @@ function render(){
     else if (pigeons.length) selected.value = String(pigeons[0].id);
   }
   if (typeof tree === 'function') tree();
+  if (typeof loadPedigreePairOptions === 'function') loadPedigreePairOptions();
   if (typeof updateTabaDashboard === 'function') updateTabaDashboard();
 }
 
@@ -3703,6 +3729,80 @@ function tree(){
  }
 }
 
+function pedigreeAncestors(bird, maxDepth=8){
+ const result=new Map();
+ function walk(node,depth,path){
+   if(!node||depth>maxDepth)return;
+   for(const rel of ['father','mother']){
+     const parentId=node[rel];
+     if(!parentId||path.has(String(parentId)))continue;
+     const parent=pigeons.find(x=>String(x.id)===String(parentId));
+     if(!parent)continue;
+     const key=String(parent.id);
+     if(!result.has(key))result.set(key,[]);
+     result.get(key).push({bird:parent,distance:depth+1});
+     const next=new Set(path);next.add(key);
+     walk(parent,depth+1,next);
+   }
+ }
+ walk(bird,0,new Set([String(bird?.id)]));
+ return result;
+}
+function pedigreeInbreedingEstimate(bird,depth=0,seen=new Set()){
+ if(!bird||depth>8||seen.has(String(bird.id)))return 0;
+ const father=pigeons.find(x=>String(x.id)===String(bird.father));
+ const mother=pigeons.find(x=>String(x.id)===String(bird.mother));
+ if(!father||!mother)return 0;
+ const shared=pedigreeAncestors(father,8), maternal=pedigreeAncestors(mother,8);
+ let value=0;
+ for(const [id,pathsA] of shared){
+   const pathsB=maternal.get(id);if(!pathsB)continue;
+   const a=Math.min(...pathsA.map(x=>x.distance));
+   const b=Math.min(...pathsB.map(x=>x.distance));
+   value+=Math.pow(.5,a+b+1);
+ }
+ return Math.min(.999999,value);
+}
+function pedigreePairData(sire,dam){
+ const a=pedigreeAncestors(sire,8),b=pedigreeAncestors(dam,8),common=[];
+ let coefficient=0;
+ for(const [id,pa] of a){
+   const pb=b.get(id);if(!pb)continue;
+   const da=Math.min(...pa.map(x=>x.distance)),db=Math.min(...pb.map(x=>x.distance));
+   const ancestor=pa[0].bird;
+   const contribution=Math.pow(.5,da+db+1);
+   coefficient+=contribution;
+   common.push({bird:ancestor,da,db,contribution});
+ }
+ common.sort((x,y)=>y.contribution-x.contribution);
+ return {common,coefficient:Math.min(.999999,coefficient)};
+}
+function loadPedigreePairOptions(){
+ const sire=document.getElementById('pedigreeSire'),dam=document.getElementById('pedigreeDam');
+ if(!sire||!dam)return;
+ const option=(p)=>'<option value="'+esc(p.id)+'">'+esc(p.ring||'Ohne Ringnummer')+(p.name?' · '+esc(p.name):'')+'</option>';
+ const oldS=sire.value,oldD=dam.value;
+ sire.innerHTML='<option value="">Täuber auswählen</option>'+pigeons.filter(p=>p.sex==='male').map(option).join('');
+ dam.innerHTML='<option value="">Täubin auswählen</option>'+pigeons.filter(p=>p.sex==='female').map(option).join('');
+ if([...sire.options].some(o=>o.value===oldS))sire.value=oldS;
+ if([...dam.options].some(o=>o.value===oldD))dam.value=oldD;
+}
+function comparePedigreePair(){
+ const sire=pigeons.find(p=>String(p.id)===String(document.getElementById('pedigreeSire')?.value));
+ const dam=pigeons.find(p=>String(p.id)===String(document.getElementById('pedigreeDam')?.value));
+ const out=document.getElementById('pedigreePairResult');if(!out)return;
+ if(!sire||!dam){out.innerHTML='<p class="sub">Bitte einen Täuber und eine Täubin auswählen.</p>';return;}
+ if(String(sire.id)===String(dam.id)){out.innerHTML='<p class="pedigree-warning">Bitte zwei unterschiedliche Tauben auswählen.</p>';return;}
+ const data=pedigreePairData(sire,dam),pct=data.coefficient*100;
+ const band=pct<1?'Niedrig':pct<6.25?'Mäßig':pct<12.5?'Erhöht':'Hoch';
+ const shared=data.common.map(x=>'<li><span><strong>'+esc(x.bird.ring||'Ohne Ringnummer')+'</strong>'+(x.bird.name?' · '+esc(x.bird.name):'')+'</span><small>'+x.da+'. / '+x.db+'. Vorfahrengeneration · Beitrag '+(x.contribution*100).toFixed(3).replace('.',',')+' %</small></li>').join('');
+ const missing=(!sire.father||!sire.mother||!dam.father||!dam.mother);
+ out.innerHTML='<div class="pedigree-result-grid"><div class="pedigree-result-stat"><span class="sub">Geschätzte Inzuchtquote</span><strong>'+pct.toFixed(2).replace('.',',')+' %</strong></div><div class="pedigree-result-stat"><span class="sub">Einstufung</span><strong>'+band+'</strong></div><div class="pedigree-result-stat"><span class="sub">Gemeinsame Vorfahren</span><strong>'+data.common.length+'</strong></div></div>'+
+ (data.common.length?'<h4>Gemeinsame Vorfahren</h4><ul class="pedigree-ancestor-list">'+shared+'</ul>':'<p>In den erfassten Abstammungsdaten wurden keine gemeinsamen Vorfahren gefunden.</p>')+
+ '<p class="pedigree-warning">Schätzwert nach den erfassten Abstammungswegen bis maximal 8 Generationen. Nicht erfasste Vorfahren, Mehrfachwege und die eigene Inzucht gemeinsamer Vorfahren können das Ergebnis verändern. Fehlende Abstammungsdaten bedeuten nicht, dass keine Verwandtschaft besteht.</p>'+
+ (missing?'<p class="sub">Hinweis: Mindestens ein Elternteil ist bei einer der beiden Tauben noch nicht hinterlegt.</p>':'');
+}
+
 let pedigreeBreederCache=[];
 async function loadPedigreeBreeders(){
  const select=document.getElementById('pedigreeBreederSelect');
@@ -3854,7 +3954,7 @@ function downloadPedigreePDF(){
  <body>
    <main>
      <div class="pdf-heading">
-       <h1>Pedigree of Pigeons by TABA</h1>
+       <div class="pedigree-pdf-brand"><img src="${location.origin}/hinterlaender-hof-logo.jpg_1.jpg" alt="TABA Logo"><div><h1>Pedigree of Pigeons by TABA</h1><p>Abstammung · Qualität · Verantwortung</p></div></div>
        <p>Stammbaum · ${ring}${name && name!=='Ausgangspunkt' ? ' · '+name : ''}</p>
      </div>
      <div id="treeview">${treeMarkup}</div>
