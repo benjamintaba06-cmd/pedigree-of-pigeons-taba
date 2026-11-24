@@ -3748,21 +3748,6 @@ function pedigreeAncestors(bird, maxDepth=8){
  walk(bird,0,new Set([String(bird?.id)]));
  return result;
 }
-function pedigreeInbreedingEstimate(bird,depth=0,seen=new Set()){
- if(!bird||depth>8||seen.has(String(bird.id)))return 0;
- const father=pigeons.find(x=>String(x.id)===String(bird.father));
- const mother=pigeons.find(x=>String(x.id)===String(bird.mother));
- if(!father||!mother)return 0;
- const shared=pedigreeAncestors(father,8), maternal=pedigreeAncestors(mother,8);
- let value=0;
- for(const [id,pathsA] of shared){
-   const pathsB=maternal.get(id);if(!pathsB)continue;
-   const a=Math.min(...pathsA.map(x=>x.distance));
-   const b=Math.min(...pathsB.map(x=>x.distance));
-   value+=Math.pow(.5,a+b+1);
- }
- return Math.min(.999999,value);
-}
 function pedigreePairData(sire,dam){
  const a=pedigreeAncestors(sire,8),b=pedigreeAncestors(dam,8),common=[];
  let coefficient=0;
@@ -3903,6 +3888,8 @@ function downloadPedigreePDF(){
  const headAssets=[...document.head.querySelectorAll('style,link[rel="stylesheet"]')]
    .map(node=>node.outerHTML).join('\n');
  const treeMarkup=treeElement.innerHTML;
+ const pairMarkup=document.getElementById('pedigreePairResult')?.innerHTML||'';
+ const pairSelection=[document.getElementById('pedigreeSire')?.selectedOptions?.[0]?.textContent,document.getElementById('pedigreeDam')?.selectedOptions?.[0]?.textContent].filter(Boolean).join(' × ');
 
  win.document.open();
  win.document.write(`<!doctype html>
@@ -3940,6 +3927,12 @@ function downloadPedigreePDF(){
    .pedigree-card:hover { background:#fff !important; border-color:#dce4dc !important; }
    .pedigree-scroll + .sub { margin-top:8px; }
    button { -webkit-appearance:none; appearance:none; }
+   .pdf-analysis{margin:18px 0 0;padding:12px 16px;border:1px solid #dce5de;border-radius:10px;break-inside:avoid;font-size:11px}
+   .pdf-analysis h2{font-size:15px;color:#173b32;margin:0 0 7px}
+   .pdf-analysis .pedigree-result-grid{display:flex;gap:10px}
+   .pdf-analysis .pedigree-result-stat{flex:1;padding:8px}
+   .pdf-analysis .pedigree-result-stat strong{font-size:17px}
+   .pdf-analysis .pedigree-warning{font-size:9px}
    .pdf-actions { text-align:center; margin:14px 0 0; }
    .pdf-actions button {
      padding:9px 16px; border:0; border-radius:8px;
@@ -3958,6 +3951,7 @@ function downloadPedigreePDF(){
        <p>Stammbaum · ${ring}${name && name!=='Ausgangspunkt' ? ' · '+name : ''}</p>
      </div>
      <div id="treeview">${treeMarkup}</div>
+     ${pairMarkup && pairSelection ? '<section class="pdf-analysis"><h2>Paarungsvergleich · '+pairSelection+'</h2>'+pairMarkup+'</section>' : ''}
      <div class="pdf-actions"><button type="button" onclick="window.print()">PDF speichern / Drucken</button></div>
    </main>
    <script>
