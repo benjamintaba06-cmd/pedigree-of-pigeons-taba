@@ -2347,7 +2347,6 @@ footer a[href*="contact"],
     <button type="button" class="action active" data-breeder-panel="community" onclick="showBreederPanel('community',this)">📝 Beiträge</button>
     <button type="button" class="action" data-breeder-panel="sales" onclick="showBreederPanel('sales',this)">🐦 Tauben im Angebot</button>
     <button type="button" class="action" data-breeder-panel="directory" onclick="showBreederPanel('directory',this)">👥 Züchterverzeichnis</button>
-    <button type="button" class="action" data-breeder-panel="invitations" onclick="showBreederPanel('invitations',this)">✉️ Einladungen</button>
   </div>
 
   <div id="breederPanel-community" class="breeder-panel">
@@ -2380,38 +2379,6 @@ footer a[href*="contact"],
     <div id="breederProfileContent"></div>
   </div>
 
-  </div>
-  <div id="breederPanel-invitations" class="breeder-panel hidden">
-    <div class="card" id="invitationsPanel">
-<h3>✉️ Einladungen</h3>
-<p class="sub">Lade neue Züchter in die TABA-Community ein.</p>
-
-<div class="card">
-<h3>Neue Einladung erstellen</h3>
-
-<p class="sub">
-  Diese Einladung kann jeder verwenden, der den Link oder Zahlencode erhält.
-</p>
-
-<label>Maximale Nutzungen</label>
-<input id="inviteMaxUses" type="number"
-min="1" max="20" value="1">
-
-<label>Gültig bis (optional)</label>
-<input id="inviteExpiry" type="date">
-
-<button class="action" onclick="createInvitation()">
-Einladung erstellen
-</button>
-
-<p id="inviteMessage" class="sub"></p>
-</div>
-
-<h3>Meine Einladungen</h3>
-<div id="invitationList">
-<p class="sub">Einladungen werden geladen ...</p>
-</div>
-</div>
   </div>
 </section>
 
@@ -3167,7 +3134,6 @@ function show(id, btn) {
 
   if (id === 'breeders') {
     loadBreeders();
-    loadInvitations();
   }
 
   render();
@@ -3207,17 +3173,7 @@ function showBreederPanel(name, button){
   if(button) button.classList.add('active');
   if(name==='sales') loadPigeonListings();
   if(name==='directory') loadBreeders();
-  if(name==='invitations') loadInvitations();
 }
-
-function openInvitations(){
-  showById('breeders');
-  const tab=document.querySelector('[data-breeder-panel="invitations"]');
-  showBreederPanel('invitations',tab);
-  const panel=document.getElementById('invitationsPanel');
-  if(panel) setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),120);
-}
-
 
 async function addPigeon(){
   const { data: authData, error: authError } = await supabaseClient.auth.getUser();
