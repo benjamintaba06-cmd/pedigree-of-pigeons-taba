@@ -5702,20 +5702,38 @@ async function logoutTabaAccount() {
 }
 
 async function verifyTabaAccess(user) {
-  const { data: breeder, error } = await supabaseClient
+  if (user?.app_metadata?.role === 'admin') return true;
+
+  const { data: breeder, error: breederError } = await supabaseClient
     .from('breeders')
     .select('status')
     .eq('id', user.id)
     .single();
 
-  if (error || !breeder || breeder.status !== 'approved') {
+  if (breederError || !breeder || breeder.status !== 'approved') {
     updateAccountRole(null);
     await supabaseClient.auth.signOut();
-
     const message = document.getElementById('loginMessage');
-    message.textContent = 'Dein TABA-Zugang ist noch nicht freigegeben.';
+    message.textContent = 'Dein Züchterkonto ist noch nicht freigegeben.';
     message.style.color = '#b33b32';
+    return false;
+  }
 
+  const { data: subscription, error: subscriptionError } = await supabaseClient
+    .from('taba_subscriptions')
+    .select('status,current_period_end')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const periodEnd = subscription?.current_period_end ? new Date(subscription.current_period_end) : null;
+  const active = !subscriptionError && subscription?.status === 'active' && periodEnd && periodEnd.getTime() > Date.now();
+
+  if (!active) {
+    updateAccountRole(null);
+    await supabaseClient.auth.signOut();
+    const message = document.getElementById('loginMessage');
+    message.textContent = 'Dein Monatszugang ist nicht aktiv. Bitte prüfe dein Abo beim Hinterländer Hof.';
+    message.style.color = '#b33b32';
     return false;
   }
 
