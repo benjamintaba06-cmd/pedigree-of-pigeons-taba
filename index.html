@@ -4681,11 +4681,12 @@ async function loadPigeonListings() {
   if (!box) return;
   box.innerHTML = '<p class="sub">Verkaufsanzeigen werden geladen ...</p>';
 
-  const { data: listings, error } = await supabaseClient
-    .from('sales_listings')
-    .select('id, owner_id, pigeon_id, price_type, price, pedigree_public, status, created_at')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false });
+  // Der RPC gibt ausschließlich ausdrücklich für den Markt freigegebene Felder zurück.
+  // Private Taubennotizen, Fotospeicherpfade und Abstammungsdaten werden nicht offengelegt.
+  const [{ data: listings, error }, { data: authData }] = await Promise.all([
+    supabaseClient.rpc('get_active_sales_market'),
+    supabaseClient.auth.getUser()
+  ]);
 
   if (error) {
     console.error('Fehler beim Laden der Verkaufsanzeigen:', error);
@@ -4697,53 +4698,28 @@ async function loadPigeonListings() {
     return;
   }
 
-  const pigeonIds = [...new Set(listings.map(x => x.pigeon_id))];
-  const sellerIds = [...new Set(listings.map(x => x.owner_id))];
-  const [{ data: birds, error: birdsError }, { data: sellers, error: sellersError }] = await Promise.all([
-    supabaseClient.from('pigeons').select('id, ring_number, name, sex, color, hatch_date, notes, photo_path').in('id', pigeonIds),
-    supabaseClient.from('breeders').select('id, display_name, location_label').in('id', sellerIds)
-  ]);
-  if (birdsError || sellersError) {
-    box.innerHTML = '<p class="sub">Anzeigendetails konnten nicht geladen werden: ' + esc((birdsError || sellersError).message) + '</p>';
-    return;
-  }
-
-  const birdById = Object.fromEntries((birds || []).map(b => [b.id, b]));
-  const sellerById = Object.fromEntries((sellers || []).map(b => [b.id, b]));
-  const { data: authData } = await supabaseClient.auth.getUser();
   const currentUser = authData?.user;
-
-  const cards = await Promise.all(listings.map(async item => {
-    const bird = birdById[item.pigeon_id];
-    const seller = sellerById[item.owner_id];
-    if (!bird || !seller) return '';
-    let photoUrl = null;
-    if (bird.photo_path) {
-      const { data } = await supabaseClient.storage.from('pigeon-photos').createSignedUrl(bird.photo_path, 3600);
-      photoUrl = data?.signedUrl || null;
-    }
+  box.innerHTML = listings.map(item => {
     const priceText = item.price === null || item.price === undefined
       ? 'VB'
       : Number(item.price).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-    const isOwner = currentUser?.id === item.owner_id;
+    const isOwner = currentUser?.id === item.seller_id;
     return `
-      <div class="card">
+      <article class="card">
         <div class="pigeon">
-          <div class="bird">${photoUrl ? `<img src="${photoUrl}" alt="Foto ${esc(bird.ring_number)}" style="width:76px;height:76px;object-fit:cover;border-radius:12px">` : '🕊️'}</div>
+          <div class="bird" aria-hidden="true">🕊️</div>
           <div class="pigeon-info">
-            <strong>${esc(bird.ring_number)}${bird.name ? ' – ' + esc(bird.name) : ''}</strong>
-            <small>${esc(bird.sex === 'male' ? 'Täuber' : bird.sex === 'female' ? 'Täubin' : 'Unbekannt')} · ${esc(bird.color || 'Farbe nicht angegeben')}</small>
+            <strong>${esc(item.ring_number)}${item.pigeon_name ? ' – ' + esc(item.pigeon_name) : ''}</strong>
+            <small>${esc(item.sex === 'male' ? 'Täuber' : item.sex === 'female' ? 'Täubin' : 'Unbekannt')} · ${esc(item.color || 'Farbe nicht angegeben')}</small>
           </div>
           <span class="tag"><strong>${esc(priceText)}</strong></span>
         </div>
-        ${bird.hatch_date ? `<p class="sub">Geboren: ${new Date(bird.hatch_date).toLocaleDateString('de-DE')}</p>` : ''}
-        <p class="sub">Angeboten von: <strong>${esc(seller.display_name)}</strong>${seller.location_label ? ' · ' + esc(seller.location_label) : ''}</p>
-        ${isOwner ? '<p class="sub">Deine Verkaufsanzeige</p>' : currentUser ? `<button class="action" onclick="startConversation('${item.owner_id}')">✉️ Interesse zeigen / Verkäufer kontaktieren</button>` : ''}
-      </div>`;
-  }));
-  box.innerHTML = cards.filter(Boolean).join('') || '<p class="sub">Aktuell sind keine Tauben zum Verkauf eingestellt.</p>';
+        ${item.hatch_date ? `<p class="sub">Geboren: ${new Date(item.hatch_date).toLocaleDateString('de-DE')}</p>` : ''}
+        <p class="sub">Angeboten von: <strong>${esc(item.seller_name || 'TABA-Mitglied')}</strong>${item.seller_location ? ' · ' + esc(item.seller_location) : ''}</p>
+        ${isOwner ? '<p class="sub">Deine Verkaufsanzeige</p>' : currentUser ? `<button type="button" class="action" onclick="startConversation('${item.seller_id}')">✉️ Interesse zeigen / Verkäufer kontaktieren</button>` : '<p class="sub">Melde dich an, um den Verkäufer zu kontaktieren.</p>'}
+      </article>`;
+  }).join('');
 }
-
 
 let newConversationBreederCache = null;
 
